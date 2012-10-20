@@ -1,0 +1,829 @@
+extern mod std;
+
+#[nolink]
+#[link_args = "-framework OpenCL"]
+#[cfg(target_os = "macos")]
+extern mod dummy { }
+
+#[nolink]
+#[link_args = "-lOpenCL"]
+#[cfg(target_os = "linux")]
+extern mod dummy { }
+
+/* Opaque types */
+pub type cl_platform_id     = *libc::c_void;
+pub type cl_device_id       = *libc::c_void;
+pub type cl_context         = *libc::c_void;
+pub type cl_command_queue   = *libc::c_void;
+pub type cl_mem             = *libc::c_void;
+pub type cl_program         = *libc::c_void;
+pub type cl_kernel          = *libc::c_void;
+pub type cl_event           = *libc::c_void;
+pub type cl_sampler         = *libc::c_void;
+
+/* Scalar types */
+pub type cl_char    = i8;
+pub type cl_uchar   = u8;
+pub type cl_short   = i16;
+pub type cl_ushort  = u16;
+pub type cl_int     = i32;
+pub type cl_uint    = u32;
+pub type cl_long    = i64;
+pub type cl_ulong   = u64;
+
+pub type cl_half    = u16;
+pub type cl_float   = f32;
+pub type cl_double  = f64;
+
+pub type cl_bool                        = cl_uint;
+pub type cl_bitfield                    = cl_ulong;
+pub type cl_device_type                 = cl_bitfield;
+pub type cl_platform_info               = cl_uint;
+pub type cl_device_info                 = cl_uint;
+pub type cl_device_fp_config            = cl_bitfield;
+pub type cl_device_mem_cache_type       = cl_uint;
+pub type cl_device_local_mem_type       = cl_uint;
+pub type cl_device_exec_capabilities    = cl_bitfield;
+pub type cl_command_queue_properties    = cl_bitfield;
+
+pub type cl_context_properties          = libc::intptr_t;
+pub type cl_context_info                = cl_uint;
+pub type cl_command_queue_info          = cl_uint;
+pub type cl_channel_order               = cl_uint;
+pub type cl_channel_type                = cl_uint;
+pub type cl_mem_flags                   = cl_bitfield;
+pub type cl_mem_object_type             = cl_uint;
+pub type cl_mem_info                    = cl_uint;
+pub type cl_image_info                  = cl_uint;
+pub type cl_buffer_create_type          = cl_uint;
+pub type cl_addressing_mode             = cl_uint;
+pub type cl_filter_mode                 = cl_uint;
+pub type cl_sampler_info                = cl_uint;
+pub type cl_map_flags                   = cl_bitfield;
+pub type cl_program_info                = cl_uint; 
+pub type cl_program_build_info          = cl_uint;
+pub type cl_build_status                = cl_int;
+pub type cl_kernel_info                 = cl_uint;
+pub type cl_kernel_work_group_info      = cl_uint;
+pub type cl_event_info                  = cl_uint;
+pub type cl_command_type                = cl_uint;
+pub type cl_profiling_info              = cl_uint;
+
+pub type cl_image_format = {
+    image_channel_order:        cl_channel_order,
+    image_channel_data_type:    cl_channel_type
+};
+
+pub type cl_buffer_region = {
+    origin:     libc::size_t,
+    size:       libc::size_t
+};
+
+
+/* Error Codes */
+pub const CL_SUCCESS:                                   cl_int = 0;
+pub const CL_DEVICE_NOT_FOUND:                          cl_int = -1;
+pub const CL_DEVICE_NOT_AVAILABLE:                      cl_int = -2;
+pub const CL_COMPILER_NOT_AVAILABLE:                    cl_int = -3;
+pub const CL_MEM_OBJECT_ALLOCATION_FAILURE:             cl_int = -4;
+pub const CL_OUT_OF_RESOURCES:                          cl_int = -5;
+pub const CL_OUT_OF_HOST_MEMORY:                        cl_int = -6;
+pub const CL_PROFILING_INFO_NOT_AVAILABLE:              cl_int = -7;
+pub const CL_MEM_COPY_OVERLAP:                          cl_int = -8;
+pub const CL_IMAGE_FORMAT_MISMATCH:                     cl_int = -9;
+pub const CL_IMAGE_FORMAT_NOT_SUPPORTED:                cl_int = -10;
+pub const CL_BUILD_PROGRAM_FAILURE:                     cl_int = -11;
+pub const CL_MAP_FAILURE:                               cl_int = -12;
+pub const CL_MISALIGNED_SUB_BUFFER_OFFSET:              cl_int = -13;
+pub const CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST: cl_int = -14;
+
+pub const CL_INVALID_VALUE:                             cl_int = -30;
+pub const CL_INVALID_DEVICE_TYPE:                       cl_int = -31;
+pub const CL_INVALID_PLATFORM:                          cl_int = -32;
+pub const CL_INVALID_DEVICE:                            cl_int = -33;
+pub const CL_INVALID_CONTEXT:                           cl_int = -34;
+pub const CL_INVALID_QUEUE_PROPERTIES:                  cl_int = -35;
+pub const CL_INVALID_COMMAND_QUEUE:                     cl_int = -36;
+pub const CL_INVALID_HOST_PTR:                          cl_int = -37;
+pub const CL_INVALID_MEM_OBJECT:                        cl_int = -38;
+pub const CL_INVALID_IMAGE_FORMAT_DESCRIPTOR:           cl_int = -39;
+pub const CL_INVALID_IMAGE_SIZE:                        cl_int = -40;
+pub const CL_INVALID_SAMPLER:                           cl_int = -41;
+pub const CL_INVALID_BINARY:                            cl_int = -42;
+pub const CL_INVALID_BUILD_OPTIONS:                     cl_int = -43;
+pub const CL_INVALID_PROGRAM:                           cl_int = -44;
+pub const CL_INVALID_PROGRAM_EXECUTABLE:                cl_int = -45;
+pub const CL_INVALID_KERNEL_NAME:                       cl_int = -46;
+pub const CL_INVALID_KERNEL_DEFINITION:                 cl_int = -47;
+pub const CL_INVALID_KERNEL:                            cl_int = -48;
+pub const CL_INVALID_ARG_INDEX:                         cl_int = -49;
+pub const CL_INVALID_ARG_VALUE:                         cl_int = -50;
+pub const CL_INVALID_ARG_SIZE:                          cl_int = -51;
+pub const CL_INVALID_KERNEL_ARGS:                       cl_int = -52;
+pub const CL_INVALID_WORK_DIMENSION:                    cl_int = -53;
+pub const CL_INVALID_WORK_GROUP_SIZE:                   cl_int = -54;
+pub const CL_INVALID_WORK_ITEM_SIZE:                    cl_int = -55;
+pub const CL_INVALID_GLOBAL_OFFSET:                     cl_int = -56;
+pub const CL_INVALID_EVENT_WAIT_LIST:                   cl_int = -57;
+pub const CL_INVALID_EVENT:                             cl_int = -58;
+pub const CL_INVALID_OPERATION:                         cl_int = -59;
+pub const CL_INVALID_GL_OBJECT:                         cl_int = -60;
+pub const CL_INVALID_BUFFER_SIZE:                       cl_int = -61;
+pub const CL_INVALID_MIP_LEVEL:                         cl_int = -62;
+pub const CL_INVALID_GLOBAL_WORK_SIZE:                  cl_int = -63;
+pub const CL_INVALID_PROPERTY:                          cl_int = -64;
+
+/* OpenCL Version */
+pub const CL_VERSION_1_0:                               cl_bool = 1;
+pub const CL_VERSION_1_1:                               cl_bool = 1;
+
+/* cl_bool */
+pub const CL_FALSE:                                     cl_bool = 0;
+pub const CL_TRUE:                                      cl_bool = 1;
+
+/* cl_platform_info */
+pub const CL_PLATFORM_PROFILE:                          cl_uint = 0x0900;
+pub const CL_PLATFORM_VERSION:                          cl_uint = 0x0901;
+pub const CL_PLATFORM_NAME:                             cl_uint = 0x0902;
+pub const CL_PLATFORM_VENDOR:                           cl_uint = 0x0903;
+pub const CL_PLATFORM_EXTENSIONS:                       cl_uint = 0x0904;
+
+/* cl_device_type - bitfield */
+pub const CL_DEVICE_TYPE_DEFAULT:                       cl_bitfield = 1 << 0;
+pub const CL_DEVICE_TYPE_CPU:                           cl_bitfield = 1 << 1;
+pub const CL_DEVICE_TYPE_GPU:                           cl_bitfield = 1 << 2;
+pub const CL_DEVICE_TYPE_ACCELERATOR:                   cl_bitfield = 1 << 3;
+pub const CL_DEVICE_TYPE_ALL:                           cl_bitfield = 0xFFFFFFFF;
+
+/* cl_device_info */
+pub const CL_DEVICE_TYPE:                               cl_uint = 0x1000;
+pub const CL_DEVICE_VENDOR_ID:                          cl_uint = 0x1001;
+pub const CL_DEVICE_MAX_COMPUTE_UNITS:                  cl_uint = 0x1002;
+pub const CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS:           cl_uint = 0x1003;
+pub const CL_DEVICE_MAX_WORK_GROUP_SIZE:                cl_uint = 0x1004;
+pub const CL_DEVICE_MAX_WORK_ITEM_SIZES:                cl_uint = 0x1005;
+pub const CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR:        cl_uint = 0x1006;
+pub const CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT:       cl_uint = 0x1007;
+pub const CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT:         cl_uint = 0x1008;
+pub const CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG:        cl_uint = 0x1009;
+pub const CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT:       cl_uint = 0x100A;
+pub const CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE:      cl_uint = 0x100B;
+pub const CL_DEVICE_MAX_CLOCK_FREQUENCY:                cl_uint = 0x100C;
+pub const CL_DEVICE_ADDRESS_BITS:                       cl_uint = 0x100D;
+pub const CL_DEVICE_MAX_READ_IMAGE_ARGS:                cl_uint = 0x100E;
+pub const CL_DEVICE_MAX_WRITE_IMAGE_ARGS:               cl_uint = 0x100F;
+pub const CL_DEVICE_MAX_MEM_ALLOC_SIZE:                 cl_uint = 0x1010;
+pub const CL_DEVICE_IMAGE2D_MAX_WIDTH:                  cl_uint = 0x1011;
+pub const CL_DEVICE_IMAGE2D_MAX_HEIGHT:                 cl_uint = 0x1012;
+pub const CL_DEVICE_IMAGE3D_MAX_WIDTH:                  cl_uint = 0x1013;
+pub const CL_DEVICE_IMAGE3D_MAX_HEIGHT:                 cl_uint = 0x1014;
+pub const CL_DEVICE_IMAGE3D_MAX_DEPTH:                  cl_uint = 0x1015;
+pub const CL_DEVICE_IMAGE_SUPPORT:                      cl_uint = 0x1016;
+pub const CL_DEVICE_MAX_PARAMETER_SIZE:                 cl_uint = 0x1017;
+pub const CL_DEVICE_MAX_SAMPLERS:                       cl_uint = 0x1018;
+pub const CL_DEVICE_MEM_BASE_ADDR_ALIGN:                cl_uint = 0x1019;
+pub const CL_DEVICE_MIN_DATA_TYPE_ALIGN_SIZE:           cl_uint = 0x101A;
+pub const CL_DEVICE_SINGLE_FP_CONFIG:                   cl_uint = 0x101B;
+pub const CL_DEVICE_GLOBAL_MEM_CACHE_TYPE:              cl_uint = 0x101C;
+pub const CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE:          cl_uint = 0x101D;
+pub const CL_DEVICE_GLOBAL_MEM_CACHE_SIZE:              cl_uint = 0x101E;
+pub const CL_DEVICE_GLOBAL_MEM_SIZE:                    cl_uint = 0x101F;
+pub const CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE:           cl_uint = 0x1020;
+pub const CL_DEVICE_MAX_CONSTANT_ARGS:                  cl_uint = 0x1021;
+pub const CL_DEVICE_LOCAL_MEM_TYPE:                     cl_uint = 0x1022;
+pub const CL_DEVICE_LOCAL_MEM_SIZE:                     cl_uint = 0x1023;
+pub const CL_DEVICE_ERROR_CORRECTION_SUPPORT:           cl_uint = 0x1024;
+pub const CL_DEVICE_PROFILING_TIMER_RESOLUTION:         cl_uint = 0x1025;
+pub const CL_DEVICE_ENDIAN_LITTLE:                      cl_uint = 0x1026;
+pub const CL_DEVICE_AVAILABLE:                          cl_uint = 0x1027;
+pub const CL_DEVICE_COMPILER_AVAILABLE:                 cl_uint = 0x1028;
+pub const CL_DEVICE_EXECUTION_CAPABILITIES:             cl_uint = 0x1029;
+pub const CL_DEVICE_QUEUE_PROPERTIES:                   cl_uint = 0x102A;
+pub const CL_DEVICE_NAME:                               cl_uint = 0x102B;
+pub const CL_DEVICE_VENDOR:                             cl_uint = 0x102C;
+pub const CL_DRIVER_VERSION:                            cl_uint = 0x102D;
+pub const CL_DEVICE_PROFILE:                            cl_uint = 0x102E;
+pub const CL_DEVICE_VERSION:                            cl_uint = 0x102F;
+pub const CL_DEVICE_EXTENSIONS:                         cl_uint = 0x1030;
+pub const CL_DEVICE_PLATFORM:                           cl_uint = 0x1031;
+/* 0x1032 reserved for CL_DEVICE_DOUBLE_FP_CONFIG */
+/* 0x1033 reserved for CL_DEVICE_HALF_FP_CONFIG */
+pub const CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF:        cl_uint = 0x1034;
+pub const CL_DEVICE_HOST_UNIFIED_MEMORY:                cl_uint = 0x1035;
+pub const CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR:           cl_uint = 0x1036;
+pub const CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT:          cl_uint = 0x1037;
+pub const CL_DEVICE_NATIVE_VECTOR_WIDTH_INT:            cl_uint = 0x1038;
+pub const CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG:           cl_uint = 0x1039;
+pub const CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT:          cl_uint = 0x103A;
+pub const CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE:         cl_uint = 0x103B;
+pub const CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF:           cl_uint = 0x103C;
+pub const CL_DEVICE_OPENCL_C_VERSION:                   cl_uint = 0x103D;
+
+/* cl_device_fp_config - bitfield */
+pub const CL_FP_DENORM:                                 cl_bitfield = 1 << 0;
+pub const CL_FP_INF_NAN:                                cl_bitfield = 1 << 1;
+pub const CL_FP_ROUND_TO_NEAREST:                       cl_bitfield = 1 << 2;
+pub const CL_FP_ROUND_TO_ZERO:                          cl_bitfield = 1 << 3;
+pub const CL_FP_ROUND_TO_INF:                           cl_bitfield = 1 << 4;
+pub const CL_FP_FMA:                                    cl_bitfield = 1 << 5;
+pub const CL_FP_SOFT_FLOAT:                             cl_bitfield = 1 << 6;
+
+/* cl_device_mem_cache_type */
+pub const CL_NONE:                                      cl_uint = 0x0;
+pub const CL_READ_ONLY_CACHE:                           cl_uint = 0x1;
+pub const CL_READ_WRITE_CACHE:                          cl_uint = 0x2;
+
+/* cl_device_local_mem_type */
+pub const CL_LOCAL:                                     cl_uint = 0x1;
+pub const CL_GLOBAL:                                    cl_uint = 0x2;
+
+/* cl_device_exec_capabilities - bitfield */
+pub const CL_EXEC_KERNEL:                               cl_bitfield = 1 << 0;
+pub const CL_EXEC_NATIVE_KERNEL:                        cl_bitfield = 1 << 1;
+
+/* cl_command_queue_properties - bitfield */
+pub const CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE:       cl_bitfield = 1 << 0;
+pub const CL_QUEUE_PROFILING_ENABLE:                    cl_bitfield = 1 << 1;
+
+/* cl_context_info  */
+pub const CL_CONTEXT_REFERENCE_COUNT:                   cl_uint = 0x1080;
+pub const CL_CONTEXT_DEVICES:                           cl_uint = 0x1081;
+pub const CL_CONTEXT_PROPERTIES:                        cl_uint = 0x1082;
+pub const CL_CONTEXT_NUM_DEVICES:                       cl_uint = 0x1083;
+
+/* cl_context_info + cl_context_properties */
+pub const CL_CONTEXT_PLATFORM:                          libc::intptr_t = 0x1084;
+
+/* cl_command_queue_info */
+pub const CL_QUEUE_CONTEXT:                             cl_uint = 0x1090;
+pub const CL_QUEUE_DEVICE:                              cl_uint = 0x1091;
+pub const CL_QUEUE_REFERENCE_COUNT:                     cl_uint = 0x1092;
+pub const CL_QUEUE_PROPERTIES:                          cl_uint = 0x1093;
+
+/* cl_mem_flags - bitfield */
+pub const CL_MEM_READ_WRITE:                            cl_bitfield = 1 << 0;
+pub const CL_MEM_WRITE_ONLY:                            cl_bitfield = 1 << 1;
+pub const CL_MEM_READ_ONLY:                             cl_bitfield = 1 << 2;
+pub const CL_MEM_USE_HOST_PTR:                          cl_bitfield = 1 << 3;
+pub const CL_MEM_ALLOC_HOST_PTR:                        cl_bitfield = 1 << 4;
+pub const CL_MEM_COPY_HOST_PTR:                         cl_bitfield = 1 << 5;
+
+/* cl_channel_order */
+pub const CL_R:                                         cl_uint = 0x10B0;
+pub const CL_A:                                         cl_uint = 0x10B1;
+pub const CL_RG:                                        cl_uint = 0x10B2;
+pub const CL_RA:                                        cl_uint = 0x10B3;
+pub const CL_RGB:                                       cl_uint = 0x10B4;
+pub const CL_RGBA:                                      cl_uint = 0x10B5;
+pub const CL_BGRA:                                      cl_uint = 0x10B6;
+pub const CL_ARGB:                                      cl_uint = 0x10B7;
+pub const CL_INTENSITY:                                 cl_uint = 0x10B8;
+pub const CL_LUMINANCE:                                 cl_uint = 0x10B9;
+pub const CL_Rx:                                        cl_uint = 0x10BA;
+pub const CL_RGx:                                       cl_uint = 0x10BB;
+pub const CL_RGBx:                                      cl_uint = 0x10BC;
+
+/* cl_channel_type */
+pub const CL_SNORM_INT8:                                cl_uint = 0x10D0;
+pub const CL_SNORM_INT16:                               cl_uint = 0x10D1;
+pub const CL_UNORM_INT8:                                cl_uint = 0x10D2;
+pub const CL_UNORM_INT16:                               cl_uint = 0x10D3;
+pub const CL_UNORM_SHORT_565:                           cl_uint = 0x10D4;
+pub const CL_UNORM_SHORT_555:                           cl_uint = 0x10D5;
+pub const CL_UNORM_INT_101010:                          cl_uint = 0x10D6;
+pub const CL_SIGNED_INT8:                               cl_uint = 0x10D7;
+pub const CL_SIGNED_INT16:                              cl_uint = 0x10D8;
+pub const CL_SIGNED_INT32:                              cl_uint = 0x10D9;
+pub const CL_UNSIGNED_INT8:                             cl_uint = 0x10DA;
+pub const CL_UNSIGNED_INT16:                            cl_uint = 0x10DB;
+pub const CL_UNSIGNED_INT32:                            cl_uint = 0x10DC;
+pub const CL_HALF_FLOAT:                                cl_uint = 0x10DD;
+pub const CL_FLOAT:                                     cl_uint = 0x10DE;
+
+/* cl_mem_object_type */
+pub const CL_MEM_OBJECT_BUFFER:                         cl_uint = 0x10F0;
+pub const CL_MEM_OBJECT_IMAGE2D:                        cl_uint = 0x10F1;
+pub const CL_MEM_OBJECT_IMAGE3D:                        cl_uint = 0x10F2;
+
+/* cl_mem_info */
+pub const CL_MEM_TYPE:                                  cl_uint = 0x1100;
+pub const CL_MEM_FLAGS:                                 cl_uint = 0x1101;
+pub const CL_MEM_SIZE:                                  cl_uint = 0x1102;
+pub const CL_MEM_HOST_PTR:                              cl_uint = 0x1103;
+pub const CL_MEM_MAP_COUNT:                             cl_uint = 0x1104;
+pub const CL_MEM_REFERENCE_COUNT:                       cl_uint = 0x1105;
+pub const CL_MEM_CONTEXT:                               cl_uint = 0x1106;
+pub const CL_MEM_ASSOCIATED_MEMOBJECT:                  cl_uint = 0x1107;
+pub const CL_MEM_OFFSET:                                cl_uint = 0x1108;
+
+/* cl_image_info */
+pub const CL_IMAGE_FORMAT:                              cl_uint = 0x1110;
+pub const CL_IMAGE_ELEMENT_SIZE:                        cl_uint = 0x1111;
+pub const CL_IMAGE_ROW_PITCH:                           cl_uint = 0x1112;
+pub const CL_IMAGE_SLICE_PITCH:                         cl_uint = 0x1113;
+pub const CL_IMAGE_WIDTH:                               cl_uint = 0x1114;
+pub const CL_IMAGE_HEIGHT:                              cl_uint = 0x1115;
+pub const CL_IMAGE_DEPTH:                               cl_uint = 0x1116;
+
+/* cl_addressing_mode */
+pub const CL_ADDRESS_NONE:                              cl_uint = 0x1130;
+pub const CL_ADDRESS_CLAMP_TO_EDGE:                     cl_uint = 0x1131;
+pub const CL_ADDRESS_CLAMP:                             cl_uint = 0x1132;
+pub const CL_ADDRESS_REPEAT:                            cl_uint = 0x1133;
+pub const CL_ADDRESS_MIRRORED_REPEAT:                   cl_uint = 0x1134;
+
+/* cl_filter_mode */
+pub const CL_FILTER_NEAREST:                            cl_uint = 0x1140;
+pub const CL_FILTER_LINEAR:                             cl_uint = 0x1141;
+
+/* cl_sampler_info */
+pub const CL_SAMPLER_REFERENCE_COUNT:                   cl_uint = 0x1150;
+pub const CL_SAMPLER_CONTEXT:                           cl_uint = 0x1151;
+pub const CL_SAMPLER_NORMALIZED_COORDS:                 cl_uint = 0x1152;
+pub const CL_SAMPLER_ADDRESSING_MODE:                   cl_uint = 0x1153;
+pub const CL_SAMPLER_FILTER_MODE:                       cl_uint = 0x1154;
+
+/* cl_map_flags - bitfield */
+pub const CL_MAP_READ:                                  cl_bitfield = 1 << 0;
+pub const CL_MAP_WRITE:                                 cl_bitfield = 1 << 1;
+
+/* cl_program_info */
+pub const CL_PROGRAM_REFERENCE_COUNT:                   cl_uint = 0x1160;
+pub const CL_PROGRAM_CONTEXT:                           cl_uint = 0x1161;
+pub const CL_PROGRAM_NUM_DEVICES:                       cl_uint = 0x1162;
+pub const CL_PROGRAM_DEVICES:                           cl_uint = 0x1163;
+pub const CL_PROGRAM_SOURCE:                            cl_uint = 0x1164;
+pub const CL_PROGRAM_BINARY_SIZES:                      cl_uint = 0x1165;
+pub const CL_PROGRAM_BINARIES:                          cl_uint = 0x1166;
+
+/* cl_program_build_info */
+pub const CL_PROGRAM_BUILD_STATUS:                      cl_uint = 0x1181;
+pub const CL_PROGRAM_BUILD_OPTIONS:                     cl_uint = 0x1182;
+pub const CL_PROGRAM_BUILD_LOG:                         cl_uint = 0x1183;
+
+/* cl_build_status */
+pub const CL_BUILD_SUCCESS:                             cl_uint = 0;
+pub const CL_BUILD_NONE:                                cl_uint = -1;
+pub const CL_BUILD_ERROR:                               cl_uint = -2;
+pub const CL_BUILD_IN_PROGRESS:                         cl_uint = -3;
+
+/* cl_kernel_info */
+pub const CL_KERNEL_FUNCTION_NAME:                      cl_uint = 0x1190;
+pub const CL_KERNEL_NUM_ARGS:                           cl_uint = 0x1191;
+pub const CL_KERNEL_REFERENCE_COUNT:                    cl_uint = 0x1192;
+pub const CL_KERNEL_CONTEXT:                            cl_uint = 0x1193;
+pub const CL_KERNEL_PROGRAM:                            cl_uint = 0x1194;
+
+/* cl_kernel_work_group_info */
+pub const CL_KERNEL_WORK_GROUP_SIZE:                    cl_uint = 0x11B0;
+pub const CL_KERNEL_COMPILE_WORK_GROUP_SIZE:            cl_uint = 0x11B1;
+pub const CL_KERNEL_LOCAL_MEM_SIZE:                     cl_uint = 0x11B2;
+pub const CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE: cl_uint = 0x11B3;
+pub const CL_KERNEL_PRIVATE_MEM_SIZE:                   cl_uint = 0x11B4;
+
+/* cl_event_info  */
+pub const CL_EVENT_COMMAND_QUEUE:                       cl_uint = 0x11D0;
+pub const CL_EVENT_COMMAND_TYPE:                        cl_uint = 0x11D1;
+pub const CL_EVENT_REFERENCE_COUNT:                     cl_uint = 0x11D2;
+pub const CL_EVENT_COMMAND_EXECUTION_STATUS:            cl_uint = 0x11D3;
+pub const CL_EVENT_CONTEXT:                             cl_uint = 0x11D4;
+
+/* cl_command_type */
+pub const CL_COMMAND_NDRANGE_KERNEL:                    cl_uint = 0x11F0;
+pub const CL_COMMAND_TASK:                              cl_uint = 0x11F1;
+pub const CL_COMMAND_NATIVE_KERNEL:                     cl_uint = 0x11F2;
+pub const CL_COMMAND_READ_BUFFER:                       cl_uint = 0x11F3;
+pub const CL_COMMAND_WRITE_BUFFER:                      cl_uint = 0x11F4;
+pub const CL_COMMAND_COPY_BUFFER:                       cl_uint = 0x11F5;
+pub const CL_COMMAND_READ_IMAGE:                        cl_uint = 0x11F6;
+pub const CL_COMMAND_WRITE_IMAGE:                       cl_uint = 0x11F7;
+pub const CL_COMMAND_COPY_IMAGE:                        cl_uint = 0x11F8;
+pub const CL_COMMAND_COPY_IMAGE_TO_BUFFER:              cl_uint = 0x11F9;
+pub const CL_COMMAND_COPY_BUFFER_TO_IMAGE:              cl_uint = 0x11FA;
+pub const CL_COMMAND_MAP_BUFFER:                        cl_uint = 0x11FB;
+pub const CL_COMMAND_MAP_IMAGE:                         cl_uint = 0x11FC;
+pub const CL_COMMAND_UNMAP_MEM_OBJECT:                  cl_uint = 0x11FD;
+pub const CL_COMMAND_MARKER:                            cl_uint = 0x11FE;
+pub const CL_COMMAND_ACQUIRE_GL_OBJECTS:                cl_uint = 0x11FF;
+pub const CL_COMMAND_RELEASE_GL_OBJECTS:                cl_uint = 0x1200;
+pub const CL_COMMAND_READ_BUFFER_RECT:                  cl_uint = 0x1201;
+pub const CL_COMMAND_WRITE_BUFFER_RECT:                 cl_uint = 0x1202;
+pub const CL_COMMAND_COPY_BUFFER_RECT:                  cl_uint = 0x1203;
+pub const CL_COMMAND_USER:                              cl_uint = 0x1204;
+
+/* command execution status */
+pub const CL_COMPLETE:                                  cl_uint = 0x0;
+pub const CL_RUNNING:                                   cl_uint = 0x1;
+pub const CL_SUBMITTED:                                 cl_uint = 0x2;
+pub const CL_QUEUED:                                    cl_uint = 0x3;
+
+/* cl_buffer_create_type  */
+pub const CL_BUFFER_CREATE_TYPE_REGION:                 cl_uint = 0x1220;
+
+/* cl_profiling_info  */
+pub const CL_PROFILING_COMMAND_QUEUED:                  cl_uint = 0x1280;
+pub const CL_PROFILING_COMMAND_SUBMIT:                  cl_uint = 0x1281;
+pub const CL_PROFILING_COMMAND_START:                   cl_uint = 0x1282;
+pub const CL_PROFILING_COMMAND_END:                     cl_uint = 0x1283;
+
+
+#[nolink]
+pub extern mod ll {
+
+    /* Platform APIs */
+    fn clGetPlatformIDs(num_entries: cl_uint,
+                        platforms: *cl_platform_id,
+                        num_platforms: *cl_uint) -> cl_int;
+    fn clGetPlatformInfo(platform: cl_platform_id,
+                         paran_name: cl_platform_info,
+                         param_value_size: libc::size_t,
+                         param_value: *libc::c_void,
+                         param_value_size_ret: *libc::size_t) -> cl_int;
+
+    /* Device APIs */
+    fn clGetDeviceIDs(platform: cl_platform_id,
+                      device_type: cl_device_type,
+                      num_entries: cl_uint,
+                      devices: *cl_device_id,
+                      num_devices: *cl_uint) -> cl_int;
+    fn clGetDeviceInfo(device: cl_device_id,
+                       param_name: cl_device_info,
+                       param_value_size: libc::size_t,
+                       param_value: *libc::c_void,
+                       param_value_size_ret: *libc::size_t) -> cl_int;
+
+    /* Context APIs */
+    fn clCreateContext(properties: *cl_context_properties,
+                       num_devices: cl_uint,
+                       devices: *cl_device_id,
+                       pfn_notify: *fn (*libc::c_char, *libc::c_void, libc::size_t, *libc::c_void),
+                       user_data: *libc::c_void,
+                       errcode_ret: *cl_int) -> cl_context;
+    fn clCreateContextFromType(properties: *cl_context_properties,
+                               device_type: cl_device_type,
+                               pfn_notify: *fn (*libc::c_char, *libc::c_void, libc::size_t, *libc::c_void),
+                               user_data: *libc::c_void,
+                               errcode_ret: *cl_int) -> cl_context;
+    fn clRetainContext(context: cl_context) -> cl_int;
+    fn clReleaseContext(context: cl_context) -> cl_int;
+    fn clGetContextInfo(context: cl_context,
+                        param_name: cl_context_info,
+                        param_value_size: libc::size_t,
+                        param_value: *libc::c_void,
+                        param_value_size_ret: *libc::size_t) -> cl_int;
+
+    /* Command Queue APIs */
+    fn clCreateCommandQueue(context: cl_context,
+                            device: cl_device_id,
+                            properties: cl_command_queue_properties,
+                            errcode_ret: *cl_int) -> cl_command_queue;
+    fn clRetainCommandQueue(command_queue: cl_command_queue) -> cl_int;
+    fn clReleaseCommandQueue(command_queue: cl_command_queue) -> cl_int;
+    fn clGetCommandQueueInfo(command_queue: cl_command_queue,
+                             param_name: cl_command_queue_info,
+                             param_value_size: libc::size_t,
+                             param_value: *libc::c_void,
+                             param_value_size_ret: *libc::size_t) -> cl_int;
+
+    /* Memory Object APIs */
+    fn clCreateBuffer(context: cl_context,
+                      flags: cl_mem_flags,
+                      size: libc::size_t,
+                      host_ptr: *libc::c_void,
+                      errcode_ret: *cl_int) -> cl_mem;
+    fn clCreateSubBuffer(buffer: cl_mem,
+                        flags: cl_mem_flags,
+                        buffer_create_type: cl_buffer_create_type,
+                        buffer_create_info: *libc::c_void,
+                        errcode_ret: *cl_int) -> cl_mem;
+    fn clCreateImage2D(context: cl_context,
+                       flags: cl_mem_flags,
+                       image_format: *cl_image_format,
+                       image_width: libc::size_t,
+                       image_height: libc::size_t,
+                       image_row_pitch: libc::size_t,
+                       host_ptr: *libc::c_void,
+                       errcode_ret: *cl_int) -> cl_mem;
+    fn clCreateImage3D(context: cl_context,
+                       flags: cl_mem_flags,
+                       image_format: *cl_image_format,
+                       image_width: libc::size_t,
+                       image_height: libc::size_t,
+                       image_depth: libc::size_t,
+                       image_row_pitch: libc::size_t,
+                       image_depth: libc::size_t,
+                       image_row_pitch: libc::size_t,
+                       image_slice_pitch: libc::size_t,
+                       host_ptr: *libc::c_void,
+                       errcode_ret: *cl_int) -> cl_mem;
+    fn clRetainMemObject(memobj: cl_mem) -> cl_int;
+    fn clReleaseMemObject(memobj: cl_mem) -> cl_int;
+    fn clGetSupportedImageFormats(context: cl_context,
+                                  flags: cl_mem_flags,
+                                  image_type: cl_mem_object_type,
+                                  num_entries: cl_uint,
+                                  image_formats: *cl_image_format,
+                                  num_image_formats: *cl_uint) -> cl_int;
+    fn clGetMemObjectInfo(memobj: cl_mem,
+                          param_name: cl_mem_info,
+                          param_value_size: libc::size_t,
+                          param_value: *libc::c_void,
+                          param_value_size_ret: *libc::size_t) -> cl_int;
+    fn clGetImageInfo(image: cl_mem,
+                      param_name: cl_image_info,
+                      param_value_size: libc::size_t,
+                      param_value: *libc::c_void,
+                      param_value_size_ret: *libc::size_t) -> cl_int;
+    fn clSetMemObjectDestructorCallback(memobj: cl_mem,
+                                        pfn_notify: *fn (cl_mem, *libc::c_void),
+                                        user_data: *libc::c_void) -> cl_int;
+
+    /** Sampler APIs */
+    fn clCreateSampler(context: cl_context,
+                       normalize_coords: cl_bool,
+                       addressing_mode: cl_addressing_mode,
+                       filter_mode: cl_filter_mode,
+                       errcode_ret: *cl_int) -> cl_sampler;
+    fn clRetainSampler(sampler: cl_sampler) -> cl_int;
+    fn clReleaseSampler(sampler: cl_sampler) ->cl_int;
+    fn clGetSamplerInfo(sampler: cl_sampler,
+                        param_name: cl_sampler_info,
+                        param_value_size: libc::size_t,
+                        param_value: *libc::c_void,
+                        param_value_size_ret: *libc::size_t) -> cl_int;
+
+    /* Program Object APIs */
+    fn clCreateProgramWithSource(context: cl_context,
+                                 count: cl_uint,
+                                 strings: **libc::c_char,
+                                 lengths: *libc::size_t,
+                                 errcode_ret: *cl_int) -> cl_program;
+    fn clCreateProgramWithBinary(context: cl_context,
+                                 num_devices: cl_uint,
+                                 device_list: *cl_device_id,
+                                 lengths: *libc::size_t,
+                                 binaries: **libc::c_uchar,
+                                 binary_status: *cl_int,
+                                 errcode_ret: *cl_int) -> cl_program;
+    fn clRetainProgram(program: cl_program) -> cl_int;
+    fn clReleaseProgram(program: cl_program) -> cl_int;
+    fn clBuildProgram(program: cl_program,
+                      num_devices: cl_uint,
+                      device_list: *cl_device_id,
+                      options: *libc::c_char,
+                      pfn_notify: *fn (cl_program, *libc::c_void),
+                      user_data: *libc::c_void) -> cl_int;
+    fn clUnloadCompiler() -> cl_int;
+    fn clGetProgramInfo(program: cl_program,
+                        param_name: cl_program_info,
+                        param_value_size: libc::size_t,
+                        param_value: *libc::c_void,
+                        param_value_size_ret: *libc::size_t) -> cl_int;
+    fn clGetProgramBuildInfo(program: cl_program,
+                             device: cl_device_id,
+                             param_name: cl_program_info,
+                             param_value_size: libc::size_t,
+                             param_value: *libc::c_void,
+                             param_value_size_ret: *libc::size_t) -> cl_int;
+
+    /* Kernel Object APIs */
+    fn clCreateKernel(program: cl_program,
+                      kernel_name: *libc::c_char,
+                      errcode_ret: *cl_int) -> cl_kernel;
+    fn clCreateKernelsInProgram(program: cl_program,
+                                num_kernels: cl_uint,
+                                kernels: *cl_kernel,
+                                num_kernels_ret: *cl_uint) -> cl_int;
+    fn clRetainKernel(kernel: cl_kernel) -> cl_int;
+    fn clReleaseKernel(kernel: cl_kernel) -> cl_int;
+    fn clSetKernelArg(kernel: cl_kernel,
+                      arg_index: cl_uint,
+                      arg_size: libc::size_t,
+                      arg_value: *libc::c_void) -> cl_int;
+    fn clGetKernelInfo(kernel: cl_kernel,
+                       param_name: cl_kernel_info,
+                       param_value_size: libc::size_t,
+                       param_value: *libc::c_void,
+                       param_value_size_ret: *libc::size_t) -> cl_int;
+    fn clGetKernelWorkGroupInfo(kernel: cl_kernel,
+                                device: cl_device_id,
+                                param_name: cl_kernel_work_group_info,
+                                param_value_size: libc::size_t,
+                                param_value: *libc::c_void,
+                                param_value_size_ret: *libc::size_t) -> cl_int;
+
+    /* Event Object APIs */
+    fn clWaitForEvents(num_events: cl_uint,
+                       event_list: *cl_event) -> cl_int;
+    fn clGetEventInfo(event: cl_event,
+                      param_name: cl_event_info,
+                      param_value_size: libc::size_t,
+                      param_value: *libc::c_void,
+                      param_value_size_ret: *libc::size_t) -> cl_int;
+    fn clCreateUserEvent(context: cl_context,
+                         errcode_ret: *cl_int) -> cl_event;
+    fn clRetainEvent(event: cl_event) -> cl_int;
+    fn clReleaseEvent(event: cl_event) -> cl_int;
+    fn clSetUserEventStatus(event: cl_event,
+                            execution_status: cl_int) -> cl_int;
+    fn clSetEventCallback(event: cl_event,
+                          command_exec_callback_type: cl_int,
+                          pfn_notify: *fn (cl_event, cl_int, *libc::c_void),
+                          user_data: *libc::c_void) -> cl_int;
+
+    /* Profiling APIs */
+    fn clGetEventProfilingInfo(event: cl_event,
+                               param_name: cl_profiling_info,
+                               param_value_size: libc::size_t,
+                               param_value: *libc::c_void,
+                               param_value_size_ret: *libc::size_t) -> cl_int;
+
+    /* Flush and Finish APIs */
+    fn clFlush(command_queue: cl_command_queue) -> cl_int;
+    fn clFinish(command_queue: cl_command_queue) -> cl_int;
+
+    /* Enqueued Commands APIs */
+    fn clEnqueueReadBuffer(command_queue: cl_command_queue,
+                           buffer: cl_mem,
+                           blocking_read: cl_bool,
+                           offset: libc::size_t,
+                           cb: libc::size_t,
+                           ptr: *libc::c_void,
+                           num_events_in_wait_list: cl_uint,
+                           event_wait_list: *cl_event,
+                           event: *cl_event) -> cl_int;
+    fn clEnqueueReadBufferRect(command_queue: cl_command_queue,
+                               buffer: cl_mem,
+                               blocking_read: cl_bool,
+                               buffer_origin: *libc::size_t,
+                               host_origin: *libc::size_t,
+                               region: *libc::size_t,
+                               buffer_row_pitch: libc::size_t,
+                               buffer_slice_pitch: libc::size_t,
+                               host_row_pitch: libc::size_t,
+                               host_slice_pitch: libc::size_t,
+                               ptr: *libc::c_void,
+                               num_events_in_wait_list: cl_uint,
+                               event_wait_list: *cl_event,
+                               event: *cl_event) -> cl_int;
+    fn clEnqueueWriteBuffer(command_queue: cl_command_queue,
+                            buffer: cl_mem,
+                            blocking_write: cl_bool,
+                            offset: libc::size_t,
+                            cb: libc::size_t,
+                            ptr: *libc::c_void,
+                            num_events_in_wait_list: cl_uint,
+                            event_wait_list: *cl_event,
+                            event: *cl_event) -> cl_int;
+    fn clEnqueueWriteBufferRect(command_queue: cl_command_queue,
+                                blocking_write: cl_bool,
+                                buffer_origin: *libc::size_t,
+                                host_origin: *libc::size_t,
+                                region: *libc::size_t,
+                                buffer_row_pitch: libc::size_t,
+                                buffer_slice_pitch: libc::size_t,
+                                host_row_pitch: libc::size_t,
+                                host_slice_pitch: libc::size_t,
+                                ptr: *libc::c_void,
+                                num_events_in_wait_list: cl_uint,
+                                event_wait_list: *cl_event,
+                                event: *cl_event) -> cl_int;
+    fn clEnqueueCopyBuffer(command_queue: cl_command_queue,
+                           src_buffer: cl_mem,
+                           dst_buffer: cl_mem,
+                           src_offset: libc::size_t,
+                           dst_offset: libc::size_t,
+                           cb: libc::size_t,
+                           num_events_in_wait_list: cl_uint,
+                           event_wait_list: *cl_event,
+                           event: *cl_event) -> cl_int;
+    fn clEnqueueCopyBufferRect(command_queue: cl_command_queue,
+                               src_buffer: cl_mem,
+                               dst_buffer: cl_mem,
+                               src_origin: *libc::size_t,
+                               dst_origin: *libc::size_t,
+                               region: *libc::size_t,
+                               src_row_pitch: libc::size_t,
+                               src_slice_pitch: libc::size_t,
+                               dst_row_pitch: libc::size_t,
+                               dst_slice_pitch: libc::size_t,
+                               num_events_in_wait_list: cl_uint,
+                               event_wait_list: *cl_event,
+                               event: *cl_event) -> cl_int;
+    fn clEnqueueReadImage(command_queue: cl_command_queue,
+                          image: cl_mem,
+                          blocking_read: cl_bool,
+                          origin: *libc::size_t,
+                          region: *libc::size_t,
+                          row_pitch: libc::size_t,
+                          slice_pitch: libc::size_t,
+                          ptr: *libc::c_void,
+                          num_events_in_wait_list: cl_uint,
+                          event_wait_list: *cl_event,
+                          event: *cl_event) -> cl_int;
+    fn clEnqueueWriteImage(command_queue: cl_command_queue,
+                           image: cl_mem,
+                           blocking_write: cl_bool,
+                           origin: *libc::size_t,
+                           region: *libc::size_t,
+                           input_row_pitch: libc::size_t,
+                           input_slice_pitch: libc::size_t,
+                           ptr: *libc::c_void,
+                           num_events_in_wait_list: cl_uint,
+                           event_wait_list: *cl_event,
+                           event: *cl_event) -> cl_int;
+    fn clEnqueueCopyImage(command_queue: cl_command_queue,
+                          src_image: cl_mem,
+                          dst_image: cl_mem,
+                          src_origin: *libc::size_t,
+                          dst_origin: *libc::size_t,
+                          region: *libc::size_t,
+                          num_events_in_wait_list: cl_uint,
+                          event_wait_list: *cl_event,
+                          event: *cl_event) -> cl_int;
+    fn clEnqueueCopyImageToBuffer(command_queue: cl_command_queue,
+                                  src_image: cl_mem,
+                                  dst_buffer: cl_mem,
+                                  src_origin: *libc::size_t,
+                                  region: *libc::size_t,
+                                  dst_offset: libc::size_t,
+                                  num_events_in_wait_list: cl_uint,
+                                  event_wait_list: *cl_event,
+                                  event: *cl_event) -> cl_int;
+    fn clEnqueueCopyBufferToImage(command_queue: cl_command_queue,
+                                  src_buffer: cl_mem,
+                                  dst_image: cl_mem,
+                                  src_offset: libc::size_t,
+                                  dst_origin: *libc::size_t,
+                                  region: *libc::size_t,
+                                  num_events_in_wait_list: cl_uint,
+                                  event_wait_list: *cl_event,
+                                  event: *cl_event) -> cl_int;
+    fn clEnqueueMapBuffer(command_queue: cl_command_queue,
+                          buffer: cl_mem,
+                          blocking_map: cl_bool,
+                          map_flags: cl_map_flags,
+                          offset: libc::size_t,
+                          cb: libc::size_t,
+                          num_events_in_wait_list: cl_uint,
+                          event_wait_list: *cl_event,
+                          event: *cl_event,
+                          errorcode_ret: *cl_int);
+    fn clEnqueueMapImage(command_queue: cl_command_queue,
+                         image: cl_mem,
+                         blocking_map: cl_bool,
+                         map_flags: cl_map_flags,
+                         origin: *libc::size_t,
+                         region: *libc::size_t,
+                         image_row_pitch: libc::size_t,
+                         image_slice_pitch: libc::size_t,
+                         num_events_in_wait_list: cl_uint,
+                         event_wait_list: *cl_event,
+                         event: *cl_event,
+                         errorcode_ret: *cl_int);
+    fn clEnqueueUnmapMemObject(command_queue: cl_command_queue,
+                               memobj: cl_mem,
+                               mapped_ptr: *libc::c_void,
+                               num_events_in_wait_list: cl_uint,
+                               event_wait_list: *cl_event,
+                               event: *cl_event) -> cl_int;
+    fn clEnqueueNDRangeKernel(command_queue: cl_command_queue,
+                              kernel: cl_kernel,
+                              work_dim: cl_uint,
+                              global_work_offset: *libc::size_t,
+                              global_work_size: *libc::size_t,
+                              local_work_size: *libc::size_t,
+                              num_events_in_wait_list: cl_uint,
+                              event_wait_list: *cl_event,
+                              event: *cl_event) -> cl_int;
+    fn clEnqueueTask(command_queue: cl_command_queue,
+                     kernel: cl_kernel,
+                     num_events_in_wait_list: cl_uint,
+                     event_wait_list: *cl_event,
+                     event: *cl_event) -> cl_int;
+    fn clEnqueueNativeKernel(command_queue: cl_command_queue,
+                             user_func: *fn (*libc::c_void),
+                             args: *libc::c_void,
+                             cb_args: libc::size_t,
+                             num_mem_objects: cl_uint,
+                             mem_list: *cl_mem,
+                             args_mem_loc: **libc::c_void,
+                             num_events_in_wait_list: cl_uint,
+                             event_wait_list: *cl_event,
+                             event: *cl_event) -> cl_int;
+    fn clEnqueueMarker(command_queue: cl_command_queue,
+                       event: *cl_event) -> cl_int;
+    fn clEnqueueWaitForEvents(command_queue: cl_command_queue,
+                              num_events: cl_uint,
+                              event_list: *cl_event) -> cl_int;
+    fn clEnqueueBarrier(command_queue: cl_command_queue) -> cl_int;
+                                
+    /* Extension function access
+     *
+     * Returns the extension function address for the given function name,
+     * or NULL if a valid function can not be found. The client must
+     * check to make sure the address is not NULL, before using or
+     * or calling the returned function address.
+     */
+    fn clGetExtensionFunctionAddress(func_name: *libc::c_char);
+}
