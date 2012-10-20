@@ -77,8 +77,9 @@ fn main() unsafe {
     let vec_c = vec::from_buf(buf as *int, sz);
     libc::free(buf);
 
-    io::println(#fmt("%? + %?", vec_a, vec_b));
-    io::println(#fmt("= %?", vec_c));
+    io::println(#fmt("   %?", vec_a));
+    io::println(#fmt("+  %?", vec_b));
+    io::println(#fmt("=  %?", vec_c));
 
     // Cleanup
     clReleaseKernel(kernel);
