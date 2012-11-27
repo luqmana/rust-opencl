@@ -7,5 +7,5 @@ fn main() {
     
     error!("%?", platforms);
 
-    do platforms.map |platform| { get_devices(*platform); }
+    get_devices(*platforms[0]);
 }
