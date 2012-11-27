@@ -61,10 +61,10 @@ pub fn create_context(device: Device) -> Context {
                               ptr::null(), ptr::null(), ptr::addr_of(&errcode));
 
     if errcode != CL_SUCCESS {
-        fail ~"Failed to create opencl context!";
+        fail ~"Failed to create opencl context!"
     }
 
-    Context { ctx: ctx };
+    Context { ctx: ctx }
 }
 
 struct CommandQueue {
@@ -81,8 +81,8 @@ pub fn create_commandqueue(ctx: Context, device: Device) -> CommandQueue {
     let cqueue = clCreateCommandQueue(ctx.ctx, device.id, 0, ptr::addr_of(&errcode));
 
     if errcode != CL_SUCCESS {
-        fail ~"Failed to create command queue!";
+        fail ~"Failed to create command queue!"
     }
 
-    CommandQueue { cqueue: cqueue };
+    CommandQueue { cqueue: cqueue }
 }
