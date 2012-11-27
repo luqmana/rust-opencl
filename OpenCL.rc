@@ -4,3 +4,4 @@
 #[crate_type = "lib"];
 
 pub mod CL;
+pub mod hl;
