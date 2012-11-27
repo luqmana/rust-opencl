@@ -7,7 +7,7 @@ struct Platform {
     id: cl_platform_id
 }
 
-fn get_platforms() -> ~[Platform] {
+pub fn get_platforms() -> ~[Platform] {
     let mut num_platforms = 0;
 
     // TODO: Check result status
@@ -28,7 +28,7 @@ struct Device {
     id: cl_device_id
 }
 
-fn get_devices(platform: Platform) -> ~[Device] {
+pub fn get_devices(platform: Platform) -> ~[Device] {
     let mut num_devices = 0;
 
     clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, 0, ptr::null(), 
