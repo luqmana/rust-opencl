@@ -51,3 +51,38 @@ struct Context {
         clReleaseContext(self.ctx);
     }
 }
+
+pub fn create_context(device: Device) -> Context {
+    // TODO: Support for multiple devices
+    let mut errcode = 0;
+
+    // TODO: Proper error messages
+    let ctx = clCreateContext(ptr::null(), 1, ptr::addr_of(&device.id),
+                              ptr::nul(), ptr::addr_of(&errcode));
+
+    if errcode != CL_SUCCESS {
+        fail ~"Failed to create opencl context!";
+    }
+
+    Context { ctx: ctx };
+}
+
+struct CommandQueue {
+    cqueue: cl_command_queue,
+
+    drop {
+        clReleaseCommandQueue(self.cqueue);
+    }
+}
+
+pub fn create_commandqueue(ctx: Context, device: Device) -> CommandQueue {
+    let mut errcode = 0;
+
+    let cqueue = clCreateCommandQueue(ctx.ctx, device.id, 0, ptr::addr_of(&errcode));
+
+    if errcode != CL_SUCCESS {
+        fail ~"Failed to create command queue!";
+    }
+
+    CommandQueue { cqueue: cqueue };
+}
