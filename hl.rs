@@ -38,7 +38,7 @@ fn get_devices(platform: Platform) -> ~[Device] {
                                          0 as cl_device_id));
     do vec::as_imm_buf(ids) |ids, len| {
         clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, len as cl_uint, 
-                       ids, ptr:addr_of(&num_devices));
+                       ids, ptr::addr_of(&num_devices));
     };
 
     error!("devices: %?", ids);
