@@ -41,8 +41,6 @@ fn get_devices(platform: Platform) -> ~[Device] {
                        ids, ptr::addr_of(&num_devices));
     };
 
-    error!("devices: %?", ids);
-
     do ids.map |id| { Device {id: *id }}
 }
 

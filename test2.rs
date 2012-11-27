@@ -7,5 +7,7 @@ fn main() {
     
     error!("%?", platforms);
 
-    get_devices(*platforms[0]);
+    let devices = get_devices(platforms[0]);
+
+    error!("%?", devices);
 }
