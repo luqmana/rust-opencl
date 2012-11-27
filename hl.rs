@@ -28,6 +28,24 @@ struct Device {
     id: cl_device_id
 }
 
+fn get_devices(platform: Platform) -> ~[Device] {
+    let mut num_devices = 0;
+
+    clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, 0, ptr::null(), 
+                   ptr::addr_of(&num_devices));
+    
+    let ids = vec::to_mut(vec::from_elem(num_devices as uint, 
+                                         0 as cl_device_id));
+    do vec::as_imm_buf(ids) |ids, len| {
+        clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, len as cl_uint, 
+                       ids, ptr:addr_of(&num_devices));
+    };
+
+    error!("devices: %?", ids);
+
+    do ids.map |id| { Device {id: *id }}
+}
+
 struct Context {
     ctx: cl_context,
 
