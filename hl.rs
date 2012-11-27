@@ -58,7 +58,7 @@ pub fn create_context(device: Device) -> Context {
 
     // TODO: Proper error messages
     let ctx = clCreateContext(ptr::null(), 1, ptr::addr_of(&device.id),
-                              ptr::null(), ptr::addr_of(&errcode));
+                              ptr::null(), ptr::null(), ptr::addr_of(&errcode));
 
     if errcode != CL_SUCCESS {
         fail ~"Failed to create opencl context!";
