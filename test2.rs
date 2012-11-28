@@ -14,8 +14,8 @@ fn main() {
 
     error!("%?", devices);
 
-    let context = create_context(devices[0]);
-    let cqueue = create_commandqueue(context, devices[0]);
-    let buf_a = create_buffer(context, sz * sys::size_of::<int>(), CL_MEM_READ_ONLY);
+    let mut context = create_context(devices[0]);
+    let mut cqueue = create_commandqueue(context, devices[0]);
+    let mut buf_a = create_buffer(context, sz * sys::size_of::<int>(), CL_MEM_READ_ONLY);
     enqueue_write_buffer(cqueue, buf_a, vec_a);
 }
