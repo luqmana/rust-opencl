@@ -86,3 +86,65 @@ pub fn create_commandqueue(ctx: Context, device: Device) -> CommandQueue {
 
     CommandQueue { cqueue: cqueue }
 }
+
+struct Buffer {
+    buffer: cl_mem,
+    size: int,
+
+    drop {
+        clReleaseMemObject(self.buffer);
+    }
+}
+
+
+// TODO: How to make this function cleaner and nice
+pub fn create_buffer(ctx: Context, size: int, flags: cl_mem_flags) -> Buffer {
+    let mut errcode = 0;
+
+    let buffer = clCreateBuffer(ctx.ctx, flags, size as libc::size_t, ptr::null(), 
+                                ptr::addr_of(&errcode));
+
+    if errcode != CL_SUCCESS {
+        fail ~"Failed to create buffer!"
+    }
+
+    Buffer { buffer: buffer, size: size }
+}
+
+pub fn enqueue_write_buffer(cqueue: CommandQueue, buf: Buffer, host_vector) {
+    let ret = clEnqueueWriteBuffer(cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
+                                   buf.size as libc::size_t, 
+                                   vec::raw::to_ptr(host_vector) as *libc::c_void,
+                                   0, ptr::null(), ptr::null());
+    if ret != CL_SUCCESS {
+        fail ~"Failed to enqueue write buffer!"
+    }
+}
+
+struct Program {
+    prg: cl_program,
+
+    drop {
+        clReleaseProgram(self.prg);
+    }
+}
+
+// TODO: Support multiple devices
+pub fn create_program_with_binary(ctx: Context, device: Device, binary_path: & Path){
+    let mut errcode = 0;
+    let binary = io::read_whole_file_str(binary_path).get();
+    let program = do str::as_c_str(binary) |kernel_binary| {
+        clCreateProgramWithBinary(ctx.ctx, 1, ptr::addr_of(&device.id), 
+                                  ptr::addr_of(&(binary.leb() + 1)) as *libc::size_t, 
+                                  ptr::addr_of(&kernel_binary) as **libc::cuchar,
+                                  ptr::null(),
+                                  ptr::addr_of(&errcode))
+    };
+    
+    if errcode != CL_SUCCESS {
+        fail ~"Failed to create open cl program with binary!"
+    }
+
+    Program { prg: program }
+}
+
