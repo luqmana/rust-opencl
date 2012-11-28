@@ -111,10 +111,10 @@ pub fn create_buffer(ctx: & Context, size: int, flags: cl_mem_flags) -> Buffer {
     Buffer { buffer: buffer, size: size }
 }
 
-pub fn enqueue_write_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: ~[int]) unsafe {
+pub fn enqueue_write_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[int]) unsafe {
     let ret = clEnqueueWriteBuffer(cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
                                    buf.size as libc::size_t, 
-                                   vec::raw::to_ptr(host_vector) as *libc::c_void,
+                                   vec::raw::to_ptr(*host_vector) as *libc::c_void,
                                    0, ptr::null(), ptr::null());
     if ret != CL_SUCCESS {
         fail ~"Failed to enqueue write buffer!"
