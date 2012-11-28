@@ -136,7 +136,7 @@ pub fn create_program_with_binary(ctx: Context, device: Device, binary_path: & P
     let program = do str::as_c_str(binary) |kernel_binary| {
         clCreateProgramWithBinary(ctx.ctx, 1, ptr::addr_of(&device.id), 
                                   ptr::addr_of(&(binary.leb() + 1)) as *libc::size_t, 
-                                  ptr::addr_of(&kernel_binary) as **libc::cuchar,
+                                  ptr::addr_of(&kernel_binary) as **libc::c_uchar,
                                   ptr::null(),
                                   ptr::addr_of(&errcode))
     };
