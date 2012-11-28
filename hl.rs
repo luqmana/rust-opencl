@@ -75,7 +75,7 @@ struct CommandQueue {
     }
 }
 
-pub fn create_commandqueue(ctx: Context, device: Device) -> CommandQueue {
+pub fn create_commandqueue(ctx: &Context, device: Device) -> CommandQueue {
     let mut errcode = 0;
 
     let cqueue = clCreateCommandQueue(ctx.ctx, device.id, 0, ptr::addr_of(&errcode));
@@ -98,7 +98,7 @@ struct Buffer {
 
 
 // TODO: How to make this function cleaner and nice
-pub fn create_buffer(ctx: Context, size: int, flags: cl_mem_flags) -> Buffer {
+pub fn create_buffer(ctx: &Context, size: int, flags: cl_mem_flags) -> Buffer {
     let mut errcode = 0;
 
     let buffer = clCreateBuffer(ctx.ctx, flags, size as libc::size_t, ptr::null(), 
