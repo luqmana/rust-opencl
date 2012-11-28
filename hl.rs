@@ -130,7 +130,7 @@ struct Program {
 }
 
 // TODO: Support multiple devices
-pub fn create_program_with_binary(ctx: Context, device: Device, binary_path: & Path){
+pub fn create_program_with_binary(ctx: Context, device: Device, binary_path: & Path) -> Program{
     let mut errcode = 0;
     let binary = io::read_whole_file_str(binary_path).get();
     let program = do str::as_c_str(binary) |kernel_binary| {
