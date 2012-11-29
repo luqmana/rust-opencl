@@ -148,3 +148,58 @@ pub fn create_program_with_binary(ctx: & Context, device: Device, binary_path: &
     Program { prg: program }
 }
 
+pub fn build_program(program: & Program, device: Device){
+    let ret = clBuildProgram(program.prg, 1, ptr::addr_of(&device.id), 
+                             ptr::null(), ptr::null(), ptr::null());
+
+    if ret != CL_SUCCESS {
+        fail ~"Failure during program building!"
+    }
+}
+
+
+struct Kernel {
+    kernel: cl_kernel,
+
+    drop {
+        clReleaseKernel(self.kernel);
+    }
+}
+
+pub fn create_kernel(program: & Program, kernel: & str) -> Kernel {
+    let mut errcode = 0;
+    let bytes = str::to_bytes(kernel);
+    let kernel = clCreateKernel(program.prg, vec::raw::to_ptr(bytes) as *libc::c_char, ptr::addr_of(&errcode));
+
+    if errcode != CL_SUCCESS {
+        fail ~"Failed to create kernel!"
+    }
+
+    Kernel { kernel: kernel }
+}
+
+
+pub fn set_kernel_arg(kernel: & Kernel, position: int, arg: & Buffer) {
+    // TODO: How to set different argument types. Currently only support cl_mem
+    let ret = clSetKernelArg(kernel.kernel, position as uint, 
+                             sys::size_of::<cl_mem>() as libc::size_t,
+                             ptr::addr_of(&buffer.buffer) as *libc::c_void);
+    
+    if ret != CL_SUCCESS {
+        fail ~"Failed to set kernel arg!"
+    }
+} 
+
+pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_dim: uint,
+                               global_work_offset: int, global_work_size: int, 
+                               local_work_size: int){
+    let ret = clEnqueueNDRangeKernel(cqueue.cqueue, kernel.kernel, work_dim, 
+                                     // ptr::addr_of(&global_work_offset) as *libc::size_t,
+                                     ptr::null(),
+                                     ptr::addr_of(&global_work_size) as *libc::size_t,
+                                     ptr::addr_of(&local_work_size) as *libc::size_t,
+                                     0, ptr::null(), ptr::null());
+    if ret != CL_SUCCESS {
+        fail ~"Failed to enqueue nd range kernel!"
+    }                                
+}
