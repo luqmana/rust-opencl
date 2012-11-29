@@ -166,7 +166,7 @@ struct Kernel {
     }
 }
 
-pub fn create_kernel(program: & Program, kernel: & str) -> Kernel {
+pub fn create_kernel(program: & Program, kernel: & str) -> Kernel unsafe{
     let mut errcode = 0;
     let bytes = str::to_bytes(kernel);
     let kernel = clCreateKernel(program.prg, vec::raw::to_ptr(bytes) as *libc::c_char, ptr::addr_of(&errcode));
@@ -179,20 +179,20 @@ pub fn create_kernel(program: & Program, kernel: & str) -> Kernel {
 }
 
 
-pub fn set_kernel_arg(kernel: & Kernel, position: int, arg: & Buffer) {
+pub fn set_kernel_arg(kernel: & Kernel, position: cl_uint, arg: & Buffer) unsafe{
     // TODO: How to set different argument types. Currently only support cl_mem
-    let ret = clSetKernelArg(kernel.kernel, position as uint, 
+    let ret = clSetKernelArg(kernel.kernel, position, 
                              sys::size_of::<cl_mem>() as libc::size_t,
-                             ptr::addr_of(&buffer.buffer) as *libc::c_void);
+                             ptr::addr_of(&arg.buffer) as *libc::c_void);
     
     if ret != CL_SUCCESS {
         fail ~"Failed to set kernel arg!"
     }
 } 
 
-pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_dim: uint,
+pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_dim: cl_uint,
                                global_work_offset: int, global_work_size: int, 
-                               local_work_size: int){
+                               local_work_size: int) unsafe{
     let ret = clEnqueueNDRangeKernel(cqueue.cqueue, kernel.kernel, work_dim, 
                                      // ptr::addr_of(&global_work_offset) as *libc::size_t,
                                      ptr::null(),
