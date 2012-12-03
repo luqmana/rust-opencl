@@ -28,7 +28,7 @@ fn main() {
 
     let program = create_program_with_binary(&context, devices[0], &path::Path(@"kernel.ptx"));
 
-    buil_program(&program, devices[0]);
+    build_program(&program, devices[0]);
 
     let kernel = create_kernel(&program, @"vector_add");
 
