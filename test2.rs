@@ -38,7 +38,7 @@ fn main() {
 
     enqueue_nd_range_kernel(&cqueue, &kernel, 1, 0, (sz * sys::size_of::<int>()) as int, 64);
 
-    enqueue_read_buffer(&cqueue, buf_c, vec_c);
+    enqueue_read_buffer(&cqueue, &buf_c, &vec_c);
 
     io::println(#fmt("=  %?", vec_c));
 

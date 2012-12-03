@@ -121,12 +121,12 @@ pub fn enqueue_write_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: 
     }
 }
 
-pub fn enqueue_read_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[int]) unsafe {
-    let ret = 0;
-     do vec::as_imm_buf(elements) |elements, len| {
+pub fn enqueue_read_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[mut int]) unsafe {
+    let mut ret = 0;
+     do vec::as_imm_buf(*host_vector) |elements, len| {
         ret = clEnqueueReadBuffer(cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
                             buf.size as libc::size_t,
-                            elements, 0, ptr::null(), ptr::null());
+                            elements as *libc::c_void, 0, ptr::null(), ptr::null());
     };
 
     if ret != CL_SUCCESS {
