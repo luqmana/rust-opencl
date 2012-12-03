@@ -121,6 +121,19 @@ pub fn enqueue_write_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: 
     }
 }
 
+pub fn enqueue_read_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[int]) unsafe {
+    let ret = 0;
+     do vec::as_imm_buf(elements) |elements, len| {
+        ret = clEnqueueReadBuffer(cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
+                            buf.size as libc::size_t,
+                            elements, 0, ptr::null(), ptr::null());
+    };
+
+    if ret != CL_SUCCESS {
+        fail ~"Failed to enqueue read buffer!"
+    }
+}
+
 struct Program {
     prg: cl_program,
 

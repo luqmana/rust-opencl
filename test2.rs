@@ -6,6 +6,7 @@ fn main() {
     let sz = 8;
     let vec_a = ~[0, 1, 2, 3, 4, 5, 6, 7];
     let vec_b = ~[1, 2, 3, 4, 5, 6, 7, 8];
+    let vec_c = vec::to_mut(vec::from_elem(sz, 0));
 
     let platforms = get_platforms();
     
@@ -36,6 +37,10 @@ fn main() {
     set_kernel_arg(&kernel, 2, &buf_c);
 
     enqueue_nd_range_kernel(&cqueue, &kernel, 1, 0, (sz * sys::size_of::<int>()) as int, 64);
+
+    enqueue_read_buffer(&cqueue, buf_c, vec_c);
+
+    io::println(#fmt("=  %?", vec_c));
 
     io::println("Done executing vector add kernel!");
 }
