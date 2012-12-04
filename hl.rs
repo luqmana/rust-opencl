@@ -111,7 +111,7 @@ pub fn create_buffer(ctx: & Context, size: int, flags: cl_mem_flags) -> Buffer {
     Buffer { buffer: buffer, size: size }
 }
 
-pub fn enqueue_write_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[int]) unsafe {
+pub fn enqueue_write_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[float]) unsafe {
     let ret = clEnqueueWriteBuffer(cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
                                    buf.size as libc::size_t, 
                                    vec::raw::to_ptr(*host_vector) as *libc::c_void,
@@ -121,7 +121,7 @@ pub fn enqueue_write_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: 
     }
 }
 
-pub fn enqueue_read_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[mut int]) unsafe {
+pub fn enqueue_read_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[mut float]) unsafe {
     let mut ret = 0;
      do vec::as_imm_buf(*host_vector) |elements, len| {
         ret = clEnqueueReadBuffer(cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
@@ -164,8 +164,20 @@ pub fn create_program_with_binary(ctx: & Context, device: Device, binary_path: &
 pub fn build_program(program: & Program, device: Device){
     let ret = clBuildProgram(program.prg, 1, ptr::addr_of(&device.id), 
                              ptr::null(), ptr::null(), ptr::null());
-
+    io::println((ret as int).to_str());
     if ret != CL_SUCCESS {
+        let mut size: int = 0;
+        let mut logv = ~"";
+        for uint::range(0,1024*1204) |i|{
+            str::push_char(& mut logv, ' ');
+        }
+        do str::as_buf(logv) |logs, l| {
+            let r = clGetProgramBuildInfo(program.prg, device.id, CL_PROGRAM_BUILD_LOG, l as libc::size_t, logs as *libc::c_void, ptr::null());
+            if r != CL_SUCCESS{
+                io::println(~"failed to get build info!");
+            }
+        }
+        //io::println(logv);
         fail ~"Failure during program building!"
     }
 }
@@ -191,12 +203,15 @@ pub fn create_kernel(program: & Program, kernel: & str) -> Kernel unsafe{
     Kernel { kernel: kernel }
 }
 
+pub trait KernelArg{
+    fn get_value() -> *libc::c_void;
+}
 
-pub fn set_kernel_arg(kernel: & Kernel, position: cl_uint, arg: & Buffer) unsafe{
+pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel, position: cl_uint, arg: & T) unsafe{
     // TODO: How to set different argument types. Currently only support cl_mem
     let ret = clSetKernelArg(kernel.kernel, position, 
                              sys::size_of::<cl_mem>() as libc::size_t,
-                             ptr::addr_of(&arg.buffer) as *libc::c_void);
+                             arg.get_value());
     
     if ret != CL_SUCCESS {
         fail ~"Failed to set kernel arg!"
@@ -213,6 +228,19 @@ pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_di
                                      ptr::addr_of(&local_work_size) as *libc::size_t,
                                      0, ptr::null(), ptr::null());
     if ret != CL_SUCCESS {
+        io::println((ret as int).to_str());
         fail ~"Failed to enqueue nd range kernel!"
     }                                
+}
+
+pub impl Buffer: KernelArg{
+    fn get_value() -> *libc::c_void{
+        ptr::addr_of(&self.buffer) as *libc::c_void
+    }
+} 
+
+pub impl *libc::c_void: KernelArg{
+    fn get_value() -> *libc::c_void {
+        self
+    }
 }
