@@ -7,6 +7,12 @@ struct Platform {
     id: cl_platform_id
 }
 
+impl Platform {
+    fn get_devices() -> ~[Device] {
+        get_devices(self)
+    }
+}
+
 pub fn get_platforms() -> ~[Platform] {
     let mut num_platforms = 0;
 
@@ -69,6 +75,7 @@ pub fn create_context(device: Device) -> Context {
 
 struct CommandQueue {
     cqueue: cl_command_queue,
+    device: Device
 
     drop {
         clReleaseCommandQueue(self.cqueue);
@@ -84,7 +91,10 @@ pub fn create_commandqueue(ctx: & Context, device: Device) -> CommandQueue {
         fail ~"Failed to create command queue!"
     }
 
-    CommandQueue { cqueue: cqueue }
+    CommandQueue {
+        cqueue: cqueue,
+        device: Device
+    }
 }
 
 struct Buffer {
@@ -143,7 +153,8 @@ struct Program {
 }
 
 // TODO: Support multiple devices
-pub fn create_program_with_binary(ctx: & Context, device: Device, binary_path: & Path) -> Program{
+pub fn create_program_with_binary(ctx: & Context, device: Device,
+                                  binary_path: & Path) -> Program {
     let mut errcode = 0;
     let binary = match move io::read_whole_file_str(binary_path) {
         result::Ok(move binary) => move binary,
