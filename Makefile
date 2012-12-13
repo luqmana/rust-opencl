@@ -1,4 +1,7 @@
-RUSTC = rustc
+
+ifndef RUSTC
+	RUSTC = rustc
+endif
 
 OPENCL_SRC = \
 	OpenCL.rc \

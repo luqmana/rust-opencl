@@ -123,7 +123,7 @@ pub fn enqueue_write_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: 
 
 pub fn enqueue_read_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[mut float]) unsafe {
     let mut ret = 0;
-     do vec::as_imm_buf(*host_vector) |elements, len| {
+     do vec::as_imm_buf(*host_vector) |elements, _len| {
         ret = clEnqueueReadBuffer(cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
                             buf.size as libc::size_t,
                             elements as *libc::c_void, 0, ptr::null(), ptr::null());
@@ -145,7 +145,10 @@ struct Program {
 // TODO: Support multiple devices
 pub fn create_program_with_binary(ctx: & Context, device: Device, binary_path: & Path) -> Program{
     let mut errcode = 0;
-    let binary = io::read_whole_file_str(binary_path).get();
+    let binary = match move io::read_whole_file_str(binary_path) {
+        result::Ok(move binary) => move binary,
+        Err(e) => fail fmt!("%?", e)
+    };
     let program = do str::as_c_str(binary) |kernel_binary| {
         clCreateProgramWithBinary(ctx.ctx, 1, ptr::addr_of(&device.id), 
                                   ptr::addr_of(&(binary.len() + 1)) as *libc::size_t, 
@@ -165,9 +168,8 @@ pub fn build_program(program: & Program, device: Device){
     let ret = clBuildProgram(program.prg, 1, ptr::addr_of(&device.id), 
                              ptr::null(), ptr::null(), ptr::null());
     if ret != CL_SUCCESS {
-        let mut size: int = 0;
         let mut logv = ~"";
-        for uint::range(0,1024*1204) |i|{
+        for uint::range(0,1024*1204) |_i| {
             str::push_char(& mut logv, ' ');
         }
         do str::as_buf(logv) |logs, l| {
@@ -187,6 +189,12 @@ struct Kernel {
 
     drop {
         clReleaseKernel(self.kernel);
+    }
+}
+
+impl Kernel {
+    fn set_arg<T: KernelArg>(i: uint, x: &T) {
+        set_kernel_arg(&self, i as CL::cl_uint, x)
     }
 }
 
@@ -218,7 +226,7 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel, position: cl_uint, arg: & 
 } 
 
 pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_dim: cl_uint,
-                               global_work_offset: int, global_work_size: int, 
+                               _global_work_offset: int, global_work_size: int, 
                                local_work_size: int) unsafe{
     let ret = clEnqueueNDRangeKernel(cqueue.cqueue, kernel.kernel, work_dim, 
                                      // ptr::addr_of(&global_work_offset) as *libc::size_t,
