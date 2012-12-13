@@ -164,7 +164,6 @@ pub fn create_program_with_binary(ctx: & Context, device: Device, binary_path: &
 pub fn build_program(program: & Program, device: Device){
     let ret = clBuildProgram(program.prg, 1, ptr::addr_of(&device.id), 
                              ptr::null(), ptr::null(), ptr::null());
-    io::println((ret as int).to_str());
     if ret != CL_SUCCESS {
         let mut size: int = 0;
         let mut logv = ~"";
