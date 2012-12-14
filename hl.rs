@@ -211,8 +211,9 @@ pub fn build_program(program: & Program, device: Device){
                 io::println(~"failed to get build info!");
             }
         }
+        info!("%s", logv);
         //io::println(logv);
-        fail ~"Failure during program building!"
+        fail fmt!("Failure during program building! %?", ret)
     }
 }
 
