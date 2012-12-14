@@ -97,7 +97,7 @@ pub fn create_context(device: Device) -> Context {
 
 struct CommandQueue {
     cqueue: cl_command_queue,
-    device: Device
+    device: Device,
 
     drop {
         clReleaseCommandQueue(self.cqueue);
@@ -115,7 +115,7 @@ pub fn create_commandqueue(ctx: & Context, device: Device) -> CommandQueue {
 
     CommandQueue {
         cqueue: cqueue,
-        device: Device
+        device: device
     }
 }
 
