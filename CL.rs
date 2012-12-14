@@ -438,7 +438,7 @@ pub extern mod ll {
                          paran_name: cl_platform_info,
                          param_value_size: libc::size_t,
                          param_value: *libc::c_void,
-                         param_value_size_ret: *libc::size_t) -> cl_int;
+                         param_value_size_ret: *mut libc::size_t) -> cl_int;
 
     /* Device APIs */
     fn clGetDeviceIDs(platform: cl_platform_id,

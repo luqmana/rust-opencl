@@ -11,6 +11,28 @@ impl Platform {
     fn get_devices() -> ~[Device] {
         get_devices(self)
     }
+
+    fn name() -> ~str {
+        let mut size = 0;
+        
+        clGetPlatformInfo(self.id,
+                          CL_PLATFORM_NAME,
+                          0,
+                          ptr::null(),
+                          ptr::mut_addr_of(&size));
+        
+        let name = str::repeat(" ", size as uint);
+
+        do str::as_buf(name) |p, len| {
+            clGetPlatformInfo(self.id,
+                              CL_PLATFORM_NAME,
+                              len as libc::size_t,
+                              p as *libc::c_void,
+                              ptr::mut_addr_of(&size));
+        };
+
+        move name
+    }
 }
 
 pub fn get_platforms() -> ~[Platform] {
