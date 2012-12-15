@@ -143,24 +143,31 @@ pub fn create_buffer(ctx: & Context, size: int, flags: cl_mem_flags) -> Buffer {
     Buffer { buffer: buffer, size: size }
 }
 
-pub fn enqueue_write_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[float]) unsafe {
-    let ret = clEnqueueWriteBuffer(cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
-                                   buf.size as libc::size_t, 
-                                   vec::raw::to_ptr(*host_vector) as *libc::c_void,
-                                   0, ptr::null(), ptr::null());
+pub fn enqueue_write_buffer<T: KernelArg>(
+    cqueue: & CommandQueue,
+    buf: & Buffer,
+    host_vector: T) unsafe
+{
+    let ret = clEnqueueWriteBuffer(
+        cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
+        buf.size as libc::size_t, 
+        host_vector.get_value(),
+        0, ptr::null(), ptr::null());
     if ret != CL_SUCCESS {
         fail ~"Failed to enqueue write buffer!"
     }
 }
 
-pub fn enqueue_read_buffer(cqueue: & CommandQueue, buf: & Buffer, host_vector: & ~[mut float]) unsafe {
-    let mut ret = 0;
-     do vec::as_imm_buf(*host_vector) |elements, _len| {
-        ret = clEnqueueReadBuffer(cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
-                            buf.size as libc::size_t,
-                            elements as *libc::c_void, 0, ptr::null(), ptr::null());
-    };
-
+pub fn enqueue_read_buffer<T: KernelArg>(
+    cqueue: & CommandQueue,
+    buf: & Buffer,
+    host_vector: T) unsafe
+{
+    let ret = clEnqueueReadBuffer(
+        cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
+        buf.size as libc::size_t,
+        host_vector.get_value(), 0, ptr::null(), ptr::null());
+    
     if ret != CL_SUCCESS {
         fail ~"Failed to enqueue read buffer!"
     }
@@ -272,6 +279,22 @@ pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_di
         io::println((ret as int).to_str());
         fail ~"Failed to enqueue nd range kernel!"
     }                                
+}
+
+pub impl<T> &~[T]: KernelArg {
+    fn get_value() -> *libc::c_void {
+        do vec::as_imm_buf(*self) |p, _len| {
+            p as *libc::c_void
+        }
+    }
+}
+
+pub impl<T> &~[mut T]: KernelArg {
+    fn get_value() -> *libc::c_void {
+        do vec::as_imm_buf(*self) |p, _len| {
+            p as *libc::c_void
+        }
+    }
 }
 
 pub impl Buffer: KernelArg{
