@@ -285,3 +285,32 @@ pub impl *libc::c_void: KernelArg{
         self
     }
 }
+
+/**
+This packages an OpenCL context, a device, and a command queue to
+simplify handling all these structures.
+*/
+struct ComputeContext {
+    ctx: Context,
+    device: Device,
+    q: CommandQueue
+}
+
+pub fn create_compute_context() -> ComputeContext {
+    // Enumerate all platforms until we find a device that works.
+
+    for get_platforms().each |p| {
+        let devices = p.get_devices();
+        if devices.len() > 0 {
+            let device = devices[0];
+            let ctx = create_context(device);
+            let q = create_commandqueue(&ctx, device);
+            return ComputeContext {
+                ctx: move ctx,
+                device: move device,
+                q: move q
+            }
+        }
+    }
+    fail ~"Could not find an acceptable device."
+}
