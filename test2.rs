@@ -43,7 +43,7 @@ fn main() {
 
     enqueue_read_buffer(&cqueue, &buf_c, &vec_c);
 
-    io::println(#fmt("=  %?", vec_c));
+    io::println(fmt!("=  %?", vec_c));
 
     io::println("Done executing vector add kernel!");
 }
