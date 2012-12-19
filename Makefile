@@ -7,9 +7,10 @@ OPENCL_SRC = \
 	OpenCL.rc \
 	CL.rs \
 	hl.rs \
+	error.rs \
 
 .PHONY: all
-all: libOpenCL test test2
+all: libOpenCL test
 
 .PHONY: libOpenCL
 libOpenCL : $(OPENCL_SRC)
@@ -17,7 +18,3 @@ libOpenCL : $(OPENCL_SRC)
 
 test : libOpenCL test.rs
 	$(RUSTC) -L . test.rs
-
-test2 : libOpenCL test2.rs
-	$(RUSTC) -L . test2.rs
-

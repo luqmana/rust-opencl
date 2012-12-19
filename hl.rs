@@ -2,6 +2,7 @@
 
 use CL::*;
 use CL::ll::*;
+use error::check;
 
 struct Platform {
     id: cl_platform_id
@@ -88,9 +89,7 @@ pub fn create_context(device: Device) -> Context {
     let ctx = clCreateContext(ptr::null(), 1, ptr::addr_of(&device.id),
                               ptr::null(), ptr::null(), ptr::addr_of(&errcode));
 
-    if errcode != CL_SUCCESS {
-        fail ~"Failed to create opencl context!"
-    }
+    check(errcode, "Failed to create opencl context!");
 
     Context { ctx: ctx }
 }
@@ -109,9 +108,7 @@ pub fn create_commandqueue(ctx: & Context, device: Device) -> CommandQueue {
 
     let cqueue = clCreateCommandQueue(ctx.ctx, device.id, 0, ptr::addr_of(&errcode));
 
-    if errcode != CL_SUCCESS {
-        fail ~"Failed to create command queue!"
-    }
+    check(errcode, "Failed to create command queue!");
 
     CommandQueue {
         cqueue: cqueue,
@@ -136,9 +133,7 @@ pub fn create_buffer(ctx: & Context, size: int, flags: cl_mem_flags) -> Buffer {
     let buffer = clCreateBuffer(ctx.ctx, flags, size as libc::size_t, ptr::null(), 
                                 ptr::addr_of(&errcode));
 
-    if errcode != CL_SUCCESS {
-        fail ~"Failed to create buffer!"
-    }
+    check(errcode, "Failed to create buffer!");
 
     Buffer { buffer: buffer, size: size }
 }
@@ -153,9 +148,7 @@ pub fn enqueue_write_buffer<T: KernelArg>(
         buf.size as libc::size_t, 
         host_vector.get_value(),
         0, ptr::null(), ptr::null());
-    if ret != CL_SUCCESS {
-        fail ~"Failed to enqueue write buffer!"
-    }
+    check(ret, "Failed to enqueue write buffer!");
 }
 
 pub fn enqueue_read_buffer<T: KernelArg>(
@@ -168,9 +161,7 @@ pub fn enqueue_read_buffer<T: KernelArg>(
         buf.size as libc::size_t,
         host_vector.get_value(), 0, ptr::null(), ptr::null());
     
-    if ret != CL_SUCCESS {
-        fail ~"Failed to enqueue read buffer!"
-    }
+    check(ret, "Failed to enqueue read buffer!");
 }
 
 struct Program {
@@ -197,9 +188,7 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
                                   ptr::addr_of(&errcode))
     };
     
-    if errcode != CL_SUCCESS {
-        fail ~"Failed to create open cl program with binary!"
-    }
+    check(errcode, "Failed to create open cl program with binary!");
 
     Program { prg: program }
 }
@@ -207,16 +196,14 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
 pub fn build_program(program: & Program, device: Device){
     let ret = clBuildProgram(program.prg, 1, ptr::addr_of(&device.id), 
                              ptr::null(), ptr::null(), ptr::null());
-    if ret != CL_SUCCESS {
+    if ret != CL_SUCCESS as cl_int {
         let mut logv = ~"";
         for uint::range(0,1024*1204) |_i| {
             str::push_char(& mut logv, ' ');
         }
         do str::as_buf(logv) |logs, l| {
             let r = clGetProgramBuildInfo(program.prg, device.id, CL_PROGRAM_BUILD_LOG, l as libc::size_t, logs as *libc::c_void, ptr::null());
-            if r != CL_SUCCESS{
-                io::println(~"failed to get build info!");
-            }
+            check(r, "failed to get build info!");
         }
         info!("%s", logv);
         //io::println(logv);
@@ -244,9 +231,7 @@ pub fn create_kernel(program: & Program, kernel: & str) -> Kernel unsafe{
     let bytes = str::to_bytes(kernel);
     let kernel = clCreateKernel(program.prg, vec::raw::to_ptr(bytes) as *libc::c_char, ptr::addr_of(&errcode));
 
-    if errcode != CL_SUCCESS {
-        fail ~"Failed to create kernel!"
-    }
+    check(errcode, "Failed to create kernel!");
 
     Kernel { kernel: kernel }
 }
@@ -261,9 +246,7 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel, position: cl_uint, arg: & 
                              sys::size_of::<cl_mem>() as libc::size_t,
                              arg.get_value());
     
-    if ret != CL_SUCCESS {
-        fail ~"Failed to set kernel arg!"
-    }
+    check(ret, "Failed to set kernel arg!");
 } 
 
 pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_dim: cl_uint,
@@ -275,10 +258,7 @@ pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_di
                                      ptr::addr_of(&global_work_size) as *libc::size_t,
                                      ptr::addr_of(&local_work_size) as *libc::size_t,
                                      0, ptr::null(), ptr::null());
-    if ret != CL_SUCCESS {
-        io::println((ret as int).to_str());
-        fail ~"Failed to enqueue nd range kernel!"
-    }                                
+    check(ret, "Failed to enqueue nd range kernel!");
 }
 
 pub impl<T> &~[T]: KernelArg {

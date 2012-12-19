@@ -5,3 +5,4 @@
 
 pub mod CL;
 pub mod hl;
+pub mod error;

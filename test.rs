@@ -23,7 +23,7 @@ fn main() unsafe {
     // Get the platform and device information
     clGetPlatformIDs(1, ptr::addr_of(&p_id), ptr::addr_of(&np));
     r = clGetDeviceIDs(p_id, CL_DEVICE_TYPE_GPU, 1, ptr::addr_of(&device), ptr::addr_of(&nd));
-    if r != CL_SUCCESS {
+    if r != CL_SUCCESS as cl_int {
         io::println(fmt!("Can't get device ID. [%?]", r));
     }
 
@@ -47,14 +47,14 @@ fn main() unsafe {
     let prog = clCreateProgramWithSource(ctx, 1, ptr::addr_of(&(vec::raw::to_ptr(bytes) as *libc::c_char)),
                                              ptr::addr_of(&(vec::len(bytes) as libc::size_t)), ptr::addr_of(&r));
     r = clBuildProgram(prog, nd, ptr::addr_of(&device), ptr::null(), ptr::null(), ptr::null());
-    if r != CL_SUCCESS {
+    if r != CL_SUCCESS as cl_int {
         io::println(fmt!("Unable to build program [%?].", r));
     }
 
     // Create the OpenCL kernel
     let bytes = str::to_bytes(@"vector_add");
     let kernel = clCreateKernel(prog, vec::raw::to_ptr(bytes) as *libc::c_char, ptr::addr_of(&r));
-    if r != CL_SUCCESS {
+    if r != CL_SUCCESS as cl_int {
         io::println(fmt!("Unable to create kernel [%?].", r));
     }
 
