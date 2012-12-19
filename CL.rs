@@ -81,6 +81,7 @@ pub type cl_buffer_region = {
 
 
 /* Error Codes */
+#[deriving_eq]
 enum CLStatus {
     CL_SUCCESS = 0,
     CL_DEVICE_NOT_FOUND = -1,

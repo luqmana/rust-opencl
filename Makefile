@@ -16,5 +16,12 @@ all: libOpenCL test
 libOpenCL : $(OPENCL_SRC)
 	$(RUSTC) -O --lib OpenCL.rc
 
+.PHONY: check
+check: opencl-test
+	./opencl-test
+
 test : libOpenCL test.rs
 	$(RUSTC) -L . test.rs
+
+opencl-test: $(OPENCL_SRC)
+	$(RUSTC) -O --test --cfg test OpenCL.rc -o opencl-test

@@ -3,4 +3,4 @@
 *.dylib
 *.dSYM
 test
-test2
+opencl-test
