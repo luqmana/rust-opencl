@@ -6,8 +6,9 @@ endif
 OPENCL_SRC = \
 	OpenCL.rc \
 	CL.rs \
-	hl.rs \
 	error.rs \
+	hl.rs \
+	vector.rs \
 
 .PHONY: all
 all: libOpenCL test

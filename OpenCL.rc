@@ -6,5 +6,6 @@
 extern mod std;
 
 pub mod CL;
-pub mod hl;
 pub mod error;
+pub mod hl;
+pub mod vector;

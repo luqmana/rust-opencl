@@ -299,7 +299,7 @@ struct ComputeContext {
     q: CommandQueue
 }
 
-pub fn create_compute_context() -> ComputeContext {
+pub fn create_compute_context() -> @ComputeContext {
     // Enumerate all platforms until we find a device that works.
 
     for get_platforms().each |p| {
@@ -308,7 +308,7 @@ pub fn create_compute_context() -> ComputeContext {
             let device = devices[0];
             let ctx = create_context(device);
             let q = create_commandqueue(&ctx, device);
-            return ComputeContext {
+            return @ComputeContext {
                 ctx: move ctx,
                 device: move device,
                 q: move q
