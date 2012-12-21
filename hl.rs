@@ -219,7 +219,7 @@ struct Kernel {
     }
 }
 
-impl Kernel {
+pub impl Kernel {
     fn set_arg<T: KernelArg>(i: uint, x: &T) {
         set_kernel_arg(&self, i as CL::cl_uint, x)
     }
@@ -239,12 +239,17 @@ pub trait KernelArg {
     pure fn get_value(&self) -> (libc::size_t, *libc::c_void);
 }
 
-pub impl int: KernelArg {
-    pure fn get_value(&self) -> (libc::size_t, *libc::c_void) {
-        (sys::size_of::<int>() as libc::size_t,
-         ptr::addr_of(self) as *libc::c_void)
-    }
-}
+macro_rules! scalar_kernel_arg (
+    ($t:ty) => (pub impl $t: KernelArg {
+        pure fn get_value(&self) -> (libc::size_t, *libc::c_void) {
+            (sys::size_of::<$t>() as libc::size_t,
+             ptr::addr_of(self) as *libc::c_void)
+        }
+    })
+)
+
+scalar_kernel_arg!(int)
+scalar_kernel_arg!(uint)
 
 pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
                                     position: cl_uint,
