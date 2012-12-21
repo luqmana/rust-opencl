@@ -173,8 +173,8 @@ struct Program {
 }
 
 pub impl Program {
-    fn build(&self, device: Device) {
-        build_program(self, device);
+    fn build(&self, device: Device) -> Result<(), ~str> {
+        build_program(self, device)
     }
 }
 
@@ -199,21 +199,36 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
     Program { prg: program }
 }
 
-pub fn build_program(program: & Program, device: Device) {
+pub fn build_program(program: & Program, device: Device) -> Result<(), ~str> {
     let ret = clBuildProgram(program.prg, 1, ptr::addr_of(&device.id), 
                              ptr::null(), ptr::null(), ptr::null());
-    if ret != CL_SUCCESS as cl_int {
-        let mut logv = ~"";
-        for uint::range(0,1024*1204) |_i| {
-            str::push_char(& mut logv, ' ');
+    if ret == CL_SUCCESS as cl_int {
+        Ok(())
+    }
+    else {
+        let mut size = 0 as libc::size_t;
+        let status = clGetProgramBuildInfo(
+            program.prg,
+            device.id,
+            CL_PROGRAM_BUILD_LOG,
+            0,
+            ptr::null(),
+            ptr::addr_of(&size));
+        check(status, "Could not get build log");
+
+        let buf = vec::from_elem(size as uint, 0u8);
+        do vec::as_imm_buf(buf) |p, len| {
+            let status = clGetProgramBuildInfo(
+                program.prg,
+                device.id,
+                CL_PROGRAM_BUILD_LOG,
+                len as libc::size_t,
+                p as *libc::c_void,
+                ptr::null());
+            check(status, "Could not get build log");
+
+            unsafe { Err(str::raw::from_c_str(p as *libc::c_char)) }
         }
-        do str::as_buf(logv) |logs, l| {
-            let r = clGetProgramBuildInfo(program.prg, device.id, CL_PROGRAM_BUILD_LOG, l as libc::size_t, logs as *libc::c_void, ptr::null());
-            check(r, "failed to get build info!");
-        }
-        info!("%s", logv);
-        //io::println(logv);
-        fail fmt!("Failure during program building! %?", ret)
     }
 }
 
