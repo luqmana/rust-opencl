@@ -64,7 +64,7 @@ impl<T: VectorType> Vector<T> {
 
 impl<T: VectorType> Vector<T>: hl::KernelArg {
     pure fn get_value(&self) -> (libc::size_t, *libc::c_void) {
-        (self.size * sys::size_of::<T>() as libc::size_t, 
+        (sys::size_of::<cl_mem>() as libc::size_t, 
          ptr::addr_of(&self.cl_buffer) as *libc::c_void)
     }
 }
@@ -81,7 +81,7 @@ mod test {
                           expected, test)
             }
         })
-    )    
+    )
 
     #[test]
     fn gpu_vector() {

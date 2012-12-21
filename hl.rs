@@ -277,7 +277,7 @@ pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_di
 
 pub impl Buffer: KernelArg{
     pure fn get_value(&self) -> (libc::size_t, *libc::c_void) {
-        (self.size as libc::size_t,
+        (sys::size_of::<cl_mem>() as libc::size_t,
          ptr::addr_of(&self.buffer) as *libc::c_void)
     }
 } 

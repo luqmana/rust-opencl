@@ -77,9 +77,16 @@ pub fn convert(status: cl_int) -> CLStatus {
     }
 }
 
+fn error_str(status: cl_int) -> ~str {
+    match try_convert(status) {
+        Some(s) => s.to_str(),
+        None => fmt!("Unknown Error: %?", status)
+    }
+}
+
 pub fn check(status: cl_int, message: &str) {
     if status != CL_SUCCESS as cl_int {
-        fail fmt!("%s", message)
+        fail fmt!("%s (%s)", message, error_str(status))
     }
 }
 
