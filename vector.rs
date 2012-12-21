@@ -62,6 +62,12 @@ impl<T: VectorType> Vector<T> {
     }
 }
 
+impl<T: VectorType> Vector<T>: hl::KernelArg {
+    fn get_value() -> *libc::c_void {
+        ptr::addr_of(&self.cl_buffer) as *libc::c_void
+    }
+}
+
 #[cfg(test)]
 mod test {
     macro_rules! expect (

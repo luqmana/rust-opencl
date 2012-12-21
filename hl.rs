@@ -176,6 +176,10 @@ pub impl Program {
     fn build(&self, device: Device) -> Result<(), ~str> {
         build_program(self, device)
     }
+
+    fn create_kernel(&self, name: &str) -> Kernel {
+        create_kernel(self, name)
+    }
 }
 
 // TODO: Support multiple devices
@@ -358,6 +362,20 @@ pub fn create_compute_context() -> @ComputeContext {
 
 #[cfg(test)]
 mod test {
+    macro_rules! expect (
+        ($test: expr, $expected: expr) => ({
+            let test = $test;
+            let expected = $expected;
+            if test != expected {
+                fail fmt!("Test failure in %s: expected %?, got %?",
+                          stringify!($test),
+                          expected, test)
+            }
+        })
+    )    
+
+    use vector::*;
+
     #[test]
     fn program_build() {
         let src = "__kernel void test(__global int *i) { \
@@ -366,5 +384,30 @@ mod test {
         let ctx = create_compute_context();
         let prog = ctx.create_program_from_source(src);
         prog.build(ctx.device);
+    }
+
+    #[test]
+    fn simple_kernel() {
+        let src = "__kernel void test(__global int *i) { \
+                       *i += 1; \
+                   }";
+        let ctx = create_compute_context();
+        let prog = ctx.create_program_from_source(src);
+        prog.build(ctx.device);
+
+        let k = prog.create_kernel("test");
+        
+        let v = Vector::from_vec(ctx, [1]);
+        
+        k.set_arg(0, &v);
+        
+        enqueue_nd_range_kernel(
+            &ctx.q,
+            &k,
+            1, 0, 1, 1);
+
+        let v = v.to_vec();
+
+        expect!(v[0], 2);
     }
 }
