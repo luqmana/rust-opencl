@@ -172,6 +172,12 @@ struct Program {
     }
 }
 
+pub impl Program {
+    fn build(&self, device: Device) {
+        build_program(self, device);
+    }
+}
+
 // TODO: Support multiple devices
 pub fn create_program_with_binary(ctx: & Context, device: Device,
                                   binary_path: & Path) -> Program {
@@ -193,7 +199,7 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
     Program { prg: program }
 }
 
-pub fn build_program(program: & Program, device: Device){
+pub fn build_program(program: & Program, device: Device) {
     let ret = clBuildProgram(program.prg, 1, ptr::addr_of(&device.id), 
                              ptr::null(), ptr::null(), ptr::null());
     if ret != CL_SUCCESS as cl_int {
@@ -299,6 +305,23 @@ struct ComputeContext {
     q: CommandQueue
 }
 
+impl ComputeContext {
+    fn create_program_with_source(src: &str) -> Program {
+        do str::as_c_str(src) |src| {
+            let mut status = CL_SUCCESS as cl_int;
+            let program = clCreateProgramWithSource(
+                self.ctx.ctx,
+                1,
+                ptr::addr_of(&src),
+                ptr::null(),
+                ptr::addr_of(&status));
+            check(status, "Could not create program");
+
+            Program { prg: program }
+        }
+    }
+}
+
 pub fn create_compute_context() -> @ComputeContext {
     // Enumerate all platforms until we find a device that works.
 
@@ -316,4 +339,17 @@ pub fn create_compute_context() -> @ComputeContext {
         }
     }
     fail ~"Could not find an acceptable device."
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn program_build() {
+        let src = "__kernel void test(__global int *i) { \
+                       *i += 1; \
+                   }";
+        let ctx = create_compute_context();
+        let prog = ctx.create_program_with_source(src);
+        prog.build(ctx.device);
+    }
 }
