@@ -306,7 +306,7 @@ struct ComputeContext {
 }
 
 impl ComputeContext {
-    fn create_program_with_source(src: &str) -> Program {
+    fn create_program_from_source(src: &str) -> Program {
         do str::as_c_str(src) |src| {
             let mut status = CL_SUCCESS as cl_int;
             let program = clCreateProgramWithSource(
@@ -349,7 +349,7 @@ mod test {
                        *i += 1; \
                    }";
         let ctx = create_compute_context();
-        let prog = ctx.create_program_with_source(src);
+        let prog = ctx.create_program_from_source(src);
         prog.build(ctx.device);
     }
 }
