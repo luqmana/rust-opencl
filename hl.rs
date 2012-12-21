@@ -138,32 +138,6 @@ pub fn create_buffer(ctx: & Context, size: int, flags: cl_mem_flags) -> Buffer {
     Buffer { buffer: buffer, size: size }
 }
 
-pub fn enqueue_write_buffer<T: KernelArg>(
-    cqueue: & CommandQueue,
-    buf: & Buffer,
-    host_vector: T) unsafe
-{
-    let ret = clEnqueueWriteBuffer(
-        cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
-        buf.size as libc::size_t, 
-        host_vector.get_value(),
-        0, ptr::null(), ptr::null());
-    check(ret, "Failed to enqueue write buffer!");
-}
-
-pub fn enqueue_read_buffer<T: KernelArg>(
-    cqueue: & CommandQueue,
-    buf: & Buffer,
-    host_vector: T) unsafe
-{
-    let ret = clEnqueueReadBuffer(
-        cqueue.cqueue, buf.buffer, CL_TRUE, 0, 
-        buf.size as libc::size_t,
-        host_vector.get_value(), 0, ptr::null(), ptr::null());
-    
-    check(ret, "Failed to enqueue read buffer!");
-}
-
 struct Program {
     prg: cl_program,
 
@@ -261,15 +235,25 @@ pub fn create_kernel(program: & Program, kernel: & str) -> Kernel unsafe{
     Kernel { kernel: kernel }
 }
 
-pub trait KernelArg{
-    fn get_value() -> *libc::c_void;
+pub trait KernelArg {
+    pure fn get_value(&self) -> (libc::size_t, *libc::c_void);
 }
 
-pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel, position: cl_uint, arg: & T) unsafe{
-    // TODO: How to set different argument types. Currently only support cl_mem
+pub impl int: KernelArg {
+    pure fn get_value(&self) -> (libc::size_t, *libc::c_void) {
+        (sys::size_of::<int>() as libc::size_t,
+         ptr::addr_of(self) as *libc::c_void)
+    }
+}
+
+pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
+                                    position: cl_uint,
+                                    arg: &T)
+{
+    let (size, p) = arg.get_value();
     let ret = clSetKernelArg(kernel.kernel, position, 
-                             sys::size_of::<cl_mem>() as libc::size_t,
-                             arg.get_value());
+                             size,
+                             p);
     
     check(ret, "Failed to set kernel arg!");
 } 
@@ -286,33 +270,12 @@ pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_di
     check(ret, "Failed to enqueue nd range kernel!");
 }
 
-pub impl<T> &~[T]: KernelArg {
-    fn get_value() -> *libc::c_void {
-        do vec::as_imm_buf(*self) |p, _len| {
-            p as *libc::c_void
-        }
-    }
-}
-
-pub impl<T> &~[mut T]: KernelArg {
-    fn get_value() -> *libc::c_void {
-        do vec::as_imm_buf(*self) |p, _len| {
-            p as *libc::c_void
-        }
-    }
-}
-
 pub impl Buffer: KernelArg{
-    fn get_value() -> *libc::c_void{
-        ptr::addr_of(&self.buffer) as *libc::c_void
+    pure fn get_value(&self) -> (libc::size_t, *libc::c_void) {
+        (self.size as libc::size_t,
+         ptr::addr_of(&self.buffer) as *libc::c_void)
     }
 } 
-
-pub impl *libc::c_void: KernelArg{
-    fn get_value() -> *libc::c_void {
-        self
-    }
-}
 
 /**
 This packages an OpenCL context, a device, and a command queue to
@@ -409,5 +372,31 @@ mod test {
         let v = v.to_vec();
 
         expect!(v[0], 2);
+    }
+
+    #[test]
+    fn add_k() {
+        let src = "__kernel void test(__global int *i, int k) { \
+                       *i += k; \
+                   }";
+        let ctx = create_compute_context();
+        let prog = ctx.create_program_from_source(src);
+        prog.build(ctx.device);
+
+        let k = prog.create_kernel("test");
+        
+        let v = Vector::from_vec(ctx, [1]);
+        
+        k.set_arg(0, &v);
+        k.set_arg(1, &42);
+        
+        enqueue_nd_range_kernel(
+            &ctx.q,
+            &k,
+            1, 0, 1, 1);
+
+        let v = v.to_vec();
+
+        expect!(v[0], 43);
     }
 }
