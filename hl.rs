@@ -27,7 +27,7 @@ impl Platform {
     fn get_devices_by_types(types: &[DeviceType]) -> ~[Device] {
         let mut dtype = 0;
         for types.each |&t| {
-            dtype != convert_device_type(t);
+            dtype |= convert_device_type(t)
         }
 
         get_devices(self, dtype)
@@ -106,6 +106,8 @@ impl Device {
 
 pub fn get_devices(platform: Platform, dtype: cl_device_type) -> ~[Device] {
     let mut num_devices = 0;
+
+    info!("Looking for devices matching %?", dtype);
 
     clGetDeviceIDs(platform.id, dtype, 0, ptr::null(), 
                    ptr::addr_of(&num_devices));
@@ -395,10 +397,14 @@ impl ComputeContext {
 }
 
 pub fn create_compute_context() -> @ComputeContext {
+    create_compute_context_types([CPU, GPU])
+}
+
+pub fn create_compute_context_types(types: &[DeviceType]) -> @ComputeContext {
     // Enumerate all platforms until we find a device that works.
 
     for get_platforms().each |p| {
-        let devices = p.get_devices();
+        let devices = p.get_devices_by_types(types);
         if devices.len() > 0 {
             let device = devices[0];
             let ctx = create_context(device);
