@@ -77,6 +77,33 @@ struct Device {
     id: cl_device_id
 }
 
+impl Device {
+    fn name() -> ~str {
+        let mut size = 0;
+        let status = clGetDeviceInfo(
+            self.id,
+            CL_DEVICE_NAME,
+            0,
+            ptr::null(),
+            ptr::addr_of(&size));
+        check(status, "Could not determine name length");
+
+        let buf = vec::from_elem(size as uint, 0);
+
+        do vec::as_imm_buf(buf) |p, len| {
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_NAME,
+                len as libc::size_t,
+                p as *libc::c_void,
+                ptr::null());
+            check(status, "Could not get device name");
+            
+            unsafe { str::raw::from_c_str(p) }
+        }
+    }
+}
+
 pub fn get_devices(platform: Platform, dtype: cl_device_type) -> ~[Device] {
     let mut num_devices = 0;
 
@@ -360,6 +387,10 @@ impl ComputeContext {
         check(status, "Error enqueuing kernel.");
 
         Event { event: e }
+    }
+
+    fn device_name() -> ~str {
+        self.device.name()
     }
 }
 
