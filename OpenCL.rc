@@ -3,4 +3,9 @@
        uuid = "26bc3ce8-7720-41a7-9280-c522285f2e70")];
 #[crate_type = "lib"];
 
+extern mod std;
+
 pub mod CL;
+pub mod error;
+pub mod hl;
+pub mod vector;
