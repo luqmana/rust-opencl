@@ -1,0 +1,6 @@
+*~
+*.so
+*.dylib
+*.dSYM
+test
+opencl-test
