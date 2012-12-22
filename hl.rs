@@ -282,6 +282,21 @@ pub impl Buffer: KernelArg{
     }
 } 
 
+struct Event {
+    event: cl_event,
+
+    drop {
+        clReleaseEvent(self.event);
+    }
+}
+
+impl Event {
+    fn wait() {
+        let status = clWaitForEvents(1, ptr::addr_of(&self.event));
+        check(status, "Error waiting for event");
+    }
+}
+
 /**
 This packages an OpenCL context, a device, and a command queue to
 simplify handling all these structures.
@@ -307,6 +322,25 @@ impl ComputeContext {
             Program { prg: program }
         }
     }
+
+    fn enqueue_async_kernel<I: KernelIndex>(k: &Kernel, global: I, local: I)
+        -> Event
+    {
+        let e: cl_event = ptr::null();
+        let status = clEnqueueNDRangeKernel(
+            self.q.cqueue,
+            k.kernel,
+            KernelIndex::num_dimensions::<I>(),
+            ptr::null(),
+            global.get_ptr(),
+            local.get_ptr(),
+            0,
+            ptr::null(),
+            ptr::addr_of(&e));
+        check(status, "Error enqueuing kernel.");
+
+        Event { event: e }
+    }
 }
 
 pub fn create_compute_context() -> @ComputeContext {
@@ -326,6 +360,27 @@ pub fn create_compute_context() -> @ComputeContext {
         }
     }
     fail ~"Could not find an acceptable device."
+}
+
+trait KernelIndex {
+    static pure fn num_dimensions() -> cl_uint;
+    pure fn get_ptr(&self) -> *libc::size_t;
+}
+
+impl int: KernelIndex {
+    static pure fn num_dimensions() -> cl_uint { 1 }
+
+    pure fn get_ptr(&self) -> *libc::size_t {
+        ptr::addr_of(self) as *libc::size_t
+    }
+}
+
+impl (int, int): KernelIndex {
+    static pure fn num_dimensions() -> cl_uint { 2 }
+
+    pure fn get_ptr(&self) -> *libc::size_t {
+        ptr::addr_of(self) as *libc::size_t
+    }
 }
 
 #[cfg(test)]
@@ -403,5 +458,60 @@ mod test {
         let v = v.to_vec();
 
         expect!(v[0], 43);
+    }
+
+    #[test]
+    fn simple_kernel_index() {
+        let src = "__kernel void test(__global int *i) { \
+                       *i += 1; \
+                   }";
+        let ctx = create_compute_context();
+        let prog = ctx.create_program_from_source(src);
+        prog.build(ctx.device);
+
+        let k = prog.create_kernel("test");
+        
+        let v = Vector::from_vec(ctx, [1]);
+        
+        k.set_arg(0, &v);
+        
+        ctx.enqueue_async_kernel(&k, 1, 1).wait();
+
+        let v = v.to_vec();
+
+        expect!(v[0], 2);
+    }
+
+    #[test]
+    fn kernel_2d() {
+        let src = "__kernel void test(__global long int *N) { \
+                       int i = get_global_id(0); \
+                       int j = get_global_id(1); \
+                       int s = get_global_size(0); \
+                       N[i * s + j] = i * j;
+                   }";
+        let ctx = create_compute_context();
+        let prog = ctx.create_program_from_source(src);
+        
+        match prog.build(ctx.device) {
+            Ok(()) => (),
+            Err(build_log) => {
+                io::println("Error building program:\n");
+                io::println(build_log);
+                fail
+            }
+        }
+
+        let k = prog.create_kernel("test");
+        
+        let v = Vector::from_vec(ctx, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        
+        k.set_arg(0, &v);
+        
+        ctx.enqueue_async_kernel(&k, (3, 3), (1, 1)).wait();
+
+        let v = v.to_vec();
+
+        expect!(v, ~[0, 0, 0, 0, 1, 2, 0, 2, 4]);
     }
 }
