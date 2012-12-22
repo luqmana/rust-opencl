@@ -472,7 +472,7 @@ mod test {
 
     #[test]
     fn add_k() {
-        let src = "__kernel void test(__global int *i, int k) { \
+        let src = "__kernel void test(__global int *i, long int k) { \
                        *i += k; \
                    }";
         let ctx = create_compute_context();
