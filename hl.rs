@@ -8,9 +8,29 @@ struct Platform {
     id: cl_platform_id
 }
 
+enum DeviceType {
+    CPU, GPU
+}
+
+fn convert_device_type(device: DeviceType) -> cl_device_type {
+    match device {
+        CPU => CL_DEVICE_TYPE_CPU,
+        GPU => CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR
+    }
+}
+
 impl Platform {
     fn get_devices() -> ~[Device] {
-        get_devices(self)
+        get_devices(self, CL_DEVICE_TYPE_ALL)
+    }
+
+    fn get_devices_by_types(types: &[DeviceType]) -> ~[Device] {
+        let mut dtype = 0;
+        for types.each |&t| {
+            dtype != convert_device_type(t);
+        }
+
+        get_devices(self, dtype)
     }
 
     fn name() -> ~str {
@@ -57,16 +77,16 @@ struct Device {
     id: cl_device_id
 }
 
-pub fn get_devices(platform: Platform) -> ~[Device] {
+pub fn get_devices(platform: Platform, dtype: cl_device_type) -> ~[Device] {
     let mut num_devices = 0;
 
-    clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_ALL, 0, ptr::null(), 
+    clGetDeviceIDs(platform.id, dtype, 0, ptr::null(), 
                    ptr::addr_of(&num_devices));
     
     let ids = vec::to_mut(vec::from_elem(num_devices as uint, 
                                          0 as cl_device_id));
     do vec::as_imm_buf(ids) |ids, len| {
-        clGetDeviceIDs(platform.id, CL_DEVICE_TYPE_GPU, len as cl_uint, 
+        clGetDeviceIDs(platform.id, dtype, len as cl_uint, 
                        ids, ptr::addr_of(&num_devices));
     };
 
