@@ -383,6 +383,22 @@ impl (int, int): KernelIndex {
     }
 }
 
+impl uint: KernelIndex {
+    static pure fn num_dimensions() -> cl_uint { 1 }
+
+    pure fn get_ptr(&self) -> *libc::size_t {
+        ptr::addr_of(self) as *libc::size_t
+    }
+}
+
+impl (uint, uint): KernelIndex {
+    static pure fn num_dimensions() -> cl_uint { 2 }
+
+    pure fn get_ptr(&self) -> *libc::size_t {
+        ptr::addr_of(self) as *libc::size_t
+    }
+}
+
 #[cfg(test)]
 mod test {
     macro_rules! expect (
