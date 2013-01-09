@@ -12,7 +12,7 @@ impl float: VectorType;
 impl f64: VectorType;
 impl f32: VectorType;
 
-struct Vector<T: VectorType> {
+pub struct Vector<T: VectorType> {
     cl_buffer: cl_mem,
     size: uint,
     context: @ComputeContext,
@@ -22,8 +22,8 @@ struct Vector<T: VectorType> {
     }
 }
 
-impl<T: VectorType> Vector<T> {
-    static fn from_vec(ctx: @ComputeContext, v: &[const T]) -> Vector<T> {
+pub impl<T: VectorType> Vector<T> {
+    static pub fn from_vec(ctx: @ComputeContext, v: &[const T]) -> Vector<T> {
         do vec::as_const_buf(v) |p, len| {
             let mut status = 0;
             let byte_size = len * sys::size_of::<T>() as libc::size_t;
@@ -47,7 +47,7 @@ impl<T: VectorType> Vector<T> {
         }
     }
 
-    fn to_vec(self) -> ~[T] unsafe {
+    pub fn to_vec(self) -> ~[T] unsafe {
         let mut result = ~[];
         vec::reserve(&mut result, self.size);
         vec::raw::set_len(&mut result, self.size);
