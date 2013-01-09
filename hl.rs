@@ -270,7 +270,7 @@ struct Kernel {
 
 pub impl Kernel {
     fn set_arg<T: KernelArg>(i: uint, x: &T) {
-        set_kernel_arg(&self, i as CL::cl_uint, x)
+        set_kernel_arg(&self, i as ::CL::cl_uint, x)
     }
 }
 

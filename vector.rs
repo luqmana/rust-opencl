@@ -62,7 +62,7 @@ impl<T: VectorType> Vector<T> {
     }
 }
 
-impl<T: VectorType> Vector<T>: hl::KernelArg {
+impl<T: VectorType> Vector<T>: ::hl::KernelArg {
     pure fn get_value(&self) -> (libc::size_t, *libc::c_void) {
         (sys::size_of::<cl_mem>() as libc::size_t, 
          ptr::addr_of(&self.cl_buffer) as *libc::c_void)
