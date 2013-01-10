@@ -58,7 +58,7 @@ pub impl<T: VectorType> Vector<T> {
                 p as *libc::c_void, 0, ptr::null(), ptr::null());
 
         }
-        result
+        move result
     }
 }
 
