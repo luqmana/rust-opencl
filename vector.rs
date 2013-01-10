@@ -3,7 +3,7 @@ use hl::*;
 use error::check;
 
 // These are basically types that can be safely memcpyed.
-trait VectorType {}
+pub trait VectorType {}
 
 impl int: VectorType;
 impl i32: VectorType;
