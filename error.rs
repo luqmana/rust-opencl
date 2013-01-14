@@ -104,6 +104,9 @@ macro_rules! expect (
 
 #[cfg(test)]
 mod test {
+    use CL::*;
+    use error::*;
+
     #[test]
     fn test_convert() {
         expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),

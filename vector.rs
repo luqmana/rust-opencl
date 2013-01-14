@@ -69,8 +69,75 @@ impl<T: VectorType> Vector<T>: ::hl::KernelArg {
     }
 }
 
+
+pub struct Unique<T: VectorType> {
+    cl_buffer: cl_mem,
+    size: uint,
+    context: @ComputeContext,
+
+    drop {
+        clReleaseMemObject(self.cl_buffer);
+    }
+}
+
+pub impl<T: VectorType> Unique<T> {
+    static pub fn from_vec(ctx: @ComputeContext, v: ~[const T]) -> Unique<T>
+        unsafe
+    {
+        let byte_size
+            = 6 * sys::size_of::<uint>()
+            + v.len() * sys::size_of::<T>();
+        let byte_size = byte_size as libc::size_t;
+
+        let len = v.len();
+
+        let addr: *libc::c_void = cast::reinterpret_cast(&v);
+
+        let mut status = 0;
+        let buf = clCreateBuffer(ctx.ctx.ctx,
+                                 CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                                 byte_size,
+                                 addr,
+                                 ptr::addr_of(&status));
+        check(status, "Could not allocate buffer");
+
+        Unique {
+            cl_buffer: buf,
+            size: len,
+            context: ctx,
+        }
+    }
+
+    pub fn to_vec(self) -> ~[T] unsafe {
+        let mut result = ~[];
+        vec::reserve(&mut result, self.size);
+        vec::raw::set_len(&mut result, self.size);
+        do vec::as_imm_buf(result) |p, len| {
+            clEnqueueReadBuffer(
+                self.context.q.cqueue, self.cl_buffer, CL_TRUE,
+                // Skip the header, we have a new one here.
+                (6 * sys::size_of::<uint>()) as libc::size_t,
+                len * sys::size_of::<T>() as libc::size_t,
+                p as *libc::c_void, 0, ptr::null(), ptr::null());
+
+        }
+        move result
+    }
+}
+
+impl<T: VectorType> Unique<T>: ::hl::KernelArg {
+    pure fn get_value(&self) -> (libc::size_t, *libc::c_void) {
+        (sys::size_of::<cl_mem>() as libc::size_t, 
+         ptr::addr_of(&self.cl_buffer) as *libc::c_void)
+    }
+}
+
+
 #[cfg(test)]
 mod test {
+    use hl::*;
+    use vector::*;
+
     macro_rules! expect (
         ($test: expr, $expected: expr) => ({
             let test = $test;
@@ -90,6 +157,16 @@ mod test {
         let x = ~[1, 2, 3, 4, 5];
         let gx = Vector::from_vec(ctx, x);
         let y = gx.to_vec();
-        expect!(x, y);
+        expect!(y, x);
+    }
+
+    #[test]
+    fn unique_vector() {
+        let ctx = create_compute_context();
+
+        let x = ~[1, 2, 3, 4, 5];
+        let gx = Unique::from_vec(ctx, copy x);
+        let y = gx.to_vec();
+        expect!(y, x);
     }
 }
