@@ -190,6 +190,8 @@ pub fn create_buffer(ctx: & Context, size: int, flags: cl_mem_flags) -> Buffer {
 struct Program {
     prg: cl_program,
 
+    context: Option<@ComputeContext>,
+
     drop {
         clReleaseProgram(self.prg);
     }
@@ -201,7 +203,17 @@ pub impl Program {
     }
 
     fn create_kernel(&self, name: &str) -> Kernel {
-        create_kernel(self, name)
+        let mut errcode = 0;
+        do str::as_c_str(name) |bytes| {
+            let kernel = clCreateKernel(
+                self.prg,
+                bytes,
+                ptr::addr_of(&errcode));
+        
+            check(errcode, "Failed to create kernel!");
+        
+            Kernel { kernel: kernel, context: self.context }
+        }
     }
 }
 
@@ -223,7 +235,10 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
     
     check(errcode, "Failed to create open cl program with binary!");
 
-    Program { prg: program }
+    Program {
+        prg: program,
+        context: None,
+    }
 }
 
 pub fn build_program(program: & Program, device: Device) -> Result<(), ~str> {
@@ -262,6 +277,7 @@ pub fn build_program(program: & Program, device: Device) -> Result<(), ~str> {
 
 struct Kernel {
     kernel: cl_kernel,
+    context: Option<@ComputeContext>,
 
     drop {
         clReleaseKernel(self.kernel);
@@ -272,6 +288,15 @@ pub impl Kernel {
     fn set_arg<T: KernelArg>(i: uint, x: &T) {
         set_kernel_arg(&self, i as ::CL::cl_uint, x)
     }
+
+    fn execute<I: KernelIndex>(&self, global: I, local: I) {
+        match self.context {
+            Some(ctx)
+            => ctx.enqueue_async_kernel(self, global, local).wait(),
+            
+            None => fail ~"Kernel does not have an associated context."
+        }
+    }
 }
 
 pub fn create_kernel(program: & Program, kernel: & str) -> Kernel unsafe{
@@ -281,7 +306,10 @@ pub fn create_kernel(program: & Program, kernel: & str) -> Kernel unsafe{
 
     check(errcode, "Failed to create kernel!");
 
-    Kernel { kernel: kernel }
+    Kernel {
+        kernel: kernel,
+        context: None
+    }
 }
 
 pub trait KernelArg {
@@ -357,7 +385,7 @@ struct ComputeContext {
 }
 
 impl ComputeContext {
-    fn create_program_from_source(src: &str) -> Program {
+    fn create_program_from_source(@self, src: &str) -> Program {
         do str::as_c_str(src) |src| {
             let mut status = CL_SUCCESS as cl_int;
             let program = clCreateProgramWithSource(
@@ -368,7 +396,31 @@ impl ComputeContext {
                 ptr::addr_of(&status));
             check(status, "Could not create program");
 
-            Program { prg: program }
+            Program {
+                prg: program,
+                context: Some(self),
+            }
+        }
+    }
+
+    fn create_program_from_binary(@self, bin: &str) -> Program {
+        do str::as_c_str(bin) |src| {
+            let mut status = CL_SUCCESS as cl_int;
+            let len = bin.len() as libc::size_t;
+            let program = clCreateProgramWithBinary(
+                self.ctx.ctx,
+                1,
+                ptr::addr_of(&self.device.id),
+                ptr::addr_of(&len),
+                ptr::addr_of(&src) as **libc::c_uchar,
+                ptr::null(),
+                ptr::addr_of(&status));
+            check(status, "Could not create program");
+
+            Program {
+                prg: program,
+                context: Some(self),
+            }
         }
     }
 
@@ -582,6 +634,38 @@ mod test {
         k.set_arg(0, &v);
         
         ctx.enqueue_async_kernel(&k, (3, 3), (1, 1)).wait();
+
+        let v = v.to_vec();
+
+        expect!(v, ~[0, 0, 0, 0, 1, 2, 0, 2, 4]);
+    }
+
+    #[test]
+    fn kernel_2d_execute() {
+        let src = "__kernel void test(__global long int *N) { \
+                       int i = get_global_id(0); \
+                       int j = get_global_id(1); \
+                       int s = get_global_size(0); \
+                       N[i * s + j] = i * j;
+                   }";
+        let ctx = create_compute_context();
+        let prog = ctx.create_program_from_source(src);
+        
+        match prog.build(ctx.device) {
+            Ok(()) => (),
+            Err(build_log) => {
+                io::println("Error building program:\n");
+                io::println(build_log);
+                fail
+            }
+        }
+
+        let k = prog.create_kernel("test");
+        
+        let v = Vector::from_vec(ctx, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        
+        k.set_arg(0, &v);
+        k.execute((3, 3), (1, 1));
 
         let v = v.to_vec();
 
