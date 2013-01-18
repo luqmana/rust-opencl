@@ -30,15 +30,17 @@ pub impl<T: VectorType> Vector<T> {
             let byte_size = len * sys::size_of::<T>() as libc::size_t;
             
             let buf = clCreateBuffer(ctx.ctx.ctx,
-                                     CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                                     CL_MEM_READ_WRITE,
                                      byte_size,
                                      p as *libc::c_void,
                                      ptr::addr_of(&status));
             check(status, "Could not allocate buffer");
 
-            //let status = clEnqueueWriteBuffer(
-            //    ctx.q, buf, CL_TRUE, 0, byte_size, p as *libc::c_void,
-            //    0, ptr::null(), ptr::null());
+            let status = clEnqueueWriteBuffer(
+                ctx.q.cqueue, buf, CL_TRUE,
+                0, byte_size, p as *libc::c_void,
+                0, ptr::null(), ptr::null());
+            check(status, "Error copying buffer data");
 
             Vector {
                 cl_buffer: buf,
