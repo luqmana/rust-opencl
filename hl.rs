@@ -297,6 +297,60 @@ pub impl Kernel {
             None => fail ~"Kernel does not have an associated context."
         }
     }
+
+    fn work_group_size(&self) -> uint {
+        match self.context {
+            Some(ctx) => {
+                let mut size: libc::size_t = 0;
+                let status = clGetKernelWorkGroupInfo(
+                    self.kernel,
+                    ctx.device.id,
+                    CL_KERNEL_WORK_GROUP_SIZE,
+                    sys::size_of::<libc::size_t>() as libc::size_t,
+                    ptr::addr_of(&size) as *libc::c_void,
+                    ptr::null());
+                check(status, "Could not get work group info.");
+                size as uint                    
+            },
+            None => fail ~"Kernel does not have an associated context."
+        }
+    }
+
+    fn local_mem_size(&self) -> uint {
+        match self.context {
+            Some(ctx) => {
+                let mut size: cl_ulong = 0;
+                let status = clGetKernelWorkGroupInfo(
+                    self.kernel,
+                    ctx.device.id,
+                    CL_KERNEL_LOCAL_MEM_SIZE,
+                    sys::size_of::<cl_ulong>() as libc::size_t,
+                    ptr::addr_of(&size) as *libc::c_void,
+                    ptr::null());
+                check(status, "Could not get work group info.");
+                size as uint     
+            },
+            None => fail ~"Kernel does not have an associated context."
+        }
+    }
+
+    fn private_mem_size(&self) -> uint {
+        match self.context {
+            Some(ctx) => {
+                let mut size: cl_ulong = 0;
+                let status = clGetKernelWorkGroupInfo(
+                    self.kernel,
+                    ctx.device.id,
+                    CL_KERNEL_PRIVATE_MEM_SIZE,
+                    sys::size_of::<cl_ulong>() as libc::size_t,
+                    ptr::addr_of(&size) as *libc::c_void,
+                    ptr::null());
+                check(status, "Could not get work group info.");
+                size as uint     
+            },
+            None => fail ~"Kernel does not have an associated context."
+        }
+    }
 }
 
 pub fn create_kernel(program: & Program, kernel: & str) -> Kernel unsafe{
@@ -363,12 +417,14 @@ struct Event {
     event: cl_event,
 
     drop {
+        info!("drop Event 0x%x", self.event as uint)
         clReleaseEvent(self.event);
     }
 }
 
 impl Event {
-    fn wait() {
+    fn wait(&self) {
+        info!("waiting for 0x%x", self.event as uint);
         let status = clWaitForEvents(1, ptr::addr_of(&self.event));
         check(status, "Error waiting for event");
     }
@@ -427,6 +483,11 @@ impl ComputeContext {
     fn enqueue_async_kernel<I: KernelIndex>(k: &Kernel, global: I, local: I)
         -> Event
     {
+        unsafe {
+            info!("enqueue_async_kernel: global size=%?, local size=%?",
+                  *global.get_ptr(), *local.get_ptr());
+        }
+
         let e: cl_event = ptr::null();
         let status = clEnqueueNDRangeKernel(
             self.q.cqueue,
