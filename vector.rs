@@ -7,6 +7,7 @@ pub trait VectorType {}
 
 impl int: VectorType;
 impl i32: VectorType;
+impl uint: VectorType;
 impl u32: VectorType;
 impl float: VectorType;
 impl f64: VectorType;
