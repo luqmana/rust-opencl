@@ -2,7 +2,7 @@ use CL::*;
 
 impl ToStr for CLStatus {
     fn to_str(&self) -> ~str {
-        fmt!("%?", self)
+        fmt!("%?", *self)
     }
 }
 
@@ -104,15 +104,18 @@ macro_rules! expect (
 
 #[cfg(test)]
 mod test {
-    #[test]
-    fn test_convert() {
-        expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),
-                CL_INVALID_GLOBAL_OFFSET)
-    }
+  use CL::*;
+  use error::*;
 
-    #[test]
-    fn convert_to_str() {
-        expect!(convert(CL_INVALID_BUFFER_SIZE as cl_int).to_str(),
-                ~"CL_INVALID_BUFFER_SIZE");
-    }
+  #[test]
+  fn test_convert() {
+    expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),
+            CL_INVALID_GLOBAL_OFFSET)
+  }
+
+  #[test]
+  fn convert_to_str() {
+    expect!(convert(CL_INVALID_BUFFER_SIZE as cl_int).to_str(),
+            ~"CL_INVALID_BUFFER_SIZE");
+  }
 }
