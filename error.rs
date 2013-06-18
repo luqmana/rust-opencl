@@ -1,7 +1,7 @@
 use CL::*;
 
-impl CLStatus: ToStr {
-    pure fn to_str() -> ~str {
+impl ToStr for CLStatus {
+    fn to_str(&self) -> ~str {
         fmt!("%?", self)
     }
 }
@@ -73,7 +73,7 @@ pub fn try_convert(status: cl_int) -> Option<CLStatus> {
 pub fn convert(status: cl_int) -> CLStatus {
     match try_convert(status) {
         Some(s) => s,
-        None => fail fmt!("Uknown OpenCL Status Code: %?", status)
+        None => fail!(fmt!("Uknown OpenCL Status Code: %?", status))
     }
 }
 
@@ -86,7 +86,7 @@ fn error_str(status: cl_int) -> ~str {
 
 pub fn check(status: cl_int, message: &str) {
     if status != CL_SUCCESS as cl_int {
-        fail fmt!("%s (%s)", message, error_str(status))
+        fail!(fmt!("%s (%s)", message, error_str(status)))
     }
 }
 
@@ -95,9 +95,9 @@ macro_rules! expect (
         let test = $test;
         let expected = $expected;
         if test != expected {
-            fail fmt!("Test failure in %s: expected %?, got %?",
-                      stringify!($test),
-                      expected, test)
+            fail!(fmt!("Test failure in %s: expected %?, got %?",
+                       stringify!($test),
+                       expected, test))
         }
     })
 )
