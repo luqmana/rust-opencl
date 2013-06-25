@@ -7,6 +7,7 @@ use std::sys;
 use std::libc;
 use std::ptr;
 use std::vec;
+use std::cast;
 
 // These are basically types that can be safely memcpyed.
 pub trait VectorType {}
@@ -89,66 +90,75 @@ impl<T: VectorType> hl::KernelArg for Vector<T>
     }
 }
 
+struct CLBuffer {
+    cl_buffer: cl_mem
+}
 
-pub struct Unique<T: VectorType> {
-    cl_buffer: cl_mem,
+pub struct Unique<T> {
+    cl_buffer: CLBuffer,
     size: uint,
     context: @ComputeContext,
+}
 
-    drop {
-        clReleaseMemObject(self.cl_buffer);
+impl Drop for CLBuffer {
+    pub fn finalize(&self) {
+        unsafe {
+            clReleaseMemObject(self.cl_buffer);
+        }
     }
 }
 
-pub impl<T: VectorType> Unique<T> {
-    static pub fn from_vec(ctx: @ComputeContext, v: ~[const T]) -> Unique<T>
+impl<T: VectorType> Unique<T> {
+    pub fn from_vec(ctx: @ComputeContext, v: ~[const T]) -> Unique<T> {
         unsafe
-    {
-        let byte_size
-            = 6 * sys::size_of::<uint>()
-            + v.len() * sys::size_of::<T>();
-        let byte_size = byte_size as libc::size_t;
-
-        let len = v.len();
-
-        let addr: *libc::c_void = cast::reinterpret_cast(&v);
-
-        let mut status = 0;
-        let buf = clCreateBuffer(ctx.ctx.ctx,
-                                 CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                                 byte_size,
-                                 addr,
-                                 ptr::addr_of(&status));
-        check(status, "Could not allocate buffer");
-
-        Unique {
-            cl_buffer: buf,
-            size: len,
-            context: ctx,
+        {
+            let byte_size
+                = 6 * sys::size_of::<uint>()
+                + v.len() * sys::size_of::<T>();
+            let byte_size = byte_size as libc::size_t;
+            
+            let len = v.len();
+            
+            let addr: *libc::c_void = cast::transmute_copy(&v);
+            
+            let status = 0;
+            let buf = clCreateBuffer(ctx.ctx.ctx,
+                                     CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                                     byte_size,
+                                     addr,
+                                     ptr::to_unsafe_ptr(&status));
+            check(status, "Could not allocate buffer");
+            
+            Unique {
+                cl_buffer: CLBuffer { cl_buffer: buf },
+                size: len,
+                context: ctx,
+            }
         }
     }
 
-    pub fn to_vec(self) -> ~[T] unsafe {
+        pub fn to_vec(self) -> ~[T] { unsafe {
         let mut result = ~[];
         vec::reserve(&mut result, self.size);
         vec::raw::set_len(&mut result, self.size);
         do vec::as_imm_buf(result) |p, len| {
             clEnqueueReadBuffer(
-                self.context.q.cqueue, self.cl_buffer, CL_TRUE,
+                self.context.q.cqueue, self.cl_buffer.cl_buffer, CL_TRUE,
                 // Skip the header, we have a new one here.
                 (6 * sys::size_of::<uint>()) as libc::size_t,
                 len * sys::size_of::<T>() as libc::size_t,
                 p as *libc::c_void, 0, ptr::null(), ptr::null());
 
         }
-        move result
-    }
+        result
+        } }
+
 }
 
-impl<T: VectorType> Unique<T>: ::hl::KernelArg {
-    pure fn get_value(&self) -> (libc::size_t, *libc::c_void) {
+impl<T: VectorType> ::hl::KernelArg for Unique<T> {
+    fn get_value(&self) -> (libc::size_t, *libc::c_void) {
         (sys::size_of::<cl_mem>() as libc::size_t, 
-         ptr::addr_of(&self.cl_buffer) as *libc::c_void)
+         ptr::to_unsafe_ptr(&self.cl_buffer) as *libc::c_void)
     }
 }
 

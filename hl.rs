@@ -6,12 +6,12 @@ use CL::ll::*;
 use error::check;
 use std::libc;
 use std::vec;
-use std::ptr;
 use std::str;
 use std::io;
 use std::result;
 use std::sys;
 use std::cast;
+use std::ptr;
 
 struct Platform {
   id: cl_platform_id
@@ -37,7 +37,7 @@ impl Platform {
   fn get_devices_by_types(&self, types: &[DeviceType]) -> ~[Device]
   {
     let dtype = 0;
-    for types.each |&t| {
+    for types.iter().advance |&t| {
       dtype != convert_device_type(t);
     }
 
@@ -96,14 +96,14 @@ struct Device {
 }
 
 impl Device {
-    fn name() -> ~str {
-        let mut size = 0;
+    fn name(&self) -> ~str { unsafe {
+        let size = 0;
         let status = clGetDeviceInfo(
             self.id,
             CL_DEVICE_NAME,
             0,
             ptr::null(),
-            ptr::addr_of(&size));
+            ptr::to_unsafe_ptr(&size));
         check(status, "Could not determine name length");
         
         let buf = vec::from_elem(size as uint, 0);
@@ -117,9 +117,9 @@ impl Device {
                 ptr::null());
             check(status, "Could not get device name");
             
-            unsafe { str::raw::from_c_str(p) }
+            str::raw::from_c_str(p)
         }
-    }
+    } }
 }
 
 pub fn get_devices(platform: Platform, dtype: cl_device_type) -> ~[Device]
@@ -245,8 +245,6 @@ pub fn create_buffer(ctx: & Context, size: int, flags: cl_mem_flags) -> Buffer
 struct Program
 {
     prg: cl_program,
-    
-    context: Option<@ComputeContext>,
 }
 
 impl Drop for Program
@@ -292,7 +290,6 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
         
         Program {
             prg: program,
-            context: None,
         }
     }
 }
@@ -338,35 +335,35 @@ pub fn build_program(program: & Program, device: Device) -> Result<(), ~str>
 
 struct Kernel {
     kernel: cl_kernel,
-    context: Option<@ComputeContext>,
-    
-    impl Drop for Kernel
-    {
-        fn finalize(&self) {
-            unsafe {
-                clReleaseKernel(self.kernel);
-            }
+}
+
+impl Drop for Kernel
+{
+    fn finalize(&self) {
+        unsafe {
+            clReleaseKernel(self.kernel);
         }
     }
 }
 
-pub impl Kernel {
-    fn set_arg<T: KernelArg>(&self, i: uint, x: &T)
+impl Kernel {
+    pub fn set_arg<T: KernelArg>(&self, i: uint, x: &T)
     {
         set_kernel_arg(self, i as CL::cl_uint, x)
     }
     
-    fn execute<I: KernelIndex>(&self, global: I, local: I) {
+/*
+    pub fn execute<I: KernelIndex>(&self, global: I, local: I) {
         match self.context {
             Some(ctx)
             => ctx.enqueue_async_kernel(self, global, local).wait(),
             
-            None => fail ~"Kernel does not have an associated context."
+            None => fail!("Kernel does not have an associated context.")
         }
     }
     
-    fn work_group_size(&self) -> uint {
-        match self.context {
+    pub fn work_group_size(&self) -> uint { unsafe {
+        match self.context { 
             Some(ctx) => {
                 let mut size: libc::size_t = 0;
                 let status = clGetKernelWorkGroupInfo(
@@ -374,50 +371,55 @@ pub impl Kernel {
                     ctx.device.id,
                     CL_KERNEL_WORK_GROUP_SIZE,
                     sys::size_of::<libc::size_t>() as libc::size_t,
-                    ptr::addr_of(&size) as *libc::c_void,
+                    ptr::to_unsafe_ptr(&size) as *libc::c_void,
                     ptr::null());
                 check(status, "Could not get work group info.");
                 size as uint                    
             },
-            None => fail ~"Kernel does not have an associated context."
+            None => fail!("Kernel does not have an associated context.")
         }
-    }
+    } }
     
-    fn local_mem_size(&self) -> uint {
+    pub fn local_mem_size(&self) -> uint {
         match self.context {
             Some(ctx) => {
                 let mut size: cl_ulong = 0;
-                let status = clGetKernelWorkGroupInfo(
-                    self.kernel,
-                    ctx.device.id,
-                    CL_KERNEL_LOCAL_MEM_SIZE,
-                    sys::size_of::<cl_ulong>() as libc::size_t,
-                    ptr::addr_of(&size) as *libc::c_void,
-                    ptr::null());
+                let status = unsafe {
+                    clGetKernelWorkGroupInfo(
+                        self.kernel,
+                        ctx.device.id,
+                        CL_KERNEL_LOCAL_MEM_SIZE,
+                        sys::size_of::<cl_ulong>() as libc::size_t,
+                        ptr::to_unsafe_ptr(&size) as *libc::c_void,
+                        ptr::null())
+                };
                 check(status, "Could not get work group info.");
                 size as uint     
             },
-            None => fail ~"Kernel does not have an associated context."
+            None => fail!("Kernel does not have an associated context.")
         }
     }
 
-    fn private_mem_size(&self) -> uint {
+    pub fn private_mem_size(&self) -> uint {
         match self.context {
             Some(ctx) => {
                 let mut size: cl_ulong = 0;
-                let status = clGetKernelWorkGroupInfo(
-                    self.kernel,
-                    ctx.device.id,
-                    CL_KERNEL_PRIVATE_MEM_SIZE,
-                    sys::size_of::<cl_ulong>() as libc::size_t,
-                    ptr::addr_of(&size) as *libc::c_void,
-                    ptr::null());
+                let status = unsafe {
+                    clGetKernelWorkGroupInfo(
+                        self.kernel,
+                        ctx.device.id,
+                        CL_KERNEL_PRIVATE_MEM_SIZE,
+                        sys::size_of::<cl_ulong>() as libc::size_t,
+                        ptr::to_unsafe_ptr(&size) as *libc::c_void,
+                        ptr::null())
+                };
                 check(status, "Could not get work group info.");
                 size as uint     
             },
-            None => fail ~"Kernel does not have an associated context."
+            None => fail!("Kernel does not have an associated context.")
         }
     }
+*/
 }
 
 pub fn create_kernel(program: & Program, kernel: & str) -> Kernel
@@ -435,7 +437,6 @@ pub fn create_kernel(program: & Program, kernel: & str) -> Kernel
             
             Kernel {
                 kernel: kernel,
-                context: None
             }
         }
     }
@@ -535,7 +536,7 @@ pub struct ComputeContext
 
 impl ComputeContext
 {
-  fn create_program_from_source(&self, src: &str) -> Program
+  fn create_program_from_source(@self, src: &str) -> Program
   {
     unsafe
     {
@@ -556,21 +557,22 @@ impl ComputeContext
 
     fn create_program_from_binary(@self, bin: &str) -> Program {
         do str::as_c_str(bin) |src| {
-            let mut status = CL_SUCCESS as cl_int;
+            let status = CL_SUCCESS as cl_int;
             let len = bin.len() as libc::size_t;
-            let program = clCreateProgramWithBinary(
-                self.ctx.ctx,
-                1,
-                ptr::addr_of(&self.device.id),
-                ptr::addr_of(&len),
-                ptr::addr_of(&src) as **libc::c_uchar,
-                ptr::null(),
-                ptr::addr_of(&status));
+            let program = unsafe {
+                clCreateProgramWithBinary(
+                    self.ctx.ctx,
+                    1,
+                    ptr::to_unsafe_ptr(&self.device.id),
+                    ptr::to_unsafe_ptr(&len),
+                    ptr::to_unsafe_ptr(&src) as **libc::c_uchar,
+                    ptr::null(),
+                    ptr::to_unsafe_ptr(&status))
+            };
             check(status, "Could not create program");
 
             Program {
                 prg: program,
-                context: Some(self),
             }
         }
     }
@@ -597,7 +599,7 @@ impl ComputeContext
       }
     }
 
-    fn device_name() -> ~str {
+    fn device_name(&self) -> ~str {
         self.device.name()
     }
 }
@@ -607,7 +609,7 @@ pub fn create_compute_context() -> @ComputeContext {
 
   let platforms = get_platforms();
 
-  for platforms.each |p|
+  for platforms.iter().advance |p|
   {
     let devices = p.get_devices();
 
@@ -625,21 +627,25 @@ pub fn create_compute_context() -> @ComputeContext {
       }
     }
   }
+    
+    fail!("No suitable device found")
 }
 
 pub fn create_compute_context_types(types: &[DeviceType]) -> @ComputeContext {
     // Enumerate all platforms until we find a device that works.
-    
-    for get_platforms().each |p| {
+
+    let platforms = get_platforms();
+
+    for platforms.iter().advance |p| {
         let devices = p.get_devices_by_types(types);
         if devices.len() > 0 {
             let device = devices[0];
             let ctx = create_context(device);
-            let q = create_commandqueue(&ctx, device);
+            let q = create_command_queue(&ctx, device);
             return @ComputeContext {
-                ctx: move ctx,
-                device: move device,
-                q: move q
+                ctx: ctx,
+                device: device,
+                q: q
             }
         }
     }
@@ -824,6 +830,7 @@ mod test {
         expect!(v, ~[0, 0, 0, 0, 1, 2, 0, 2, 4]);
     }
     
+/*
     #[test]
     fn kernel_2d_execute() {
         let src = "__kernel void test(__global long int *N) { \
@@ -840,7 +847,7 @@ mod test {
             Err(build_log) => {
                 io::println("Error building program:\n");
                 io::println(build_log);
-                fail
+                fail!()
             }
         }
         
@@ -855,4 +862,5 @@ mod test {
 
         expect!(v, ~[0, 0, 0, 0, 1, 2, 0, 2, 4]);
     }
+*/
 }

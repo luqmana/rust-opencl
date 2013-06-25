@@ -112,12 +112,6 @@ mod test {
         expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),
                 CL_INVALID_GLOBAL_OFFSET)
     }
-
-    #[test]
-    fn test_convert() {
-        expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),
-                CL_INVALID_GLOBAL_OFFSET)
-    }
     
     #[test]
     fn convert_to_str() {
