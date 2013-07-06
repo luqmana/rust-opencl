@@ -104,18 +104,18 @@ macro_rules! expect (
 
 #[cfg(test)]
 mod test {
-  use CL::*;
-  use error::*;
+    use CL::*;
+    use error::*;
 
-  #[test]
-  fn test_convert() {
-    expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),
-            CL_INVALID_GLOBAL_OFFSET)
-  }
-
-  #[test]
-  fn convert_to_str() {
-    expect!(convert(CL_INVALID_BUFFER_SIZE as cl_int).to_str(),
-            ~"CL_INVALID_BUFFER_SIZE");
-  }
+    #[test]
+    fn test_convert() {
+        expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),
+                CL_INVALID_GLOBAL_OFFSET)
+    }
+    
+    #[test]
+    fn convert_to_str() {
+        expect!(convert(CL_INVALID_BUFFER_SIZE as cl_int).to_str(),
+                ~"CL_INVALID_BUFFER_SIZE");
+    }
 }
