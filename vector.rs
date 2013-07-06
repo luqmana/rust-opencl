@@ -28,16 +28,16 @@ struct Vector<T> {
 #[unsafe_destructor]
 impl<T: VectorType> Drop for Vector<T>
 {
-  fn finalize(&self)
+  fn drop(&self)
   { unsafe { clReleaseMemObject(self.cl_buffer); } }
 }
 
 impl<T: VectorType> Vector<T> {
-  pub fn from_vec(ctx: @ComputeContext, v: &[const T]) -> Vector<T>
+  pub fn from_vec(ctx: @ComputeContext, v: &[T]) -> Vector<T>
   {
     unsafe
     {
-      do vec::as_const_buf(v) |p, len|
+      do v.as_imm_buf |p, len|
       {
         let status = 0;
         let byte_size = len * sys::size_of::<T>() as libc::size_t;
@@ -67,9 +67,9 @@ impl<T: VectorType> Vector<T> {
     unsafe
     {
       let mut result = ~[];
-      vec::reserve(&mut result, self.size);
+      result.reserve(self.size);
       vec::raw::set_len(&mut result, self.size);
-      do vec::as_imm_buf(result) |p, len| {
+      do result.as_imm_buf |p, len| {
         clEnqueueReadBuffer(
           self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0,
           len * sys::size_of::<T>() as libc::size_t,
@@ -101,7 +101,7 @@ pub struct Unique<T> {
 }
 
 impl Drop for CLBuffer {
-    pub fn finalize(&self) {
+    pub fn drop(&self) {
         unsafe {
             clReleaseMemObject(self.cl_buffer);
         }
@@ -109,7 +109,7 @@ impl Drop for CLBuffer {
 }
 
 impl<T: VectorType> Unique<T> {
-    pub fn from_vec(ctx: @ComputeContext, v: ~[const T]) -> Unique<T> {
+    pub fn from_vec(ctx: @ComputeContext, v: ~[T]) -> Unique<T> {
         unsafe
         {
             let byte_size
@@ -139,9 +139,9 @@ impl<T: VectorType> Unique<T> {
 
         pub fn to_vec(self) -> ~[T] { unsafe {
         let mut result = ~[];
-        vec::reserve(&mut result, self.size);
+        result.reserve(self.size);
         vec::raw::set_len(&mut result, self.size);
-        do vec::as_imm_buf(result) |p, len| {
+        do result.as_imm_buf |p, len| {
             clEnqueueReadBuffer(
                 self.context.q.cqueue, self.cl_buffer.cl_buffer, CL_TRUE,
                 // Skip the header, we have a new one here.

@@ -82,7 +82,7 @@ pub fn get_platforms() -> ~[Platform]
         
         let ids = vec::from_elem(num_platforms as uint, 0 as cl_platform_id);
 
-        do vec::as_imm_buf(ids) |ids, len| {
+        do ids.as_imm_buf |ids, len| {
             clGetPlatformIDs(len as cl_uint,
                              ids, ptr::to_unsafe_ptr(&num_platforms))
         };
@@ -108,7 +108,7 @@ impl Device {
         
         let buf = vec::from_elem(size as uint, 0);
         
-        do vec::as_imm_buf(buf) |p, len| {
+        do buf.as_imm_buf |p, len| {
             let status = clGetDeviceInfo(
                 self.id,
                 CL_DEVICE_NAME,
@@ -134,7 +134,7 @@ pub fn get_devices(platform: Platform, dtype: cl_device_type) -> ~[Device]
                        ptr::to_unsafe_ptr(&num_devices));
         
         let ids = vec::from_elem(num_devices as uint, 0 as cl_device_id);
-        do vec::as_imm_buf(ids) |ids, len| {
+        do ids.as_imm_buf |ids, len| {
             clGetDeviceIDs(platform.id, dtype, len as cl_uint, 
                            ids, ptr::to_unsafe_ptr(&num_devices));
         };
@@ -149,7 +149,7 @@ struct Context {
 
 impl Drop for Context
 {
-    fn finalize(&self) {
+    fn drop(&self) {
         unsafe {
             clReleaseContext(self.ctx);
         }
@@ -184,7 +184,7 @@ struct CommandQueue {
 
 impl Drop for CommandQueue
 {
-    fn finalize(&self) {
+    fn drop(&self) {
         unsafe {
             clReleaseCommandQueue(self.cqueue);
         }
@@ -217,7 +217,7 @@ struct Buffer
 
 impl Drop for Buffer
 {
-    fn finalize(&self) {
+    fn drop(&self) {
         unsafe {
             clReleaseMemObject(self.buffer);
         }
@@ -249,7 +249,7 @@ struct Program
 
 impl Drop for Program
 {
-    fn finalize(&self) { 
+    fn drop(&self) { 
         unsafe {
             clReleaseProgram(self.prg);
         }
@@ -317,7 +317,7 @@ pub fn build_program(program: & Program, device: Device) -> Result<(), ~str>
             check(status, "Could not get build log");
                 
             let buf = vec::from_elem(size as uint, 0u8);
-            do vec::as_imm_buf(buf) |p, len| {
+            do buf.as_imm_buf |p, len| {
                 let status = clGetProgramBuildInfo(
                     program.prg,
                     device.id,
@@ -339,7 +339,7 @@ struct Kernel {
 
 impl Drop for Kernel
 {
-    fn finalize(&self) {
+    fn drop(&self) {
         unsafe {
             clReleaseKernel(self.kernel);
         }
@@ -505,7 +505,7 @@ struct Event
 
 impl Drop for Event
 {
-    fn finalize(&self) {
+    fn drop(&self) {
         unsafe {
             clReleaseEvent(self.event);
         }
