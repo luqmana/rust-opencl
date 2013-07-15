@@ -5,6 +5,16 @@
 
 extern mod std;
 
+#[nolink]
+#[link_args = "-framework OpenCL"]
+#[cfg(target_os = "macos")]
+extern { }
+
+#[nolink]
+#[link_args = "-lOpenCL"]
+#[cfg(target_os = "linux")]
+extern { }
+
 pub mod CL;
 pub mod error;
 pub mod hl;
