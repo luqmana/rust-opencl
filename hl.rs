@@ -258,11 +258,11 @@ impl Drop for Program
 
 impl Program
 {
-    fn build(&self, device: Device) -> Result<(), ~str> {
+    pub fn build(&self, device: Device) -> Result<(), ~str> {
         build_program(self, device)
     }
     
-    fn create_kernel(&self, name: &str) -> Kernel {
+    pub fn create_kernel(&self, name: &str) -> Kernel {
         create_kernel(self, name)
     }
 }
@@ -536,7 +536,7 @@ pub struct ComputeContext
 
 impl ComputeContext
 {
-  fn create_program_from_source(@self, src: &str) -> Program
+  pub fn create_program_from_source(@self, src: &str) -> Program
   {
     unsafe
     {
@@ -555,7 +555,7 @@ impl ComputeContext
     }
   }
 
-    fn create_program_from_binary(@self, bin: &str) -> Program {
+  pub fn create_program_from_binary(@self, bin: &str) -> Program {
         do str::as_c_str(bin) |src| {
             let status = CL_SUCCESS as cl_int;
             let len = bin.len() as libc::size_t;
@@ -577,7 +577,7 @@ impl ComputeContext
         }
     }
 
-  fn enqueue_async_kernel<I: KernelIndex>(&self, k: &Kernel, global: I, local: I)
+  pub fn enqueue_async_kernel<I: KernelIndex>(&self, k: &Kernel, global: I, local: I)
     -> Event
     {
       unsafe
@@ -599,9 +599,9 @@ impl ComputeContext
       }
     }
 
-    fn device_name(&self) -> ~str {
-        self.device.name()
-    }
+  pub fn device_name(&self) -> ~str {
+      self.device.name()
+  }
 }
 
 pub fn create_compute_context() -> @ComputeContext {
@@ -627,8 +627,8 @@ pub fn create_compute_context() -> @ComputeContext {
       }
     }
   }
-    
-    fail!("No suitable device found")
+
+  fail!("No suitable device found")
 }
 
 pub fn create_compute_context_types(types: &[DeviceType]) -> @ComputeContext {
