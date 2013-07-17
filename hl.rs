@@ -457,6 +457,8 @@ macro_rules! scalar_kernel_arg (
 
 scalar_kernel_arg!(int)
 scalar_kernel_arg!(uint)
+scalar_kernel_arg!(u32)
+scalar_kernel_arg!(f64)
 
 pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
                                     position: cl_uint,
