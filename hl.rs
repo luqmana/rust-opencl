@@ -117,7 +117,7 @@ impl Device {
                 ptr::null());
             check(status, "Could not get device name");
             
-            str::raw::from_c_str(p)
+            str::raw::from_c_str(p as *i8)
         }
     } }
 }
@@ -704,7 +704,7 @@ impl KernelIndex for (uint, uint)
 #[cfg(test)]
 mod test {
     use hl::*;
-    use vector::*;
+    use vector::Vector;
     use std::io;
     
     macro_rules! expect (

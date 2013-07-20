@@ -217,7 +217,7 @@ mod test {
         let ctx = create_compute_context();
 
         let x = ~[1, 2, 3, 4, 5];
-        let gx = Unique::from_vec(ctx, copy x);
+        let gx = Unique::from_vec(ctx, x.clone());
         let y = gx.to_vec();
         expect!(y, x);
     }
