@@ -58,7 +58,7 @@ impl Platform {
 
       let name = " ".repeat(size as uint);
 
-      do str::as_buf(name) |p, len| {
+      do name.as_imm_buf |p, len| {
         clGetPlatformInfo(self.id,
                           CL_PLATFORM_NAME,
                           len as libc::size_t,
@@ -278,7 +278,7 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
             result::Ok(binary) => binary,
             Err(e)             => fail!(fmt!("%?", e))
         };
-        let program = do str::as_c_str(binary) |kernel_binary| {
+        let program = do binary.as_c_str |kernel_binary| {
             clCreateProgramWithBinary(ctx.ctx, 1, ptr::to_unsafe_ptr(&device.id), 
                                       ptr::to_unsafe_ptr(&(binary.len() + 1)) as *libc::size_t, 
                                       ptr::to_unsafe_ptr(&kernel_binary) as **libc::c_uchar,
@@ -546,7 +546,7 @@ impl ComputeContext
   {
     unsafe
     {
-      do str::as_c_str(src) |src| {
+      do src.as_c_str |src| {
         let status = CL_SUCCESS as cl_int;
         let program = clCreateProgramWithSource(
           self.ctx.ctx,
@@ -562,7 +562,7 @@ impl ComputeContext
   }
 
   pub fn create_program_from_binary(@self, bin: &str) -> Program {
-        do str::as_c_str(bin) |src| {
+        do bin.as_c_str |src| {
             let status = CL_SUCCESS as cl_int;
             let len = bin.len() as libc::size_t;
             let program = unsafe {
