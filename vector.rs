@@ -55,9 +55,29 @@ impl<T: VectorType> Vector<T> {
 
         Vector {
           cl_buffer: buf,
-                       size: len,
-                       context: ctx,
+          size:      len,
+          context:   ctx,
         }
+      }
+    }
+  }
+
+  pub fn rewrite(&mut self, v: &[T])
+  {
+    if self.size < v.len()
+    { fail!("Cannot copy cpu buffer on a smaller gpu buffer.") }
+
+    unsafe
+    {
+      do v.as_imm_buf |p, len|
+      {
+        let byte_size = len * sys::size_of::<T>() as libc::size_t;
+
+        let status = clEnqueueWriteBuffer(
+          self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0, byte_size, p as *libc::c_void,
+          0, ptr::null(), ptr::null());
+
+        check(status, "Could not write buffer");
       }
     }
   }
@@ -69,14 +89,26 @@ impl<T: VectorType> Vector<T> {
       let mut result = ~[];
       result.reserve(self.size);
       vec::raw::set_len(&mut result, self.size);
-      do result.as_imm_buf |p, len| {
+
+      self.to_existing_vec(result);
+
+      result
+    }
+  }
+
+  pub fn to_existing_vec(&self, out: &mut [T])
+  {
+    if out.len() < self.size
+    { fail!("Cannot copy gpu buffer on a smaller cpu buffer.") }
+
+    unsafe
+    {
+      do out.as_imm_buf |p, len| {
         clEnqueueReadBuffer(
           self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0,
           len * sys::size_of::<T>() as libc::size_t,
           p as *libc::c_void, 0, ptr::null(), ptr::null());
-
       }
-      result
     }
   }
 }
@@ -185,7 +217,7 @@ mod test {
         let ctx = create_compute_context();
 
         let x = ~[1, 2, 3, 4, 5];
-        let gx = Unique::from_vec(ctx, copy x);
+        let gx = Unique::from_vec(ctx, x.clone());
         let y = gx.to_vec();
         expect!(y, x);
     }
