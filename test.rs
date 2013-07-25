@@ -6,7 +6,6 @@ use std::io;
 use std::sys;
 use std::libc;
 use std::vec;
-use std::str;
 use std::cast;
 
 fn main()
@@ -96,7 +95,7 @@ fn main()
                          ptr::null());
 
     // Create a program from the kernel and build it
-    do str::as_buf(ker) |bytes, len|
+    do ker.as_imm_buf |bytes, len|
     {
       let prog = clCreateProgramWithSource(ctx,
                                            1,
@@ -115,7 +114,7 @@ fn main()
       { io::println(fmt!("Unable to build program [%?].", r)); }
 
       // Create the OpenCL kernel
-      do str::as_buf("vector_add") |bytes, _|
+      do "vector_add".as_imm_buf() |bytes, _|
       {
         let kernel = clCreateKernel(prog, bytes as *libc::c_char, ptr::to_unsafe_ptr(&r));
         if r != CL_SUCCESS as cl_int
