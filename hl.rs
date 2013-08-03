@@ -37,7 +37,7 @@ impl Platform {
   fn get_devices_by_types(&self, types: &[DeviceType]) -> ~[Device]
   {
     let dtype = 0;
-    for types.iter().advance |&t| {
+    for &t in types.iter() {
       dtype != convert_device_type(t);
     }
 
@@ -615,7 +615,7 @@ pub fn create_compute_context() -> @ComputeContext {
 
   let platforms = get_platforms();
 
-  for platforms.iter().advance |p|
+  for p in platforms.iter()
   {
     let devices = p.get_devices();
 
@@ -642,7 +642,7 @@ pub fn create_compute_context_types(types: &[DeviceType]) -> @ComputeContext {
 
     let platforms = get_platforms();
 
-    for platforms.iter().advance |p| {
+    for p in platforms.iter() {
         let devices = p.get_devices_by_types(types);
         if devices.len() > 0 {
             let device = devices[0];

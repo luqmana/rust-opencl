@@ -40,7 +40,7 @@ impl<T: VectorType> Vector<T> {
       do v.as_imm_buf |p, len|
       {
         let status = 0;
-        let byte_size = len * sys::size_of::<T>() as libc::size_t;
+        let byte_size = (len * sys::size_of::<T>()) as libc::size_t;
 
         let buf = clCreateBuffer(ctx.ctx.ctx,
                                  CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
@@ -71,7 +71,7 @@ impl<T: VectorType> Vector<T> {
     {
       do v.as_imm_buf |p, len|
       {
-        let byte_size = len * sys::size_of::<T>() as libc::size_t;
+        let byte_size = (len * sys::size_of::<T>()) as libc::size_t;
 
         let status = clEnqueueWriteBuffer(
           self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0, byte_size, p as *libc::c_void,
@@ -106,7 +106,7 @@ impl<T: VectorType> Vector<T> {
       do out.as_imm_buf |p, len| {
         clEnqueueReadBuffer(
           self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0,
-          len * sys::size_of::<T>() as libc::size_t,
+          (len * sys::size_of::<T>()) as libc::size_t,
           p as *libc::c_void, 0, ptr::null(), ptr::null());
       }
     }
@@ -178,7 +178,7 @@ impl<T: VectorType> Unique<T> {
                 self.context.q.cqueue, self.cl_buffer.cl_buffer, CL_TRUE,
                 // Skip the header, we have a new one here.
                 (6 * sys::size_of::<uint>()) as libc::size_t,
-                len * sys::size_of::<T>() as libc::size_t,
+                (len * sys::size_of::<T>()) as libc::size_t,
                 p as *libc::c_void, 0, ptr::null(), ptr::null());
 
         }
