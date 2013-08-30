@@ -28,95 +28,91 @@ struct Vector<T> {
 #[unsafe_destructor]
 impl<T: VectorType> Drop for Vector<T>
 {
-  fn drop(&self)
-  { unsafe { clReleaseMemObject(self.cl_buffer); } }
+    #[fixed_stack_segment] #[inline(never)]
+    fn drop(&self)
+    { unsafe { clReleaseMemObject(self.cl_buffer); } }
 }
 
 impl<T: VectorType> Vector<T> {
-  pub fn from_vec(ctx: @ComputeContext, v: &[T]) -> Vector<T>
-  {
-    unsafe
-    {
-      do v.as_imm_buf |p, len|
-      {
-        let status = 0;
-        let byte_size = (len * sys::size_of::<T>()) as libc::size_t;
+    #[fixed_stack_segment] #[inline(never)]
+    pub fn from_vec(ctx: @ComputeContext, v: &[T]) -> Vector<T> {
+        unsafe {
+            do v.as_imm_buf |p, len| {
+                let status = 0;
+                let byte_size = (len * sys::size_of::<T>()) as libc::size_t;
 
-        let buf = clCreateBuffer(ctx.ctx.ctx,
-                                 CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                                 byte_size,
-                                 p as *libc::c_void,
-                                 ptr::to_unsafe_ptr(&status));
-        check(status, "Could not allocate buffer");
+                let buf = clCreateBuffer(ctx.ctx.ctx,
+                CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                byte_size,
+                p as *libc::c_void,
+                ptr::to_unsafe_ptr(&status));
+                check(status, "Could not allocate buffer");
 
-        //let status = clEnqueueWriteBuffer(
-        //    ctx.q, buf, CL_TRUE, 0, byte_size, p as *libc::c_void,
-        //    0, ptr::null(), ptr::null());
+                //let status = clEnqueueWriteBuffer(
+                //    ctx.q, buf, CL_TRUE, 0, byte_size, p as *libc::c_void,
+                //    0, ptr::null(), ptr::null());
 
-        Vector {
-          cl_buffer: buf,
-          size:      len,
-          context:   ctx,
+                Vector {
+                    cl_buffer: buf,
+                    size:      len,
+                    context:   ctx,
+                }
+            }
         }
-      }
     }
-  }
+ 
+    #[fixed_stack_segment] #[inline(never)]
+    pub fn rewrite(&mut self, v: &[T]) {
+        if self.size < v.len() {
+            fail!("Cannot copy cpu buffer on a smaller gpu buffer.")
+        }
 
-  pub fn rewrite(&mut self, v: &[T])
-  {
-    if self.size < v.len()
-    { fail!("Cannot copy cpu buffer on a smaller gpu buffer.") }
+        unsafe {
+            do v.as_imm_buf |p, len|
+            {
+                let byte_size = (len * sys::size_of::<T>()) as libc::size_t;
 
-    unsafe
-    {
-      do v.as_imm_buf |p, len|
-      {
-        let byte_size = (len * sys::size_of::<T>()) as libc::size_t;
+                let status = clEnqueueWriteBuffer(
+                    self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0, byte_size, p as *libc::c_void,
+                    0, ptr::null(), ptr::null());
 
-        let status = clEnqueueWriteBuffer(
-          self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0, byte_size, p as *libc::c_void,
-          0, ptr::null(), ptr::null());
-
-        check(status, "Could not write buffer");
-      }
+                check(status, "Could not write buffer");
+            }
+        }
     }
-  }
 
-  pub fn to_vec(self) -> ~[T]
-  {
-    unsafe
-    {
-      let mut result = ~[];
-      result.reserve(self.size);
-      vec::raw::set_len(&mut result, self.size);
+    pub fn to_vec(self) -> ~[T] {
+        unsafe {
+            let mut result = ~[];
+            result.reserve(self.size);
+            vec::raw::set_len(&mut result, self.size);
 
-      self.to_existing_vec(result);
+            self.to_existing_vec(result);
 
-      result
+            result
+        }
     }
-  }
 
-  pub fn to_existing_vec(&self, out: &mut [T])
-  {
-    if out.len() < self.size
-    { fail!("Cannot copy gpu buffer on a smaller cpu buffer.") }
+    #[fixed_stack_segment] #[inline(never)]
+    pub fn to_existing_vec(&self, out: &mut [T]) {
+        if out.len() < self.size {
+            fail!("Cannot copy gpu buffer on a smaller cpu buffer.")
+        }
 
-    unsafe
-    {
-      do out.as_imm_buf |p, len| {
-        clEnqueueReadBuffer(
-          self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0,
-          (len * sys::size_of::<T>()) as libc::size_t,
-          p as *libc::c_void, 0, ptr::null(), ptr::null());
-      }
+        unsafe {
+            do out.as_imm_buf |p, len| {
+                clEnqueueReadBuffer(
+                    self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0,
+                    (len * sys::size_of::<T>()) as libc::size_t,
+                    p as *libc::c_void, 0, ptr::null(), ptr::null());
+            }
+        }
     }
-  }
 }
 
 impl<T: VectorType> hl::KernelArg for Vector<T>
 {
-    fn get_value(&self) -> (libc::size_t, *libc::c_void)
-    {
+    fn get_value(&self) -> (libc::size_t, *libc::c_void) {
         (sys::size_of::<cl_mem>() as libc::size_t, 
          ptr::to_unsafe_ptr(&self.cl_buffer) as *libc::c_void)
     }
@@ -133,7 +129,8 @@ pub struct Unique<T> {
 }
 
 impl Drop for CLBuffer {
-    pub fn drop(&self) {
+    #[fixed_stack_segment] #[inline(never)]
+    fn drop(&self) {
         unsafe {
             clReleaseMemObject(self.cl_buffer);
         }
@@ -141,6 +138,7 @@ impl Drop for CLBuffer {
 }
 
 impl<T: VectorType> Unique<T> {
+    #[fixed_stack_segment] #[inline(never)]
     pub fn from_vec(ctx: @ComputeContext, v: ~[T]) -> Unique<T> {
         unsafe
         {
@@ -169,20 +167,22 @@ impl<T: VectorType> Unique<T> {
         }
     }
 
-        pub fn to_vec(self) -> ~[T] { unsafe {
-        let mut result = ~[];
-        result.reserve(self.size);
-        vec::raw::set_len(&mut result, self.size);
-        do result.as_imm_buf |p, len| {
-            clEnqueueReadBuffer(
-                self.context.q.cqueue, self.cl_buffer.cl_buffer, CL_TRUE,
-                // Skip the header, we have a new one here.
-                (6 * sys::size_of::<uint>()) as libc::size_t,
-                (len * sys::size_of::<T>()) as libc::size_t,
-                p as *libc::c_void, 0, ptr::null(), ptr::null());
+    #[fixed_stack_segment] #[inline(never)]
+    pub fn to_vec(self) -> ~[T] {
+        unsafe {
+            let mut result = ~[];
+            result.reserve(self.size);
+            vec::raw::set_len(&mut result, self.size);
+            do result.as_imm_buf |p, len| {
+                clEnqueueReadBuffer(
+                    self.context.q.cqueue, self.cl_buffer.cl_buffer, CL_TRUE,
+                    // Skip the header, we have a new one here.
+                    (6 * sys::size_of::<uint>()) as libc::size_t,
+                    (len * sys::size_of::<T>()) as libc::size_t,
+                    p as *libc::c_void, 0, ptr::null(), ptr::null());
 
-        }
-        result
+            }
+            result
         } }
 
 }

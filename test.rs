@@ -8,6 +8,7 @@ use std::libc;
 use std::vec;
 use std::cast;
 
+#[fixed_stack_segment]
 fn main()
 {
   unsafe

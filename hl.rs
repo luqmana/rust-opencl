@@ -44,6 +44,7 @@ impl Platform {
     get_devices(*self, dtype)
   }
 
+  #[fixed_stack_segment] #[inline(never)]
   fn name(&self) -> ~str
   {
     unsafe
@@ -71,6 +72,7 @@ impl Platform {
   }
 }
 
+#[fixed_stack_segment] #[inline(never)]
 pub fn get_platforms() -> ~[Platform]
 {
     let num_platforms = 0;
@@ -96,6 +98,7 @@ struct Device {
 }
 
 impl Device {
+    #[fixed_stack_segment] #[inline(never)]
     fn name(&self) -> ~str { unsafe {
         let size = 0;
         let status = clGetDeviceInfo(
@@ -122,6 +125,7 @@ impl Device {
     } }
 }
 
+#[fixed_stack_segment] #[inline(never)]
 pub fn get_devices(platform: Platform, dtype: cl_device_type) -> ~[Device]
 {
     unsafe
@@ -149,6 +153,7 @@ struct Context {
 
 impl Drop for Context
 {
+    #[fixed_stack_segment] #[inline(never)]
     fn drop(&self) {
         unsafe {
             clReleaseContext(self.ctx);
@@ -156,6 +161,7 @@ impl Drop for Context
     }
 }
 
+#[fixed_stack_segment] #[inline(never)]
 pub fn create_context(device: Device) -> Context
 {
     unsafe
@@ -184,6 +190,7 @@ struct CommandQueue {
 
 impl Drop for CommandQueue
 {
+    #[fixed_stack_segment] #[inline(never)]
     fn drop(&self) {
         unsafe {
             clReleaseCommandQueue(self.cqueue);
@@ -191,6 +198,7 @@ impl Drop for CommandQueue
     }
 }
 
+#[fixed_stack_segment] #[inline(never)]
 pub fn create_command_queue(ctx: & Context, device: Device) -> CommandQueue
 {
     unsafe
@@ -217,6 +225,7 @@ struct Buffer
 
 impl Drop for Buffer
 {
+    #[fixed_stack_segment] #[inline(never)]
     fn drop(&self) {
         unsafe {
             clReleaseMemObject(self.buffer);
@@ -226,6 +235,7 @@ impl Drop for Buffer
 
 
 // TODO: How to make this function cleaner and nice
+#[fixed_stack_segment] #[inline(never)]
 pub fn create_buffer(ctx: & Context, size: int, flags: cl_mem_flags) -> Buffer
 {
     unsafe
@@ -249,6 +259,7 @@ struct Program
 
 impl Drop for Program
 {
+    #[fixed_stack_segment] #[inline(never)]
     fn drop(&self) { 
         unsafe {
             clReleaseProgram(self.prg);
@@ -268,6 +279,7 @@ impl Program
 }
 
 // TODO: Support multiple devices
+#[fixed_stack_segment] #[inline(never)]
 pub fn create_program_with_binary(ctx: & Context, device: Device,
                                   binary_path: & Path) -> Program
 {
@@ -278,7 +290,7 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
             result::Ok(binary) => binary,
             Err(e)             => fail!(fmt!("%?", e))
         };
-        let program = do binary.as_c_str |kernel_binary| {
+        let program = do binary.to_c_str().with_ref |kernel_binary| {
             clCreateProgramWithBinary(ctx.ctx, 1, ptr::to_unsafe_ptr(&device.id), 
                                       ptr::to_unsafe_ptr(&(binary.len() + 1)) as *libc::size_t, 
                                       ptr::to_unsafe_ptr(&kernel_binary) as **libc::c_uchar,
@@ -294,6 +306,7 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
     }
 }
 
+#[fixed_stack_segment] #[inline(never)]
 pub fn build_program(program: & Program, device: Device) -> Result<(), ~str>
 {
     unsafe
@@ -339,6 +352,7 @@ struct Kernel {
 
 impl Drop for Kernel
 {
+    #[fixed_stack_segment] #[inline(never)]
     fn drop(&self) {
         unsafe {
             clReleaseKernel(self.kernel);
@@ -422,12 +436,13 @@ impl Kernel {
 */
 }
 
+#[fixed_stack_segment] #[inline(never)]
 pub fn create_kernel(program: & Program, kernel: & str) -> Kernel
 {
     unsafe {
         let errcode = 0;
         // let bytes = str::to_bytes(kernel);
-        do kernel.as_c_str() |str_ptr|
+        do kernel.to_c_str().with_ref |str_ptr|
         {
             let kernel = clCreateKernel(program.prg,
                                         str_ptr,
@@ -464,6 +479,7 @@ scalar_kernel_arg!(i64)
 scalar_kernel_arg!(f32)
 scalar_kernel_arg!(f64)
 
+#[fixed_stack_segment] #[inline(never)]
 pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
                                     position: cl_uint,
                                     arg: &T)
@@ -479,6 +495,7 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
     }
 }
 
+#[fixed_stack_segment] #[inline(never)]
 pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_dim: cl_uint,
                                _global_work_offset: int, global_work_size: int, 
                                local_work_size: int)
@@ -511,6 +528,7 @@ struct Event
 
 impl Drop for Event
 {
+    #[fixed_stack_segment] #[inline(never)]
     fn drop(&self) {
         unsafe {
             clReleaseEvent(self.event);
@@ -519,6 +537,7 @@ impl Drop for Event
 }
 
 impl Event {
+    #[fixed_stack_segment] #[inline(never)]
     fn wait(&self)
     {
         unsafe
@@ -542,27 +561,29 @@ pub struct ComputeContext
 
 impl ComputeContext
 {
-  pub fn create_program_from_source(@self, src: &str) -> Program
-  {
-    unsafe
+    #[fixed_stack_segment] #[inline(never)]
+    pub fn create_program_from_source(@self, src: &str) -> Program
     {
-      do src.as_c_str |src| {
-        let status = CL_SUCCESS as cl_int;
-        let program = clCreateProgramWithSource(
-          self.ctx.ctx,
-          1,
-          ptr::to_unsafe_ptr(&src),
-          ptr::null(),
-          ptr::to_unsafe_ptr(&status));
-        check(status, "Could not create program");
+        unsafe
+        {
+            do src.to_c_str().with_ref |src| {
+                let status = CL_SUCCESS as cl_int;
+                let program = clCreateProgramWithSource(
+                    self.ctx.ctx,
+                    1,
+                    ptr::to_unsafe_ptr(&src),
+                    ptr::null(),
+                    ptr::to_unsafe_ptr(&status));
+                check(status, "Could not create program");
 
-        Program { prg: program }
-      }
+                Program { prg: program }
+            }
+        }
     }
-  }
 
-  pub fn create_program_from_binary(@self, bin: &str) -> Program {
-        do bin.as_c_str |src| {
+    #[fixed_stack_segment] #[inline(never)]
+    pub fn create_program_from_binary(@self, bin: &str) -> Program {
+        do bin.to_c_str().with_ref |src| {
             let status = CL_SUCCESS as cl_int;
             let len = bin.len() as libc::size_t;
             let program = unsafe {
@@ -583,31 +604,32 @@ impl ComputeContext
         }
     }
 
-  pub fn enqueue_async_kernel<I: KernelIndex>(&self, k: &Kernel, global: I, local: I)
-    -> Event
-    {
-      unsafe
-      {
-        let e: cl_event = ptr::null();
-        let status = clEnqueueNDRangeKernel(
-          self.q.cqueue,
-          k.kernel,
-          KernelIndex::num_dimensions::<I>(),
-          ptr::null(),
-          global.get_ptr(),
-          local.get_ptr(),
-          0,
-          ptr::null(),
-          ptr::to_unsafe_ptr(&e));
-        check(status, "Error enqueuing kernel.");
+    #[fixed_stack_segment] #[inline(never)]
+    pub fn enqueue_async_kernel<I: KernelIndex>(&self, k: &Kernel, global: I, local: I)
+        -> Event
+        {
+            unsafe
+            {
+                let e: cl_event = ptr::null();
+                let status = clEnqueueNDRangeKernel(
+                    self.q.cqueue,
+                    k.kernel,
+                    KernelIndex::num_dimensions(None::<I>),
+                    ptr::null(),
+                    global.get_ptr(),
+                    local.get_ptr(),
+                    0,
+                    ptr::null(),
+                    ptr::to_unsafe_ptr(&e));
+                check(status, "Error enqueuing kernel.");
 
-        Event { event: e }
-      }
+                Event { event: e }
+            }
+        }
+
+    pub fn device_name(&self) -> ~str {
+        self.device.name()
     }
-
-  pub fn device_name(&self) -> ~str {
-      self.device.name()
-  }
 }
 
 pub fn create_compute_context() -> @ComputeContext {
@@ -661,13 +683,13 @@ pub fn create_compute_context_types(types: &[DeviceType]) -> @ComputeContext {
 
 trait KernelIndex
 {
-    fn num_dimensions() -> cl_uint;
+    fn num_dimensions(dummy_self: Option<Self>) -> cl_uint;
     fn get_ptr(&self) -> *libc::size_t;
 }
 
 impl KernelIndex for int
 {
-    fn num_dimensions() -> cl_uint { 1 }
+    fn num_dimensions(_: Option<int>) -> cl_uint { 1 }
     
     fn get_ptr(&self) -> *libc::size_t
     {
@@ -676,7 +698,7 @@ impl KernelIndex for int
 }
 
 impl KernelIndex for (int, int) {
-    fn num_dimensions() -> cl_uint { 2 }
+    fn num_dimensions(_: Option<(int, int)>) -> cl_uint { 2 }
     
     fn get_ptr(&self) -> *libc::size_t {
         ptr::to_unsafe_ptr(self) as *libc::size_t
@@ -685,7 +707,7 @@ impl KernelIndex for (int, int) {
 
 impl KernelIndex for uint
 {
-    fn num_dimensions() -> cl_uint { 1 }
+    fn num_dimensions(_: Option<uint>) -> cl_uint { 1 }
     
     fn get_ptr(&self) -> *libc::size_t {
         ptr::to_unsafe_ptr(self) as *libc::size_t
@@ -694,7 +716,7 @@ impl KernelIndex for uint
 
 impl KernelIndex for (uint, uint)
 {
-    fn num_dimensions() -> cl_uint { 2 }
+    fn num_dimensions(_: Option<(uint, uint)>) -> cl_uint { 2 }
     
     fn get_ptr(&self) -> *libc::size_t {
         ptr::to_unsafe_ptr(self) as *libc::size_t
