@@ -9,16 +9,6 @@ use std::ptr;
 use std::vec;
 use std::cast;
 
-// These are basically types that can be safely memcpyed.
-pub trait VectorType {}
-
-impl VectorType for int;
-impl VectorType for i32;
-impl VectorType for u32;
-impl VectorType for float;
-impl VectorType for f64;
-impl VectorType for f32;
-
 struct Vector<T> {
     cl_buffer: cl_mem,
     size:      uint,
@@ -26,14 +16,14 @@ struct Vector<T> {
 }
 
 #[unsafe_destructor]
-impl<T: VectorType> Drop for Vector<T>
+impl<T> Drop for Vector<T>
 {
     #[fixed_stack_segment] #[inline(never)]
     fn drop(&self)
     { unsafe { clReleaseMemObject(self.cl_buffer); } }
 }
 
-impl<T: VectorType> Vector<T> {
+impl<T> Vector<T> {
     #[fixed_stack_segment] #[inline(never)]
     pub fn from_vec(ctx: @ComputeContext, v: &[T]) -> Vector<T> {
         unsafe {
@@ -110,7 +100,7 @@ impl<T: VectorType> Vector<T> {
     }
 }
 
-impl<T: VectorType> hl::KernelArg for Vector<T>
+impl<T> hl::KernelArg for Vector<T>
 {
     fn get_value(&self) -> (libc::size_t, *libc::c_void) {
         (sys::size_of::<cl_mem>() as libc::size_t, 
@@ -137,7 +127,7 @@ impl Drop for CLBuffer {
     }
 }
 
-impl<T: VectorType> Unique<T> {
+impl<T> Unique<T> {
     #[fixed_stack_segment] #[inline(never)]
     pub fn from_vec(ctx: @ComputeContext, v: ~[T]) -> Unique<T> {
         unsafe
@@ -187,7 +177,7 @@ impl<T: VectorType> Unique<T> {
 
 }
 
-impl<T: VectorType> ::hl::KernelArg for Unique<T> {
+impl<T> ::hl::KernelArg for Unique<T> {
     fn get_value(&self) -> (libc::size_t, *libc::c_void) {
         (sys::size_of::<cl_mem>() as libc::size_t, 
          ptr::to_unsafe_ptr(&self.cl_buffer) as *libc::c_void)
