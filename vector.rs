@@ -8,6 +8,7 @@ use std::libc;
 use std::ptr;
 use std::vec;
 use std::cast;
+use std::unstable;
 
 struct Vector<T> {
     cl_buffer: cl_mem,
@@ -133,7 +134,8 @@ impl<T> Unique<T> {
         unsafe
         {
             let byte_size
-                = 6 * sys::size_of::<uint>()
+                = sys::size_of::<unstable::raw::Vec<T>>()
+                - sys::size_of::<T>() 
                 + v.len() * sys::size_of::<T>();
             let byte_size = byte_size as libc::size_t;
             
@@ -167,7 +169,7 @@ impl<T> Unique<T> {
                 clEnqueueReadBuffer(
                     self.context.q.cqueue, self.cl_buffer.cl_buffer, CL_TRUE,
                     // Skip the header, we have a new one here.
-                    (6 * sys::size_of::<uint>()) as libc::size_t,
+                    (sys::size_of::<unstable::raw::Vec<T>>() - sys::size_of::<T>())  as libc::size_t,
                     (len * sys::size_of::<T>()) as libc::size_t,
                     p as *libc::c_void, 0, ptr::null(), ptr::null());
 
@@ -206,7 +208,7 @@ mod test {
     fn unique_vector() {
         let ctx = create_compute_context();
 
-        let x = ~[1, 2, 3, 4, 5];
+        let x = ~[1, 2, 3, 4, 5, 6];
         let gx = Unique::from_vec(ctx, x.clone());
         let y = gx.to_vec();
         expect!(y, x);
