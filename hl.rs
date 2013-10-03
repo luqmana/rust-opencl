@@ -154,7 +154,7 @@ struct Context {
 impl Drop for Context
 {
     #[fixed_stack_segment] #[inline(never)]
-    fn drop(&self) {
+    fn drop(&mut self) {
         unsafe {
             clReleaseContext(self.ctx);
         }
@@ -191,7 +191,7 @@ struct CommandQueue {
 impl Drop for CommandQueue
 {
     #[fixed_stack_segment] #[inline(never)]
-    fn drop(&self) {
+    fn drop(&mut self) {
         unsafe {
             clReleaseCommandQueue(self.cqueue);
         }
@@ -226,7 +226,7 @@ struct Buffer
 impl Drop for Buffer
 {
     #[fixed_stack_segment] #[inline(never)]
-    fn drop(&self) {
+    fn drop(&mut self) {
         unsafe {
             clReleaseMemObject(self.buffer);
         }
@@ -260,7 +260,7 @@ struct Program
 impl Drop for Program
 {
     #[fixed_stack_segment] #[inline(never)]
-    fn drop(&self) { 
+    fn drop(&mut self) { 
         unsafe {
             clReleaseProgram(self.prg);
         }
@@ -353,7 +353,7 @@ struct Kernel {
 impl Drop for Kernel
 {
     #[fixed_stack_segment] #[inline(never)]
-    fn drop(&self) {
+    fn drop(&mut self) {
         unsafe {
             clReleaseKernel(self.kernel);
         }
@@ -529,7 +529,7 @@ struct Event
 impl Drop for Event
 {
     #[fixed_stack_segment] #[inline(never)]
-    fn drop(&self) {
+    fn drop(&mut self) {
         unsafe {
             clReleaseEvent(self.event);
         }

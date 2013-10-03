@@ -19,7 +19,7 @@ struct Vector<T> {
 impl<T> Drop for Vector<T>
 {
     #[fixed_stack_segment] #[inline(never)]
-    fn drop(&self)
+    fn drop(&mut self)
     { unsafe { clReleaseMemObject(self.cl_buffer); } }
 }
 
@@ -120,7 +120,7 @@ pub struct Unique<T> {
 
 impl Drop for CLBuffer {
     #[fixed_stack_segment] #[inline(never)]
-    fn drop(&self) {
+    fn drop(&mut self) {
         unsafe {
             clReleaseMemObject(self.cl_buffer);
         }
