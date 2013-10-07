@@ -1,3 +1,5 @@
+#[feature(globs)];
+
 extern mod OpenCL;
 use OpenCL::CL::*;
 use OpenCL::CL::ll::*;
