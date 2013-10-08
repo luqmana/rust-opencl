@@ -567,7 +567,7 @@ impl<T: EventList> EventList for Option<T> {
     }
 }
 
-impl EventList for ~[Event] {
+impl<'self> EventList for &'self ~[Event] {
     fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T 
     {
         /* this is wasteful */
@@ -902,26 +902,25 @@ mod test {
         let prog = ctx.create_program_from_source(src);
         prog.build(ctx.device);
         
-        let k_inc = prog.create_kernel("inc");
+        let k_incA = prog.create_kernel("inc");
+        let k_incB = prog.create_kernel("inc");
         let k_add = prog.create_kernel("add");
         
         let a = Vector::from_vec(ctx, [1]);
         let b = Vector::from_vec(ctx, [1]);
         let c = Vector::from_vec(ctx, [1]);
       
-        let mut event_list = ~[];
-
-        k_inc.set_arg(0, &a);
-        event_list.push(ctx.enqueue_async_kernel(&k_inc, 1, 1, ()));
-
-        k_inc.set_arg(0, &b);
-        event_list.push(ctx.enqueue_async_kernel(&k_inc, 1, 1, ()));
+        k_incA.set_arg(0, &a);
+        k_incB.set_arg(0, &b);
+        let event_list = ~[
+            ctx.enqueue_async_kernel(&k_incA, 1, 1, ()),
+            ctx.enqueue_async_kernel(&k_incB, 1, 1, ()),
+        ];
 
         k_add.set_arg(0, &a);
         k_add.set_arg(1, &b);
         k_add.set_arg(2, &c);
-
-        ctx.enqueue_async_kernel(&k_add, 1, 1, event_list).wait();
+        ctx.enqueue_async_kernel(&k_add, 1, 1, &event_list).wait();
       
         let v = c.to_vec();
 
