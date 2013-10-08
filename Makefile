@@ -4,7 +4,7 @@ ifndef RUSTC
 endif
 
 OPENCL_SRC = \
-	OpenCL.rc \
+	lib.rs \
 	CL.rs \
 	error.rs \
 	hl.rs \
@@ -15,7 +15,7 @@ all: libOpenCL test
 
 .PHONY: libOpenCL
 libOpenCL : $(OPENCL_SRC)
-	$(RUSTC) -O --lib OpenCL.rc
+	$(RUSTC) -O --lib lib.rs
 
 .PHONY: check
 check: opencl-test
@@ -23,4 +23,4 @@ check: opencl-test
 
 test : libOpenCL test.rs
 	$(RUSTC) -L . test.rs
-	$(RUSTC) -O --test --cfg test OpenCL.rc -o opencl-test
+	$(RUSTC) -O --test --cfg test lib.rs -o opencl-test
