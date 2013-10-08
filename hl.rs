@@ -521,7 +521,7 @@ impl KernelArg for Buffer
     }
 } 
 
-struct Event
+pub struct Event
 {
     event: cl_event,
 }
@@ -536,15 +536,54 @@ impl Drop for Event
     }
 }
 
-impl Event {
+trait EventList {
+    fn as_event_list<T>(&self, &fn(*cl_event, cl_uint) -> T) -> T;
+
     #[fixed_stack_segment] #[inline(never)]
-    fn wait(&self)
-    {
-        unsafe
-        {
-            let status = clWaitForEvents(1, ptr::to_unsafe_ptr(&self.event));
-            check(status, "Error waiting for event");
+    fn wait(&self) {
+        do self.as_event_list |p, len| {
+            unsafe {
+                let status = clWaitForEvents(len, p);
+                check(status, "Error waiting for event(s)");
+            }
         }
+    }
+}
+
+impl EventList for Event {
+    fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
+    {
+        f(ptr::to_unsafe_ptr(&self.event), 1 as cl_uint)
+    }
+}
+
+impl<T: EventList> EventList for Option<T> {
+    fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
+    {
+        match *self {
+            None => f(ptr::null(), 0),
+            Some(ref s) => s.as_event_list(f)
+        }
+    }
+}
+
+impl<'self> EventList for &'self ~[Event] {
+    fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T 
+    {
+        /* this is wasteful */
+        let events = self.iter().map(|event| event.event).to_owned_vec();
+
+        do events.as_imm_buf |p, len| {
+            f(p as **libc::c_void, len as cl_uint)
+        }
+    }
+}
+
+/* this seems VERY hackey */
+impl EventList for () {
+    fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
+    {
+        f(ptr::null(), 0)
     }
 }
 
@@ -605,25 +644,26 @@ impl ComputeContext
     }
 
     #[fixed_stack_segment] #[inline(never)]
-    pub fn enqueue_async_kernel<I: KernelIndex>(&self, k: &Kernel, global: I, local: I)
+    pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: I, wait_on: E)
         -> Event
         {
             unsafe
             {
-                let e: cl_event = ptr::null();
-                let status = clEnqueueNDRangeKernel(
-                    self.q.cqueue,
-                    k.kernel,
-                    KernelIndex::num_dimensions(None::<I>),
-                    ptr::null(),
-                    global.get_ptr(),
-                    local.get_ptr(),
-                    0,
-                    ptr::null(),
-                    ptr::to_unsafe_ptr(&e));
-                check(status, "Error enqueuing kernel.");
-
-                Event { event: e }
+                do wait_on.as_event_list |event, event_count| {
+                    let e: cl_event = ptr::null();
+                    let status = clEnqueueNDRangeKernel(
+                        self.q.cqueue,
+                        k.kernel,
+                        KernelIndex::num_dimensions(None::<I>),
+                        ptr::null(),
+                        global.get_ptr(),
+                        local.get_ptr(),
+                        event_count,
+                        event,
+                        ptr::to_unsafe_ptr(&e));
+                    check(status, "Error enqueuing kernel.");
+                    Event { event: e }
+                }
             }
         }
 
@@ -817,13 +857,76 @@ mod test {
       
         k.set_arg(0, &v);
 
-        ctx.enqueue_async_kernel(&k, 1, 1).wait();
+        ctx.enqueue_async_kernel(&k, 1, 1, ()).wait();
       
         let v = v.to_vec();
 
         expect!(v[0], 2);
     }
-    
+
+    #[test]
+    fn chain_kernel_event() {
+        let src = "__kernel void test(__global int *i) { \
+                   *i += 1; \
+                   }";
+        let ctx = create_compute_context();
+        let prog = ctx.create_program_from_source(src);
+        prog.build(ctx.device);
+        
+        let k = prog.create_kernel("test");
+        
+        let v = Vector::from_vec(ctx, [1]);
+      
+        k.set_arg(0, &v);
+
+        let mut e : Option<Event> = None;
+        for _ in range(0, 8) {
+            e = Some(ctx.enqueue_async_kernel(&k, 1, 1, e));
+        }
+        e.wait();
+      
+        let v = v.to_vec();
+
+        expect!(v[0], 9);
+    }
+
+    #[test]
+    fn chain_kernel_event_list() {
+        let src = "__kernel void inc(__global int *i) { \
+                   *i += 1; \
+                   } \
+                   __kernel void add(__global int *a, __global int *b, __global int *c) { \
+                   *c = *a + *b; \
+                   }";
+        let ctx = create_compute_context();
+        let prog = ctx.create_program_from_source(src);
+        prog.build(ctx.device);
+        
+        let k_incA = prog.create_kernel("inc");
+        let k_incB = prog.create_kernel("inc");
+        let k_add = prog.create_kernel("add");
+        
+        let a = Vector::from_vec(ctx, [1]);
+        let b = Vector::from_vec(ctx, [1]);
+        let c = Vector::from_vec(ctx, [1]);
+      
+        k_incA.set_arg(0, &a);
+        k_incB.set_arg(0, &b);
+        let event_list = ~[
+            ctx.enqueue_async_kernel(&k_incA, 1, 1, ()),
+            ctx.enqueue_async_kernel(&k_incB, 1, 1, ()),
+        ];
+
+        k_add.set_arg(0, &a);
+        k_add.set_arg(1, &b);
+        k_add.set_arg(2, &c);
+        ctx.enqueue_async_kernel(&k_add, 1, 1, &event_list).wait();
+      
+        let v = c.to_vec();
+
+        expect!(v[0], 4);
+    }
+
     #[test]
     fn kernel_2d()
     {
@@ -851,7 +954,7 @@ mod test {
         
         k.set_arg(0, &v);
         
-        ctx.enqueue_async_kernel(&k, (3, 3), (1, 1)).wait();
+        ctx.enqueue_async_kernel(&k, (3, 3), (1, 1), ()).wait();
         
         let v = v.to_vec();
         
