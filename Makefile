@@ -11,7 +11,7 @@ OPENCL_SRC = \
 	vector.rs \
 
 .PHONY: all
-all: libOpenCL test
+all: libOpenCL opencl-test
 
 .PHONY: libOpenCL
 libOpenCL : $(OPENCL_SRC)
@@ -21,6 +21,6 @@ libOpenCL : $(OPENCL_SRC)
 check: opencl-test
 	RUST_THREADS=1 ./opencl-test
 
-test : libOpenCL test.rs
+opencl-test : libOpenCL test.rs
 	$(RUSTC) -L . test.rs
 	$(RUSTC) -O --test --cfg test lib.rs -o opencl-test
