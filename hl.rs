@@ -79,14 +79,18 @@ pub fn get_platforms() -> ~[Platform]
     
     unsafe
     {
-        // TODO: Check result status
-        clGetPlatformIDs(0, ptr::null(), ptr::to_unsafe_ptr(&num_platforms));
+        let status = clGetPlatformIDs(0,
+                                      ptr::null(),
+                                      ptr::to_unsafe_ptr(&num_platforms));
+        check(status, "could not get platform count.");
         
         let ids = vec::from_elem(num_platforms as uint, 0 as cl_platform_id);
 
         do ids.as_imm_buf |ids, len| {
-            clGetPlatformIDs(len as cl_uint,
-                             ids, ptr::to_unsafe_ptr(&num_platforms))
+            let status = clGetPlatformIDs(len as cl_uint,
+                                          ids,
+                                          ptr::to_unsafe_ptr(&num_platforms));
+            check(status, "could not get platforms.");
         };
 
         do ids.map |id| { Platform { id: *id } }
