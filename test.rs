@@ -13,17 +13,19 @@ fn main()
 
 	let vec_a: &[int] = &[0, 1, 2, -3, 4, 5, 6, 7];
 	let vec_b: &[int] = &[-7, -6, 5, -4, 0, -1, 2, 3];
+	let vec_c: &[int] = &[0, 0, 0, 0, 0, 0, 0, 0];
 
 	let ctx = OpenCL::hl::create_compute_context();
 
 	println!("{:?}", ctx.borrow().device_name());
 
-	let A = ctx.borrow().create_buffer(vec_a.len() * mem::size_of_val(&vec_a[0]), OpenCL::CL::CL_MEM_READ_ONLY);
-	let B = ctx.borrow().create_buffer(vec_a.len() * mem::size_of_val(&vec_a[0]), OpenCL::CL::CL_MEM_READ_ONLY);
-	let C = ctx.borrow().create_buffer(vec_a.len() * mem::size_of_val(&vec_a[0]), OpenCL::CL::CL_MEM_WRITE_ONLY);
 
-	A.write(ctx.clone(), vec_a);
-	B.write(ctx.clone(), vec_b);
+	let A = ctx.borrow().ctx.create_buffer(vec_a.len() * mem::size_of_val(&vec_a[0]), OpenCL::CL::CL_MEM_READ_ONLY);
+	let B = ctx.borrow().ctx.create_buffer(vec_a.len() * mem::size_of_val(&vec_a[0]), OpenCL::CL::CL_MEM_READ_ONLY);
+	let C = ctx.borrow().ctx.create_buffer(vec_a.len() * mem::size_of_val(&vec_a[0]), OpenCL::CL::CL_MEM_WRITE_ONLY);
+
+	ctx.borrow().q.write_buffer(&A, 0, vec_a, ());
+	ctx.borrow().q.write_buffer(&B, 0, vec_b, ());
 
 	let program = ctx.borrow().create_program_from_source(ker);
 
@@ -31,18 +33,14 @@ fn main()
 
 	let kernel = program.create_kernel("vector_add");
 
-	println!("{:?}", program);
-
 	kernel.set_arg(0, &A);
 	kernel.set_arg(1, &B);
 	kernel.set_arg(2, &C);
 
-	OpenCL::hl::enqueue_nd_range_kernel(&ctx.borrow().q, &kernel, 1, 0, 64, 64);
 
-	let mut vec_c: ~[int];
-	unsafe {
-		vec_c = C.read(ctx);
-	}
+	OpenCL::hl::enqueue_nd_range_kernel(&ctx.borrow().q, &kernel, 1, 0, 8, 8);
+
+	ctx.borrow().q.read_buffer(&C, 0, vec_c, ());
 
 	println!("	{:?}", vec_a);
 	println!("+	{:?}", vec_b);
