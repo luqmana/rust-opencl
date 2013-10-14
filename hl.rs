@@ -404,7 +404,7 @@ pub fn create_command_queue(ctx: & Context, device: Device) -> CommandQueue
     }
 }
 
-struct Program
+pub struct Program
 {
     prg: cl_program,
 }
