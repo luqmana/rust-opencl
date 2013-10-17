@@ -39,7 +39,7 @@ fn main()
                      ptr::to_unsafe_ptr(&np));
 
     r = clGetDeviceIDs(p_id,
-                       CL_DEVICE_TYPE_CPU,
+                       CL_DEVICE_TYPE_ALL,
                        1,
                        ptr::to_unsafe_ptr(&device),
                        ptr::to_unsafe_ptr(&nd));
