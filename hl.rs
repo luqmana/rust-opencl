@@ -99,7 +99,7 @@ struct Device {
 
 impl Device {
     #[fixed_stack_segment] #[inline(never)]
-    fn name(&self) -> ~str { unsafe {
+    pub fn name(&self) -> ~str { unsafe {
         let size = 0;
         let status = clGetDeviceInfo(
             self.id,
@@ -220,7 +220,7 @@ pub fn create_command_queue(ctx: & Context, device: Device) -> CommandQueue
 struct Buffer
 {
     buffer: cl_mem,
-    size: int,
+    size: uint,
 }
 
 impl Drop for Buffer
@@ -236,7 +236,7 @@ impl Drop for Buffer
 
 // TODO: How to make this function cleaner and nice
 #[fixed_stack_segment] #[inline(never)]
-pub fn create_buffer(ctx: & Context, size: int, flags: cl_mem_flags) -> Buffer
+pub fn create_buffer(ctx: & Context, size: uint, flags: cl_mem_flags) -> Buffer
 {
     unsafe
     {
