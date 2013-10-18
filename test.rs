@@ -1,14 +1,11 @@
 extern mod OpenCL;
 
 use std::sys;
+use std::io;
 
 fn main()
 {
-	let ker =
-			~"__kernel void vector_add(__global const long *A, __global const long *B, __global long *C) {
-				int i = get_global_id(0);
-				C[i] = A[i] + B[i];
-			 }";
+	let ker = io::read_whole_file_str(&Path::new("./test.ocl")).unwrap();
 
 	let vec_a: &[int] = &[0, 1, 2, -3, 4, 5, 6, 7];
 	let vec_b: &[int] = &[-7, -6, 5, -4, 0, -1, 2, 3];
