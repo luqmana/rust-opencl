@@ -242,19 +242,18 @@ impl Buffer
 	#[fixed_stack_segment]
 	pub fn read<T>(&self, ctx: @ComputeContext) -> ~[T] {
 		unsafe {
-			let buf = libc::malloc(self.size as libc::size_t);
+			let mut v: ~[T] = vec::with_capacity(self.size / sys::size_of::<T>());
 			clEnqueueReadBuffer(ctx.q.cqueue,
 				self.buffer,
 				CL_TRUE,
 				0,
 				self.size as libc::size_t,
-				buf,
+				vec::raw::to_mut_ptr(v) as *libc::c_void,
 				0,
 				ptr::null(),
 				ptr::null());
-		let outVec = vec::from_buf(buf as *T, self.size / sys::size_of::<T>());
-		libc::free(buf);
-		return outVec
+		vec::raw::set_len(&mut v, self.size / sys::size_of::<T>());
+		return v
 		}
 	}
 }
