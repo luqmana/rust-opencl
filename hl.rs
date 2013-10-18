@@ -240,21 +240,19 @@ impl Buffer
 		}
 	}
 	#[fixed_stack_segment]
-	pub fn read<T>(&self, ctx: @ComputeContext) -> ~[T] {
-		unsafe {
-			let mut v: ~[T] = vec::with_capacity(self.size / sys::size_of::<T>());
-			clEnqueueReadBuffer(ctx.q.cqueue,
-				self.buffer,
-				CL_TRUE,
-				0,
-				self.size as libc::size_t,
-				vec::raw::to_mut_ptr(v) as *libc::c_void,
-				0,
-				ptr::null(),
-				ptr::null());
+	pub unsafe fn read<T>(&self, ctx: @ComputeContext) -> ~[T] {
+		let mut v: ~[T] = vec::with_capacity(self.size / sys::size_of::<T>());
+		clEnqueueReadBuffer(ctx.q.cqueue,
+			self.buffer,
+			CL_TRUE,
+			0,
+			self.size as libc::size_t,
+			vec::raw::to_mut_ptr(v) as *libc::c_void,
+			0,
+			ptr::null(),
+			ptr::null());
 		vec::raw::set_len(&mut v, self.size / sys::size_of::<T>());
 		return v
-		}
 	}
 }
 

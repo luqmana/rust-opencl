@@ -35,7 +35,10 @@ fn main()
 
 	OpenCL::hl::enqueue_nd_range_kernel(&ctx.q, &kernel, 1, 0, 64, 64);
 
-	let vec_c: ~[int] = C.read(ctx);
+	let mut vec_c: ~[int];
+	unsafe {
+		vec_c = C.read(ctx);
+	}
 
 	println(fmt!("	%?", vec_a));
 	println(fmt!("+	%?", vec_b));
