@@ -88,16 +88,16 @@ impl<T> hl::KernelArg for Vector<T>
     }
 }
 
-impl<T> hl::Buffer for Vector<T>
+impl<T> hl::Buffer<T> for Vector<T>
 {
-    fn get_id(&self) -> cl_mem 
+    fn id(&self) -> cl_mem 
     {
         self.cl_buffer
     }   
 }
 
 pub struct Unique<T> {
-    cl_buffer: CLBuffer,
+    cl_buffer: CLBuffer<T>,
     size: uint,
     context: Rc<ComputeContext>,
 }

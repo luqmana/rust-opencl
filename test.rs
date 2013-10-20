@@ -1,6 +1,5 @@
 extern mod OpenCL;
 
-use std::mem;
 use std::rt::io;
 use std::rt::io::file;
 use std::rt::io::Reader;
@@ -20,9 +19,9 @@ fn main()
 	println!("{:?}", ctx.borrow().device_name());
 
 
-	let A = ctx.borrow().ctx.create_buffer(vec_a.len() * mem::size_of_val(&vec_a[0]), OpenCL::CL::CL_MEM_READ_ONLY);
-	let B = ctx.borrow().ctx.create_buffer(vec_a.len() * mem::size_of_val(&vec_a[0]), OpenCL::CL::CL_MEM_READ_ONLY);
-	let C = ctx.borrow().ctx.create_buffer(vec_a.len() * mem::size_of_val(&vec_a[0]), OpenCL::CL::CL_MEM_WRITE_ONLY);
+	let A : OpenCL::hl::CLBuffer<int> = ctx.borrow().ctx.create_buffer(vec_a.len(), OpenCL::CL::CL_MEM_READ_ONLY);
+	let B : OpenCL::hl::CLBuffer<int> = ctx.borrow().ctx.create_buffer(vec_a.len(), OpenCL::CL::CL_MEM_READ_ONLY);
+	let C : OpenCL::hl::CLBuffer<int> = ctx.borrow().ctx.create_buffer(vec_a.len(), OpenCL::CL::CL_MEM_WRITE_ONLY);
 
 	ctx.borrow().q.write_buffer(&A, 0, vec_a, ());
 	ctx.borrow().q.write_buffer(&B, 0, vec_b, ());
