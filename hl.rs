@@ -225,7 +225,7 @@ trait Buffer<T> {
     fn id(&self) -> cl_mem;
 
     #[fixed_stack_segment] #[inline(never)]
-    fn byte_size(&self) -> libc::size_t 
+    fn byte_len(&self) -> libc::size_t 
     {
         unsafe {
             let size : libc::size_t = 0;
@@ -241,9 +241,9 @@ trait Buffer<T> {
     }
 
     #[fixed_stack_segment] #[inline(never)]
-    fn len(&self) -> libc::size_t 
+    fn len(&self) -> uint 
     {
-        self.byte_size() / mem::size_of::<T>() as libc::size_t
+        self.byte_len() as uint / mem::size_of::<T>()
     }
 }
 
@@ -283,6 +283,16 @@ pub struct CommandQueue {
 
 impl CommandQueue
 {
+    pub fn read<T, B: Buffer<T>, E: EventList>(&self, mem: &B, event: E) -> ~[T]
+    {
+        let mut v: ~[T] = vec::with_capacity(mem.len());
+        unsafe {
+            vec::raw::set_len(&mut v, mem.len());
+        }
+        self.read_buffer(mem, 0, v, event);
+        v
+    }
+
     #[fixed_stack_segment] #[inline(never)]
     pub fn write_buffer<T, B: Buffer<T>, E: EventList>(&self, mem: &B, offset: uint, write: &[T], event: E)
     {
@@ -518,75 +528,6 @@ impl Kernel {
     {
         set_kernel_arg(self, i as CL::cl_uint, x)
     }
-
-/*
-    pub fn execute<I: KernelIndex>(&self, global: I, local: I) {
-        match self.context {
-            Some(ctx)
-            => ctx.enqueue_async_kernel(self, global, local).wait(),
-
-            None => fail!("Kernel does not have an associated context.")
-        }
-    }
-
-    pub fn work_group_size(&self) -> uint { unsafe {
-        match self.context {
-            Some(ctx) => {
-                let mut size: libc::size_t = 0;
-                let status = clGetKernelWorkGroupInfo(
-                    self.kernel,
-                    ctx.device.id,
-                    CL_KERNEL_WORK_GROUP_SIZE,
-                    mem::size_of::<libc::size_t>() as libc::size_t,
-                    ptr::to_unsafe_ptr(&size) as *libc::c_void,
-                    ptr::null());
-                check(status, "Could not get work group info.");
-                size as uint
-            },
-            None => fail!("Kernel does not have an associated context.")
-        }
-    } }
-
-    pub fn local_mem_size(&self) -> uint {
-        match self.context {
-            Some(ctx) => {
-                let mut size: cl_ulong = 0;
-                let status = unsafe {
-                    clGetKernelWorkGroupInfo(
-                        self.kernel,
-                        ctx.device.id,
-                        CL_KERNEL_LOCAL_MEM_SIZE,
-                        mem::size_of::<cl_ulong>() as libc::size_t,
-                        ptr::to_unsafe_ptr(&size) as *libc::c_void,
-                        ptr::null())
-                };
-                check(status, "Could not get work group info.");
-                size as uint
-            },
-            None => fail!("Kernel does not have an associated context.")
-        }
-    }
-
-    pub fn private_mem_size(&self) -> uint {
-        match self.context {
-            Some(ctx) => {
-                let mut size: cl_ulong = 0;
-                let status = unsafe {
-                    clGetKernelWorkGroupInfo(
-                        self.kernel,
-                        ctx.device.id,
-                        CL_KERNEL_PRIVATE_MEM_SIZE,
-                        mem::size_of::<cl_ulong>() as libc::size_t,
-                        ptr::to_unsafe_ptr(&size) as *libc::c_void,
-                        ptr::null())
-                };
-                check(status, "Could not get work group info.");
-                size as uint
-            },
-            None => fail!("Kernel does not have an associated context.")
-        }
-    }
-*/
 }
 
 #[fixed_stack_segment] #[inline(never)]
@@ -718,7 +659,7 @@ impl<T: EventList> EventList for Option<T> {
     }
 }
 
-impl<'self> EventList for &'self ~[Event] {
+impl<'self> EventList for &'self [Event] {
     fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
     {
         /* this is wasteful */
@@ -1087,7 +1028,8 @@ mod test {
       
         k_incA.set_arg(0, &a);
         k_incB.set_arg(0, &b);
-        let event_list = ~[
+
+        let event_list = &[
             ctx.borrow().enqueue_async_kernel(&k_incA, 1, None, ()),
             ctx.borrow().enqueue_async_kernel(&k_incB, 1, None, ()),
         ];
@@ -1096,8 +1038,7 @@ mod test {
         k_add.set_arg(1, &b);
         k_add.set_arg(2, &c);
 
-        ctx.borrow().enqueue_async_kernel(&k_add, 1, None, &event_list).wait();
-
+        ctx.borrow().enqueue_async_kernel(&k_add, 1, None, event_list).wait();
         let v = c.to_vec();
 
         expect!(v[0], 4);
@@ -1151,37 +1092,17 @@ mod test {
 
         expect!(input, output);
     }
-/*
+
     #[test]
-    fn kernel_2d_execute() {
-        let src = "__kernel void test(__global long int *N) { \
-                   int i = get_global_id(0); \
-                   int j = get_global_id(1); \
-                   int s = get_global_size(0); \
-                   N[i * s + j] = i * j;
-}";
+    fn memory_read_vec()
+    {
         let ctx = create_compute_context();
-        let prog = ctx.create_program_from_source(src);
+        let buffer : CLBuffer<int> = ctx.borrow().ctx.create_buffer(8, CL_MEM_READ_ONLY);
 
-        match prog.build(ctx.device) {
-            Ok(()) => (),
-            Err(build_log) => {
-                io::println("Error building program:\n");
-                io::println(build_log);
-                fail!()
-            }
-        }
+        let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
 
-        let k = prog.create_kernel("test");
-
-        let v = Vector::from_vec(ctx, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
-
-        k.set_arg(0, &v);
-        k.execute((3, 3), (1, 1));
-
-        let v = v.to_vec();
-
-        expect!(v, ~[0, 0, 0, 0, 1, 2, 0, 2, 4]);
+        ctx.borrow().q.write_buffer(&buffer, 0, input, ());
+        let output = ctx.borrow().q.read(&buffer, ());
+        expect!(input, output);
     }
-*/
 }
