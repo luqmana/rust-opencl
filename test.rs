@@ -103,7 +103,7 @@ fn main()
 					ptr::to_unsafe_ptr(&C.buffer)	 as *libc::c_void);
 
 				let global_item_size: libc::size_t = (sz) as libc::size_t;
-				let local_item_size:	libc::size_t = 64;
+				let local_item_size:	libc::size_t = 8;
 
 				// Execute the OpenCL kernel on the list
 				clEnqueueNDRangeKernel(cque.cqueue,
