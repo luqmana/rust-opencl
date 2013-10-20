@@ -12,7 +12,7 @@ fn main()
 
 	let vec_a: &[int] = &[0, 1, 2, -3, 4, 5, 6, 7];
 	let vec_b: &[int] = &[-7, -6, 5, -4, 0, -1, 2, 3];
-	let vec_c: &[int] = &[0, 0, 0, 0, 0, 0, 0, 0];
+	let vec_c: &mut [int] = &mut [0, 0, 0, 0, 0, 0, 0, 0];
 
 	let ctx = OpenCL::hl::create_compute_context();
 
