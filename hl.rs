@@ -695,6 +695,13 @@ trait EventList {
     }
 }
 
+impl<'self> EventList for &'self Event {
+    fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
+    {
+        f(ptr::to_unsafe_ptr(&self.event), 1 as cl_uint)
+    }
+}
+
 impl EventList for Event {
     fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
     {
