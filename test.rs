@@ -4,7 +4,7 @@ extern mod OpenCL;
 use OpenCL::CL::*;
 use OpenCL::CL::ll::*;
 use std::ptr;
-use std::sys;
+use std::mem;
 use std::libc;
 use std::vec;
 use std::cast;
@@ -29,7 +29,7 @@ fn main()
 		let platforms = OpenCL::hl::get_platforms();
 
 		let device = OpenCL::hl::get_devices(platforms[0], CL_DEVICE_TYPE_ALL)[0];
-		println(fmt!("%?", device.name()));
+		println(format!("{:s}", device.name()));
 
 		let ctx = OpenCL::hl::create_context(device);
 
@@ -44,7 +44,7 @@ fn main()
 			A.buffer,
 			CL_TRUE,
 			0,
-			(sz * sys::size_of::<int>()) as libc::size_t,
+			(sz * mem::size_of::<int>()) as libc::size_t,
 			vec::raw::to_ptr(vec_a) as *libc::c_void,
 			0,
 			ptr::null(),
@@ -54,7 +54,7 @@ fn main()
 			B.buffer,
 			CL_TRUE,
 			0,
-			(sz * sys::size_of::<int>()) as libc::size_t,
+			(sz * mem::size_of::<int>()) as libc::size_t,
 			vec::raw::to_ptr(vec_b) as *libc::c_void,
 			0,
 			ptr::null(),
@@ -77,33 +77,33 @@ fn main()
 				ptr::null());
 
 			if r != CL_SUCCESS as cl_int
-			{ println(fmt!("Unable to build program [%?].", r)); }
+			{ println(format!("Unable to build program [{:?}].", r)); }
 
 			// Create the OpenCL kernel
 			do "vector_add".as_imm_buf() |bytes, _|
 			{
 				let kernel = clCreateKernel(prog, bytes as *libc::c_char, ptr::to_unsafe_ptr(&r));
 				if r != CL_SUCCESS as cl_int
-				{ println(fmt!("Unable to create kernel [%?].", r)); }
+				{ println(format!("Unable to create kernel [{:?}].", r)); }
 
 				// Set the arguments of the kernel
 				clSetKernelArg(kernel,
 					0,
-					sys::size_of::<cl_mem>() as libc::size_t,
+					mem::size_of::<cl_mem>() as libc::size_t,
 					ptr::to_unsafe_ptr(&A.buffer)	 as *libc::c_void);
 
 				clSetKernelArg(kernel,
 					1,
-					sys::size_of::<cl_mem>() as libc::size_t,
+					mem::size_of::<cl_mem>() as libc::size_t,
 					ptr::to_unsafe_ptr(&B.buffer)	 as *libc::c_void);
 
 				clSetKernelArg(kernel,
 					2,
-					sys::size_of::<cl_mem>() as libc::size_t,
+					mem::size_of::<cl_mem>() as libc::size_t,
 					ptr::to_unsafe_ptr(&C.buffer)	 as *libc::c_void);
 
-				let global_item_size: libc::size_t = (sz * sys::size_of::<int>()) as libc::size_t;
-				let local_item_size:	libc::size_t = 64;
+				let global_item_size: libc::size_t = (sz) as libc::size_t;
+				let local_item_size:	libc::size_t = 8;
 
 				// Execute the OpenCL kernel on the list
 				clEnqueueNDRangeKernel(cque.cqueue,
@@ -117,13 +117,13 @@ fn main()
 					ptr::null());
 
 				// Now let's read back the new list from the device
-				let buf = libc::malloc((sz * sys::size_of::<int>()) as libc::size_t);
+				let buf = libc::malloc((sz * mem::size_of::<int>()) as libc::size_t);
 
 				clEnqueueReadBuffer(cque.cqueue,
 					C.buffer,
 					CL_TRUE,
 					0,
-					(sz * sys::size_of::<int>()) as libc::size_t,
+					(sz * mem::size_of::<int>()) as libc::size_t,
 					buf,
 					0,
 					ptr::null(),
@@ -133,9 +133,9 @@ fn main()
 
 				libc::free(buf);
 
-				println(fmt!("	%?", vec_a));
-				println(fmt!("+	%?", vec_b));
-				println(fmt!("=	%?", vec_c));
+				println(format!("	{:?}", vec_a));
+				println(format!("+	{:?}", vec_b));
+				println(format!("=	{:?}", vec_c));
 
 				// Cleanup
 //				clReleaseKernel(kernel);

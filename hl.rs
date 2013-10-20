@@ -9,7 +9,7 @@ use std::vec;
 use std::str;
 use std::io;
 use std::result;
-use std::sys;
+use std::mem;
 use std::cast;
 use std::ptr;
 
@@ -136,7 +136,7 @@ pub fn get_devices(platform: Platform, dtype: cl_device_type) -> ~[Device]
     {
         let num_devices = 0;
         
-        info!("Looking for devices matching %?", dtype);
+        info!("Looking for devices matching {:?}", dtype);
         
         clGetDeviceIDs(platform.id, dtype, 0, ptr::null(), 
                        ptr::to_unsafe_ptr(&num_devices));
@@ -292,7 +292,7 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
         let errcode = 0;
         let binary = match io::read_whole_file_str(binary_path) {
             result::Ok(binary) => binary,
-            Err(e)             => fail!(fmt!("%?", e))
+            Err(e)             => fail!(format!("{:?}", e))
         };
         let program = do binary.to_c_str().with_ref |kernel_binary| {
             clCreateProgramWithBinary(ctx.ctx, 1, ptr::to_unsafe_ptr(&device.id), 
@@ -388,7 +388,7 @@ impl Kernel {
                     self.kernel,
                     ctx.device.id,
                     CL_KERNEL_WORK_GROUP_SIZE,
-                    sys::size_of::<libc::size_t>() as libc::size_t,
+                    mem::size_of::<libc::size_t>() as libc::size_t,
                     ptr::to_unsafe_ptr(&size) as *libc::c_void,
                     ptr::null());
                 check(status, "Could not get work group info.");
@@ -407,7 +407,7 @@ impl Kernel {
                         self.kernel,
                         ctx.device.id,
                         CL_KERNEL_LOCAL_MEM_SIZE,
-                        sys::size_of::<cl_ulong>() as libc::size_t,
+                        mem::size_of::<cl_ulong>() as libc::size_t,
                         ptr::to_unsafe_ptr(&size) as *libc::c_void,
                         ptr::null())
                 };
@@ -427,7 +427,7 @@ impl Kernel {
                         self.kernel,
                         ctx.device.id,
                         CL_KERNEL_PRIVATE_MEM_SIZE,
-                        sys::size_of::<cl_ulong>() as libc::size_t,
+                        mem::size_of::<cl_ulong>() as libc::size_t,
                         ptr::to_unsafe_ptr(&size) as *libc::c_void,
                         ptr::null())
                 };
@@ -468,7 +468,7 @@ pub trait KernelArg {
 macro_rules! scalar_kernel_arg (
     ($t:ty) => (impl KernelArg for $t {
         fn get_value(&self) -> (libc::size_t, *libc::c_void) {
-            (sys::size_of::<$t>() as libc::size_t,
+            (mem::size_of::<$t>() as libc::size_t,
              ptr::to_unsafe_ptr(self) as *libc::c_void)
         }
     })
@@ -520,7 +520,7 @@ impl KernelArg for Buffer
 {
     fn get_value(&self) -> (libc::size_t, *libc::c_void)
     {
-        (sys::size_of::<cl_mem>() as libc::size_t,
+        (mem::size_of::<cl_mem>() as libc::size_t,
          ptr::to_unsafe_ptr(&self.buffer) as *libc::c_void)
     }
 } 
@@ -778,7 +778,7 @@ mod test {
             let test     = $test;
             let expected = $expected;
             if test != expected {
-                fail!(fmt!("Test failure in %s: expected %?, got %?",
+                fail!(format!("Test failure in {:s}: expected {:?}, got {:?}",
                            stringify!($test),
                            expected, test))
             }
