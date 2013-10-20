@@ -3,7 +3,7 @@ use CL::ll::*;
 use hl;
 use hl::*;
 use error::check;
-use std::sys;
+use std::mem;
 use std::libc;
 use std::ptr;
 use std::vec;
@@ -30,7 +30,7 @@ impl<T> Vector<T> {
         unsafe {
             do v.as_imm_buf |p, len| {
                 let status = 0;
-                let byte_size = (len * sys::size_of::<T>()) as libc::size_t;
+                let byte_size = (len * mem::size_of::<T>()) as libc::size_t;
 
                 let buf = clCreateBuffer(ctx.ctx.ctx,
                 CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
@@ -61,7 +61,7 @@ impl<T> Vector<T> {
         unsafe {
             do v.as_imm_buf |p, len|
             {
-                let byte_size = (len * sys::size_of::<T>()) as libc::size_t;
+                let byte_size = (len * mem::size_of::<T>()) as libc::size_t;
 
                 let status = clEnqueueWriteBuffer(
                     self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0, byte_size, p as *libc::c_void,
@@ -94,7 +94,7 @@ impl<T> Vector<T> {
             do out.as_imm_buf |p, len| {
                 clEnqueueReadBuffer(
                     self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0,
-                    (len * sys::size_of::<T>()) as libc::size_t,
+                    (len * mem::size_of::<T>()) as libc::size_t,
                     p as *libc::c_void, 0, ptr::null(), ptr::null());
             }
         }
@@ -104,7 +104,7 @@ impl<T> Vector<T> {
 impl<T> hl::KernelArg for Vector<T>
 {
     fn get_value(&self) -> (libc::size_t, *libc::c_void) {
-        (sys::size_of::<cl_mem>() as libc::size_t, 
+        (mem::size_of::<cl_mem>() as libc::size_t, 
          ptr::to_unsafe_ptr(&self.cl_buffer) as *libc::c_void)
     }
 }
@@ -134,9 +134,9 @@ impl<T> Unique<T> {
         unsafe
         {
             let byte_size
-                = sys::size_of::<unstable::raw::Vec<T>>()
-                - sys::size_of::<T>() 
-                + v.len() * sys::size_of::<T>();
+                = mem::size_of::<unstable::raw::Vec<T>>()
+                - mem::size_of::<T>() 
+                + v.len() * mem::size_of::<T>();
             let byte_size = byte_size as libc::size_t;
             
             let len = v.len();
@@ -169,8 +169,8 @@ impl<T> Unique<T> {
                 clEnqueueReadBuffer(
                     self.context.q.cqueue, self.cl_buffer.cl_buffer, CL_TRUE,
                     // Skip the header, we have a new one here.
-                    (sys::size_of::<unstable::raw::Vec<T>>() - sys::size_of::<T>())  as libc::size_t,
-                    (len * sys::size_of::<T>()) as libc::size_t,
+                    (mem::size_of::<unstable::raw::Vec<T>>() - mem::size_of::<T>())  as libc::size_t,
+                    (len * mem::size_of::<T>()) as libc::size_t,
                     p as *libc::c_void, 0, ptr::null(), ptr::null());
 
             }
@@ -181,7 +181,7 @@ impl<T> Unique<T> {
 
 impl<T> ::hl::KernelArg for Unique<T> {
     fn get_value(&self) -> (libc::size_t, *libc::c_void) {
-        (sys::size_of::<cl_mem>() as libc::size_t, 
+        (mem::size_of::<cl_mem>() as libc::size_t, 
          ptr::to_unsafe_ptr(&self.cl_buffer) as *libc::c_void)
     }
 }
@@ -197,7 +197,7 @@ mod test {
           let test = $test;
           let expected = $expected;
           if test != expected {
-              fail!(fmt!("Test failure in %s: expected %?, got %?",
+              fail!(format!("Test failure in {:s}: expected {:?}, got {:?}",
                          stringify!($test),
                          expected, test))
           }
