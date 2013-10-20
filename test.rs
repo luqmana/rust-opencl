@@ -102,7 +102,7 @@ fn main()
 					mem::size_of::<cl_mem>() as libc::size_t,
 					ptr::to_unsafe_ptr(&C.buffer)	 as *libc::c_void);
 
-				let global_item_size: libc::size_t = (sz * mem::size_of::<int>()) as libc::size_t;
+				let global_item_size: libc::size_t = (sz) as libc::size_t;
 				let local_item_size:	libc::size_t = 64;
 
 				// Execute the OpenCL kernel on the list
