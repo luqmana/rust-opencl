@@ -16,62 +16,61 @@ use std::ptr;
 use std::rc::Rc;
 
 struct Platform {
-  id: cl_platform_id
+    id: cl_platform_id
 }
 
-enum DeviceType {
-  CPU, GPU
+    enum DeviceType {
+      CPU, GPU
 }
 
 fn convert_device_type(device: DeviceType) -> cl_device_type {
-  match device {
-    CPU => CL_DEVICE_TYPE_CPU,
-    GPU => CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR
-  }
+    match device {
+        CPU => CL_DEVICE_TYPE_CPU,
+        GPU => CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR
+    }
 }
 
 impl Platform {
-  pub fn get_devices(&self) -> ~[Device]
-  {
-    get_devices(*self, CL_DEVICE_TYPE_ALL)
-  }
-
-  fn get_devices_by_types(&self, types: &[DeviceType]) -> ~[Device]
-  {
-    let dtype = 0;
-    for &t in types.iter() {
-      dtype != convert_device_type(t);
-    }
-
-    get_devices(*self, dtype)
-  }
-
-  #[fixed_stack_segment] #[inline(never)]
-  fn name(&self) -> ~str
-  {
-    unsafe
+    pub fn get_devices(&self) -> ~[Device]
     {
-      let mut size = 0;
-
-      clGetPlatformInfo(self.id,
-                        CL_PLATFORM_NAME,
-                        0,
-                        ptr::null(),
-                        ptr::to_mut_unsafe_ptr(&mut size));
-
-      let name = " ".repeat(size as uint);
-
-      do name.as_imm_buf |p, len| {
-        clGetPlatformInfo(self.id,
-                          CL_PLATFORM_NAME,
-                          len as libc::size_t,
-                          p as *libc::c_void,
-                          ptr::to_mut_unsafe_ptr(&mut size));
-      };
-
-      name
+        get_devices(*self, CL_DEVICE_TYPE_ALL)
     }
-  }
+
+    fn get_devices_by_types(&self, types: &[DeviceType]) -> ~[Device]
+    {
+        let dtype = 0;
+        for &t in types.iter() {
+          dtype != convert_device_type(t);
+        }
+
+        get_devices(*self, dtype)
+    }
+
+    #[fixed_stack_segment] #[inline(never)]
+    fn name(&self) -> ~str
+    {
+        unsafe {
+            let mut size = 0;
+
+            clGetPlatformInfo(self.id,
+                            CL_PLATFORM_NAME,
+                            0,
+                            ptr::null(),
+                            ptr::to_mut_unsafe_ptr(&mut size));
+
+            let name = " ".repeat(size as uint);
+
+            do name.as_imm_buf |p, len| {
+            clGetPlatformInfo(self.id,
+                              CL_PLATFORM_NAME,
+                              len as libc::size_t,
+                              p as *libc::c_void,
+                              ptr::to_mut_unsafe_ptr(&mut size));
+            };
+
+            name
+        }
+    }
 }
 
 #[fixed_stack_segment] #[inline(never)]
