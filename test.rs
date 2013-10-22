@@ -15,7 +15,7 @@ fn main()
 	let vec_a: &[int] = &[0, 1, 2, -3, 4, 5, 6, 7];
 	let vec_b: &[int] = &[-7, -6, 5, -4, 0, -1, 2, 3];
 
-	let (_, device, ctx, queue) = OpenCL::util::create_compute_context().unwrap();
+	let (device, ctx, queue) = OpenCL::util::create_compute_context().unwrap();
 
 	println!("{:?}", device.name());
 
@@ -28,7 +28,7 @@ fn main()
 
 	let program = ctx.create_program_from_source(ker);
 
-	program.build(device);
+	program.build(&device);
 
 	let kernel = program.create_kernel("vector_add");
 

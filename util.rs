@@ -1,6 +1,6 @@
 use hl::*;
 
-pub fn create_compute_context() -> Result<(Platform, Device, Context, CommandQueue), ~str>
+pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), ~str>
 {
     let platforms = get_platforms();
     if platforms.len() == 0 {
@@ -15,5 +15,5 @@ pub fn create_compute_context() -> Result<(Platform, Device, Context, CommandQue
     let context = devices[0].create_context();
     let queue = context.create_command_queue(&devices[0]);
 
-    Ok((platforms[0], devices[0], context, queue))
+    Ok((devices[0], context, queue))
 }

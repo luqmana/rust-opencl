@@ -7,9 +7,6 @@ use error::check;
 use std::libc;
 use std::vec;
 use std::str;
-use std::rt::io;
-use std::rt::io::file;
-use std::rt::io::Reader;
 use std::mem;
 use std::cast;
 use std::ptr;
@@ -189,8 +186,6 @@ impl Device {
     }
 }
 
-
-
 struct Context {
     ctx: cl_context,
 }
@@ -297,7 +292,6 @@ impl Drop for Context
         }
     }
 }
-
 
 trait Buffer<T> {
     fn id(&self) -> cl_mem;
@@ -518,78 +512,48 @@ impl Drop for Program
 
 impl Program
 {
-    pub fn build(&self, device: Device) -> Result<(), ~str> {
-        build_program(self, device)
+    #[fixed_stack_segment]
+    pub fn build(&self, device: &Device) -> Result<(), ~str> 
+    {
+        unsafe
+        {
+            let ret = clBuildProgram(self.prg, 1, ptr::to_unsafe_ptr(&device.id),
+                                     ptr::null(),
+                                     cast::transmute(ptr::null::<&fn ()>()),
+                                     ptr::null());
+            if ret == CL_SUCCESS as cl_int {
+                Ok(())
+            }
+            else {
+                let size = 0 as libc::size_t;
+                let status = clGetProgramBuildInfo(
+                    self.prg,
+                    device.id,
+                    CL_PROGRAM_BUILD_LOG,
+                    0,
+                    ptr::null(),
+                    ptr::to_unsafe_ptr(&size));
+                check(status, "Could not get build log");
+
+                let buf = vec::from_elem(size as uint, 0u8);
+                do buf.as_imm_buf |p, len| {
+                    let status = clGetProgramBuildInfo(
+                        self.prg,
+                        device.id,
+                        CL_PROGRAM_BUILD_LOG,
+                        len as libc::size_t,
+                        p as *libc::c_void,
+                        ptr::null());
+                    check(status, "Could not get build log");
+
+                    Err(str::raw::from_c_str(p as *libc::c_char))
+                }
+            }
+        }
     }
 
     pub fn create_kernel(&self, name: &str) -> Kernel {
         create_kernel(self, name)
-    }
-}
-
-// TODO: Support multiple devices
-#[fixed_stack_segment] #[inline(never)]
-pub fn create_program_with_binary(ctx: & Context, device: Device,
-                                  binary_path: & Path) -> Program
-{
-    unsafe
-    {
-        let errcode = 0;
-        let mut file = file::open(binary_path, io::Open, io::Read);
-        let binary = file.read_to_end();
-        let program = do binary.to_c_str().with_ref |kernel_binary| {
-            clCreateProgramWithBinary(ctx.ctx, 1, ptr::to_unsafe_ptr(&device.id),
-                                      ptr::to_unsafe_ptr(&(binary.len() + 1)) as *libc::size_t,
-                                      ptr::to_unsafe_ptr(&kernel_binary) as **libc::c_uchar,
-                                      ptr::null(),
-                                      ptr::to_unsafe_ptr(&errcode))
-        };
-
-        check(errcode, "Failed to create open cl program with binary!");
-
-        Program {
-            prg: program,
-        }
-    }
-}
-
-#[fixed_stack_segment] #[inline(never)]
-pub fn build_program(program: & Program, device: Device) -> Result<(), ~str>
-{
-    unsafe
-    {
-        let ret = clBuildProgram(program.prg, 1, ptr::to_unsafe_ptr(&device.id),
-                                 ptr::null(),
-                                 cast::transmute(ptr::null::<&fn ()>()),
-                                 ptr::null());
-        if ret == CL_SUCCESS as cl_int {
-            Ok(())
-        }
-        else {
-            let size = 0 as libc::size_t;
-            let status = clGetProgramBuildInfo(
-                program.prg,
-                device.id,
-                CL_PROGRAM_BUILD_LOG,
-                0,
-                ptr::null(),
-                ptr::to_unsafe_ptr(&size));
-            check(status, "Could not get build log");
-
-            let buf = vec::from_elem(size as uint, 0u8);
-            do buf.as_imm_buf |p, len| {
-                let status = clGetProgramBuildInfo(
-                    program.prg,
-                    device.id,
-                    CL_PROGRAM_BUILD_LOG,
-                    len as libc::size_t,
-                    p as *libc::c_void,
-                    ptr::null());
-                check(status, "Could not get build log");
-
-                Err(str::raw::from_c_str(p as *libc::c_char))
-            }
-        }
     }
 }
 
@@ -673,22 +637,6 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
     }
 }
 
-#[fixed_stack_segment] #[inline(never)]
-pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_dim: cl_uint,
-                               _global_work_offset: int, global_work_size: int,
-                               local_work_size: int)
-{
-  unsafe
-    {
-      let ret = clEnqueueNDRangeKernel(cqueue.cqueue, kernel.kernel, work_dim,
-                                       // ptr::to_unsafe_ptr(&global_work_offset) as *libc::size_t,
-                                       ptr::null(),
-                                       ptr::to_unsafe_ptr(&global_work_size) as *libc::size_t,
-                                       ptr::to_unsafe_ptr(&local_work_size) as *libc::size_t,
-                                       0, ptr::null(), ptr::null());
-      check(ret, "Failed to enqueue nd range kernel!");
-  }
-}
 
 pub struct Event
 {
@@ -763,6 +711,7 @@ impl EventList for () {
     }
 }
 
+
 trait KernelIndex
 {
     fn num_dimensions(dummy_self: Option<Self>) -> cl_uint;
@@ -828,10 +777,9 @@ mod test {
         let src = "__kernel void test(__global int *i) { \
                    *i += 1; \
                    }";
-
-        let (_, device, ctx, _) = util::create_compute_context().unwrap();
+        let (device, ctx, _) = util::create_compute_context().unwrap();
         let prog = ctx.create_program_from_source(src);
-        prog.build(device);
+        prog.build(&device);
     }
 
     #[test]
@@ -839,21 +787,16 @@ mod test {
         let src = "__kernel void test(__global int *i) { \
                    *i += 1; \
                    }";
-
-        let (_, device, ctx, queue) = util::create_compute_context().unwrap();
+        let (device, ctx, queue) = util::create_compute_context().unwrap();
         let prog = ctx.create_program_from_source(src);
-        prog.build(device);
+        prog.build(&device);
 
         let k = prog.create_kernel("test");
         let v = ctx.create_buffer_from_vec([1]);
         
         k.set_arg(0, &v);
 
-        enqueue_nd_range_kernel(
-
-            &queue,
-            &k,
-            1, 0, 1, 1);
+        queue.enqueue_async_kernel(&k, 1, None, ()).wait();
 
         let v = queue.read(&v, ());
 
@@ -866,9 +809,9 @@ mod test {
                    *i += k; \
                    }";
 
-        let (_, device, ctx, queue) = util::create_compute_context().unwrap();
+        let (device, ctx, queue) = util::create_compute_context().unwrap();
         let prog = ctx.create_program_from_source(src);
-        prog.build(device);
+        prog.build(&device);
 
         let k = prog.create_kernel("test");
         
@@ -877,10 +820,7 @@ mod test {
         k.set_arg(0, &v);
         k.set_arg(1, &42);
 
-        enqueue_nd_range_kernel(
-              &queue,
-              &k,
-              1, 0, 1, 1);
+        queue.enqueue_async_kernel(&k, 1, None, ()).wait();
 
         let v = queue.read(&v, ());
 
@@ -893,9 +833,9 @@ mod test {
                    *i += 1; \
                    }";
 
-        let (_, device, ctx, queue) = util::create_compute_context().unwrap();
+        let (device, ctx, queue) = util::create_compute_context().unwrap();
         let prog = ctx.create_program_from_source(src);
-        prog.build(device);
+        prog.build(&device);
 
         let k = prog.create_kernel("test");
 
@@ -916,9 +856,9 @@ mod test {
                    *i += 1; \
                    }";
 
-        let (_, device, ctx, queue) = util::create_compute_context().unwrap();
+        let (device, ctx, queue) = util::create_compute_context().unwrap();
         let prog = ctx.create_program_from_source(src);
-        prog.build(device);
+        prog.build(&device);
 
         let k = prog.create_kernel("test");
         let v = ctx.create_buffer_from_vec([1]);
@@ -945,9 +885,9 @@ mod test {
                    *c = *a + *b; \
                    }";
 
-        let (_, device, ctx, queue) = util::create_compute_context().unwrap();
+        let (device, ctx, queue) = util::create_compute_context().unwrap();
         let prog = ctx.create_program_from_source(src);
-        prog.build(device);
+        prog.build(&device);
 
         let k_incA = prog.create_kernel("inc");
         let k_incB = prog.create_kernel("inc");
@@ -985,10 +925,10 @@ mod test {
                    int s = get_global_size(0); \
                    N[i * s + j] = i * j;
 }";
-        let (_, device, ctx, queue) = util::create_compute_context().unwrap();
+        let (device, ctx, queue) = util::create_compute_context().unwrap();
         let prog = ctx.create_program_from_source(src);
 
-        match prog.build(device) {
+        match prog.build(&device) {
             Ok(()) => (),
             Err(build_log) => {
                 println!("Error building program:\n");
@@ -1013,7 +953,7 @@ mod test {
     #[test]
     fn memory_read_write()
     {
-        let (_, _, ctx, queue) = util::create_compute_context().unwrap();
+        let (_, ctx, queue) = util::create_compute_context().unwrap();
         let buffer : CLBuffer<int> = ctx.create_buffer(8, CL_MEM_READ_ONLY);
 
         let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
@@ -1029,8 +969,7 @@ mod test {
     fn memory_read_vec()
     {
         let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
-
-        let (_, _, ctx, queue) = util::create_compute_context().unwrap();
+        let (_, ctx, queue) = util::create_compute_context().unwrap();
         let buffer : CLBuffer<int> = ctx.create_buffer_from_vec(input);
         let output = queue.read(&buffer, ());
         expect!(input, output);
