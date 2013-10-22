@@ -683,7 +683,7 @@ impl ComputeContext
     }
 
     #[fixed_stack_segment] #[inline(never)]
-    pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: I, wait_on: E)
+    pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
         -> Event
         {
             unsafe
@@ -696,7 +696,10 @@ impl ComputeContext
                         KernelIndex::num_dimensions(None::<I>),
                         ptr::null(),
                         global.get_ptr(),
-                        local.get_ptr(),
+                        match local {
+                            Some(ref l) => l.get_ptr(),
+                            None => ptr::null()
+                        },
                         event_count,
                         event,
                         ptr::to_unsafe_ptr(&e));
@@ -872,13 +875,13 @@ mod test {
         k.set_arg(1, &42);
 
         enqueue_nd_range_kernel(
-      &ctx.q,
-      &k,
-      1, 0, 1, 1);
+          &ctx.q,
+          &k,
+          1, 0, 1, 1);
+        
+        let v = v.to_vec();
 
-      let v = v.to_vec();
-
-      expect!(v[0], 43);
+        expect!(v[0], 43);
   }
 
     #[test]
@@ -896,8 +899,7 @@ mod test {
 
         k.set_arg(0, &v);
 
-        ctx.enqueue_async_kernel(&k, 1, 1, ()).wait();
-
+        ctx.enqueue_async_kernel(&k, 1, None, ()).wait();
         let v = v.to_vec();
 
         expect!(v[0], 2);
@@ -920,7 +922,7 @@ mod test {
 
         let mut e : Option<Event> = None;
         for _ in range(0, 8) {
-            e = Some(ctx.enqueue_async_kernel(&k, 1, 1, e));
+            e = Some(ctx.enqueue_async_kernel(&k, 1, None, e));
         }
         e.wait();
 
@@ -952,15 +954,15 @@ mod test {
         k_incA.set_arg(0, &a);
         k_incB.set_arg(0, &b);
         let event_list = ~[
-            ctx.enqueue_async_kernel(&k_incA, 1, 1, ()),
-            ctx.enqueue_async_kernel(&k_incB, 1, 1, ()),
+            ctx.enqueue_async_kernel(&k_incA, 1, None, ()),
+            ctx.enqueue_async_kernel(&k_incB, 1, None, ()),
         ];
 
         k_add.set_arg(0, &a);
         k_add.set_arg(1, &b);
         k_add.set_arg(2, &c);
-        ctx.enqueue_async_kernel(&k_add, 1, 1, &event_list).wait();
 
+        ctx.enqueue_async_kernel(&k_add, 1, None, &event_list).wait();
         let v = c.to_vec();
 
         expect!(v[0], 4);
@@ -992,8 +994,8 @@ mod test {
         let v = Vector::from_vec(ctx, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
         k.set_arg(0, &v);
-
-        ctx.enqueue_async_kernel(&k, (3, 3), (1, 1), ()).wait();
+        
+        ctx.enqueue_async_kernel(&k, (3, 3), None, ()).wait();
 
         let v = v.to_vec();
 
