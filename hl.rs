@@ -83,7 +83,7 @@ pub fn get_platforms() -> ~[Platform]
                                       ptr::null(),
                                       ptr::to_unsafe_ptr(&num_platforms));
         check(status, "could not get platform count.");
-        
+
         let ids = vec::from_elem(num_platforms as uint, 0 as cl_platform_id);
 
         do ids.as_imm_buf |ids, len| {
@@ -127,6 +127,22 @@ impl Device {
             str::raw::from_c_str(p as *i8)
         }
     } }
+
+    #[fixed_stack_segment] #[inline(never)]
+	pub fn computeUnits(&self) -> uint {
+		unsafe {
+			let mut ct: uint = 0;
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_MAX_COMPUTE_UNITS,
+                8,
+                ptr::to_mut_unsafe_ptr(&mut ct) as *libc::c_void,
+                ptr::null());
+            check(status, "Could not get number of device compute units.");
+			return ct;
+		}
+	}
+
 }
 
 #[fixed_stack_segment] #[inline(never)]
@@ -135,10 +151,10 @@ pub fn get_devices(platform: Platform, dtype: cl_device_type) -> ~[Device]
     unsafe
     {
         let num_devices = 0;
-        
+
         info!("Looking for devices matching {:?}", dtype);
-        
-        clGetDeviceIDs(platform.id, dtype, 0, ptr::null(), 
+
+        clGetDeviceIDs(platform.id, dtype, 0, ptr::null(),
                        ptr::to_unsafe_ptr(&num_devices));
 
         let ids = vec::from_elem(num_devices as uint, 0 as cl_device_id);
@@ -878,7 +894,7 @@ mod test {
           &ctx.q,
           &k,
           1, 0, 1, 1);
-        
+
         let v = v.to_vec();
 
         expect!(v[0], 43);
@@ -994,7 +1010,7 @@ mod test {
         let v = Vector::from_vec(ctx, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
         k.set_arg(0, &v);
-        
+
         ctx.enqueue_async_kernel(&k, (3, 3), None, ()).wait();
 
         let v = v.to_vec();
