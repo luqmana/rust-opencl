@@ -4,6 +4,7 @@
 #[crate_type = "lib"];
 #[feature(macro_rules)];
 #[feature(globs)];
+#[feature(managed_boxes)];
 
 extern mod std;
 
