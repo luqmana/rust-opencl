@@ -1,11 +1,15 @@
 extern mod OpenCL;
 
 use std::mem;
-use std::io;
+use std::rt::io;
+use std::rt::io::file;
+use std::rt::io::extensions::ReaderUtil;
+use std::str;
 
 fn main()
 {
-	let ker = io::read_whole_file_str(&Path::new("./test.ocl")).unwrap();
+	let ker = file::open(&std::path::Path::new("./test.ocl"), io::Open, io::Read).read_to_end();
+    let ker = str::from_utf8(ker);
 
 	let vec_a: &[int] = &[0, 1, 2, -3, 4, 5, 6, 7];
 	let vec_b: &[int] = &[-7, -6, 5, -4, 0, -1, 2, 3];

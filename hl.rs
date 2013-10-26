@@ -7,8 +7,9 @@ use error::check;
 use std::libc;
 use std::vec;
 use std::str;
-use std::io;
-use std::result;
+use std::rt::io;
+use std::rt::io::file;
+use std::rt::io::extensions::ReaderUtil;
 use std::mem;
 use std::cast;
 use std::ptr;
@@ -322,10 +323,8 @@ pub fn create_program_with_binary(ctx: & Context, device: Device,
     unsafe
     {
         let errcode = 0;
-        let binary = match io::read_whole_file_str(binary_path) {
-            result::Ok(binary) => binary,
-            Err(e)             => fail!(format!("{:?}", e))
-        };
+        let mut file = file::open(binary_path, io::Open, io::Read);
+        let binary = file.read_to_end();
         let program = do binary.to_c_str().with_ref |kernel_binary| {
             clCreateProgramWithBinary(ctx.ctx, 1, ptr::to_unsafe_ptr(&device.id),
                                       ptr::to_unsafe_ptr(&(binary.len() + 1)) as *libc::size_t,
@@ -825,7 +824,7 @@ impl KernelIndex for (uint, uint)
 mod test {
     use hl::*;
     use vector::Vector;
-    use std::io;
+    use std::rt::io;
 
     macro_rules! expect (
         ($test: expr, $expected: expr) => ({
@@ -999,8 +998,8 @@ mod test {
         match prog.build(ctx.device) {
             Ok(()) => (),
             Err(build_log) => {
-                io::println("Error building program:\n");
-                io::println(build_log);
+                println!("Error building program:\n");
+                println!("{:s}", build_log);
                 fail!("");
             }
         }
