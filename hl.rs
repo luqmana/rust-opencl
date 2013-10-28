@@ -13,6 +13,7 @@ use std::rt::io::extensions::ReaderUtil;
 use std::mem;
 use std::cast;
 use std::ptr;
+use std::rc::Rc;
 
 struct Platform {
   id: cl_platform_id
@@ -247,9 +248,9 @@ struct Buffer
 impl Buffer
 {
 	#[fixed_stack_segment]
-	pub fn write<T>(&self, ctx: @ComputeContext, inVec: &[T]) {
+	pub fn write<T>(&self, ctx: Rc<ComputeContext>, inVec: &[T]) {
 		unsafe {
-			clEnqueueWriteBuffer(ctx.q.cqueue,
+			clEnqueueWriteBuffer(ctx.borrow().q.cqueue,
 				self.buffer,
 				CL_TRUE,
 				0,
@@ -261,9 +262,9 @@ impl Buffer
 		}
 	}
 	#[fixed_stack_segment]
-	pub unsafe fn read<T>(&self, ctx: @ComputeContext) -> ~[T] {
+	pub unsafe fn read<T>(&self, ctx: Rc<ComputeContext>) -> ~[T] {
 		let mut v: ~[T] = vec::with_capacity(self.size / mem::size_of::<T>());
-		clEnqueueReadBuffer(ctx.q.cqueue,
+		clEnqueueReadBuffer(ctx.borrow().q.cqueue,
 			self.buffer,
 			CL_TRUE,
 			0,
@@ -637,7 +638,7 @@ impl ComputeContext
 {
 	// TODO: How to make this function cleaner and nice
 	#[fixed_stack_segment] #[inline(never)]
-	pub fn create_buffer(@self, len: uint, flags: cl_mem_flags) -> Buffer
+	pub fn create_buffer(&self, len: uint, flags: cl_mem_flags) -> Buffer
 	{
    		unsafe
     	{
@@ -655,7 +656,7 @@ impl ComputeContext
 	}
 
     #[fixed_stack_segment] #[inline(never)]
-    pub fn create_program_from_source(@self, src: &str) -> Program
+    pub fn create_program_from_source(&self, src: &str) -> Program
     {
         unsafe
         {
@@ -675,7 +676,7 @@ impl ComputeContext
     }
 
     #[fixed_stack_segment] #[inline(never)]
-    pub fn create_program_from_binary(@self, bin: &str) -> Program {
+    pub fn create_program_from_binary(&self, bin: &str) -> Program {
         do bin.to_c_str().with_ref |src| {
             let status = CL_SUCCESS as cl_int;
             let len = bin.len() as libc::size_t;
@@ -729,7 +730,7 @@ impl ComputeContext
     }
 }
 
-pub fn create_compute_context() -> @ComputeContext {
+pub fn create_compute_context() -> Rc<ComputeContext> {
   // Enumerate all platforms until we find a device that works.
 
   let platforms = get_platforms();
@@ -744,19 +745,19 @@ pub fn create_compute_context() -> @ComputeContext {
       let ctx    = create_context(device);
       let q      = create_command_queue(&ctx, device);
 
-      return @ComputeContext
+      return Rc::new(ComputeContext
       {
         ctx:    ctx,
         device: device,
         q:      q
-      }
+      })
     }
   }
 
   fail!("No suitable device found")
 }
 
-pub fn create_compute_context_types(types: &[DeviceType]) -> @ComputeContext {
+pub fn create_compute_context_types(types: &[DeviceType]) -> Rc<ComputeContext> {
     // Enumerate all platforms until we find a device that works.
 
     let platforms = get_platforms();
@@ -767,11 +768,11 @@ pub fn create_compute_context_types(types: &[DeviceType]) -> @ComputeContext {
             let device = devices[0];
             let ctx = create_context(device);
             let q = create_command_queue(&ctx, device);
-            return @ComputeContext {
+            return Rc::new(ComputeContext {
                 ctx: ctx,
                 device: device,
                 q: q
-            }
+            })
         }
     }
 
@@ -824,7 +825,6 @@ impl KernelIndex for (uint, uint)
 mod test {
     use hl::*;
     use vector::Vector;
-    use std::rt::io;
 
     macro_rules! expect (
         ($test: expr, $expected: expr) => ({
@@ -844,8 +844,8 @@ mod test {
                    *i += 1; \
                    }";
         let ctx = create_compute_context();
-        let prog = ctx.create_program_from_source(src);
-        prog.build(ctx.device);
+        let prog = ctx.borrow().create_program_from_source(src);
+        prog.build(ctx.borrow().device);
     }
 
     #[test]
@@ -854,17 +854,17 @@ mod test {
                    *i += 1; \
                    }";
         let ctx = create_compute_context();
-        let prog = ctx.create_program_from_source(src);
-        prog.build(ctx.device);
-
+        let prog = ctx.borrow().create_program_from_source(src);
+        prog.build(ctx.borrow().device);
+        
         let k = prog.create_kernel("test");
-
-        let v = Vector::from_vec(ctx, [1]);
-
+        
+        let v = Vector::from_vec(&ctx, [1]);
+        
         k.set_arg(0, &v);
 
         enqueue_nd_range_kernel(
-            &ctx.q,
+            &ctx.borrow().q,
             &k,
             1, 0, 1, 1);
 
@@ -879,25 +879,25 @@ mod test {
                    *i += k; \
                    }";
         let ctx = create_compute_context();
-        let prog = ctx.create_program_from_source(src);
-        prog.build(ctx.device);
-
+        let prog = ctx.borrow().create_program_from_source(src);
+        prog.build(ctx.borrow().device);
+        
         let k = prog.create_kernel("test");
-
-        let v = Vector::from_vec(ctx, [1]);
-
+        
+        let v = Vector::from_vec(&ctx, [1]);
+        
         k.set_arg(0, &v);
         k.set_arg(1, &42);
 
         enqueue_nd_range_kernel(
-          &ctx.q,
-          &k,
-          1, 0, 1, 1);
-
+            &ctx.borrow().q,
+            &k,
+            1, 0, 1, 1);
+      
         let v = v.to_vec();
 
         expect!(v[0], 43);
-  }
+    }
 
     #[test]
     fn simple_kernel_index() {
@@ -905,16 +905,17 @@ mod test {
                    *i += 1; \
                    }";
         let ctx = create_compute_context();
-        let prog = ctx.create_program_from_source(src);
-        prog.build(ctx.device);
-
+        let prog = ctx.borrow().create_program_from_source(src);
+        prog.build(ctx.borrow().device);
+        
         let k = prog.create_kernel("test");
-
-        let v = Vector::from_vec(ctx, [1]);
-
+        
+        let v = Vector::from_vec(&ctx, [1]);
+      
         k.set_arg(0, &v);
 
-        ctx.enqueue_async_kernel(&k, 1, None, ()).wait();
+        ctx.borrow().enqueue_async_kernel(&k, 1, Some(1), ()).wait();
+      
         let v = v.to_vec();
 
         expect!(v[0], 2);
@@ -926,18 +927,18 @@ mod test {
                    *i += 1; \
                    }";
         let ctx = create_compute_context();
-        let prog = ctx.create_program_from_source(src);
-        prog.build(ctx.device);
-
+        let prog = ctx.borrow().create_program_from_source(src);
+        prog.build(ctx.borrow().device);
+        
         let k = prog.create_kernel("test");
-
-        let v = Vector::from_vec(ctx, [1]);
-
+        
+        let v = Vector::from_vec(&ctx, [1]);
+      
         k.set_arg(0, &v);
 
         let mut e : Option<Event> = None;
         for _ in range(0, 8) {
-            e = Some(ctx.enqueue_async_kernel(&k, 1, None, e));
+            e = Some(ctx.borrow().enqueue_async_kernel(&k, 1, Some(1), e));
         }
         e.wait();
 
@@ -955,29 +956,30 @@ mod test {
                    *c = *a + *b; \
                    }";
         let ctx = create_compute_context();
-        let prog = ctx.create_program_from_source(src);
-        prog.build(ctx.device);
-
+        let prog = ctx.borrow().create_program_from_source(src);
+        prog.build(ctx.borrow().device);
+        
         let k_incA = prog.create_kernel("inc");
         let k_incB = prog.create_kernel("inc");
         let k_add = prog.create_kernel("add");
-
-        let a = Vector::from_vec(ctx, [1]);
-        let b = Vector::from_vec(ctx, [1]);
-        let c = Vector::from_vec(ctx, [1]);
-
+        
+        let a = Vector::from_vec(&ctx, [1]);
+        let b = Vector::from_vec(&ctx, [1]);
+        let c = Vector::from_vec(&ctx, [1]);
+      
         k_incA.set_arg(0, &a);
         k_incB.set_arg(0, &b);
         let event_list = ~[
-            ctx.enqueue_async_kernel(&k_incA, 1, None, ()),
-            ctx.enqueue_async_kernel(&k_incB, 1, None, ()),
+            ctx.borrow().enqueue_async_kernel(&k_incA, 1, None, ()),
+            ctx.borrow().enqueue_async_kernel(&k_incB, 1, None, ()),
         ];
 
         k_add.set_arg(0, &a);
         k_add.set_arg(1, &b);
         k_add.set_arg(2, &c);
 
-        ctx.enqueue_async_kernel(&k_add, 1, None, &event_list).wait();
+        ctx.borrow().enqueue_async_kernel(&k_add, 1, None, &event_list).wait();
+
         let v = c.to_vec();
 
         expect!(v[0], 4);
@@ -993,9 +995,9 @@ mod test {
                    N[i * s + j] = i * j;
 }";
         let ctx = create_compute_context();
-        let prog = ctx.create_program_from_source(src);
-
-        match prog.build(ctx.device) {
+        let prog = ctx.borrow().create_program_from_source(src);
+        
+        match prog.build(ctx.borrow().device) {
             Ok(()) => (),
             Err(build_log) => {
                 println!("Error building program:\n");
@@ -1005,13 +1007,13 @@ mod test {
         }
 
         let k = prog.create_kernel("test");
-
-        let v = Vector::from_vec(ctx, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
-
+        
+        let v = Vector::from_vec(&ctx, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        
         k.set_arg(0, &v);
 
-        ctx.enqueue_async_kernel(&k, (3, 3), None, ()).wait();
-
+        ctx.borrow().enqueue_async_kernel(&k, (3, 3), None, ()).wait();
+        
         let v = v.to_vec();
 
         expect!(v, ~[0, 0, 0, 0, 1, 2, 0, 2, 4]);

@@ -9,11 +9,12 @@ use std::ptr;
 use std::vec;
 use std::cast;
 use std::unstable;
+use std::rc::Rc;
 
 struct Vector<T> {
     cl_buffer: cl_mem,
     size:      uint,
-    context:   @ComputeContext,
+    context:   Rc<ComputeContext>,
 }
 
 #[unsafe_destructor]
@@ -26,13 +27,13 @@ impl<T> Drop for Vector<T>
 
 impl<T> Vector<T> {
     #[fixed_stack_segment] #[inline(never)]
-    pub fn from_vec(ctx: @ComputeContext, v: &[T]) -> Vector<T> {
+    pub fn from_vec(ctx: &Rc<ComputeContext>, v: &[T]) -> Vector<T> {
         unsafe {
             do v.as_imm_buf |p, len| {
                 let status = 0;
                 let byte_size = (len * mem::size_of::<T>()) as libc::size_t;
 
-                let buf = clCreateBuffer(ctx.ctx.ctx,
+                let buf = clCreateBuffer(ctx.borrow().ctx.ctx,
                 CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                 byte_size,
                 p as *libc::c_void,
@@ -46,7 +47,7 @@ impl<T> Vector<T> {
                 Vector {
                     cl_buffer: buf,
                     size:      len,
-                    context:   ctx,
+                    context:   ctx.clone(),
                 }
             }
         }
@@ -64,7 +65,7 @@ impl<T> Vector<T> {
                 let byte_size = (len * mem::size_of::<T>()) as libc::size_t;
 
                 let status = clEnqueueWriteBuffer(
-                    self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0, byte_size, p as *libc::c_void,
+                    self.context.borrow().q.cqueue, self.cl_buffer, CL_TRUE, 0, byte_size, p as *libc::c_void,
                     0, ptr::null(), ptr::null());
 
                 check(status, "Could not write buffer");
@@ -93,7 +94,7 @@ impl<T> Vector<T> {
         unsafe {
             do out.as_imm_buf |p, len| {
                 clEnqueueReadBuffer(
-                    self.context.q.cqueue, self.cl_buffer, CL_TRUE, 0,
+                    self.context.borrow().q.cqueue, self.cl_buffer, CL_TRUE, 0,
                     (len * mem::size_of::<T>()) as libc::size_t,
                     p as *libc::c_void, 0, ptr::null(), ptr::null());
             }
@@ -116,7 +117,7 @@ struct CLBuffer {
 pub struct Unique<T> {
     cl_buffer: CLBuffer,
     size: uint,
-    context: @ComputeContext,
+    context: Rc<ComputeContext>,
 }
 
 impl Drop for CLBuffer {
@@ -130,7 +131,7 @@ impl Drop for CLBuffer {
 
 impl<T> Unique<T> {
     #[fixed_stack_segment] #[inline(never)]
-    pub fn from_vec(ctx: @ComputeContext, v: ~[T]) -> Unique<T> {
+    pub fn from_vec(ctx: &Rc<ComputeContext>, v: ~[T]) -> Unique<T> {
         unsafe
         {
             let byte_size
@@ -144,7 +145,7 @@ impl<T> Unique<T> {
             let addr: *libc::c_void = cast::transmute_copy(&v);
             
             let status = 0;
-            let buf = clCreateBuffer(ctx.ctx.ctx,
+            let buf = clCreateBuffer(ctx.borrow().ctx.ctx,
                                      CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
                                      byte_size,
                                      addr,
@@ -154,7 +155,7 @@ impl<T> Unique<T> {
             Unique {
                 cl_buffer: CLBuffer { cl_buffer: buf },
                 size: len,
-                context: ctx,
+                context: ctx.clone(),
             }
         }
     }
@@ -167,7 +168,7 @@ impl<T> Unique<T> {
             vec::raw::set_len(&mut result, self.size);
             do result.as_imm_buf |p, len| {
                 clEnqueueReadBuffer(
-                    self.context.q.cqueue, self.cl_buffer.cl_buffer, CL_TRUE,
+                    self.context.borrow().q.cqueue, self.cl_buffer.cl_buffer, CL_TRUE,
                     // Skip the header, we have a new one here.
                     (mem::size_of::<unstable::raw::Vec<T>>() - mem::size_of::<T>())  as libc::size_t,
                     (len * mem::size_of::<T>()) as libc::size_t,
@@ -209,7 +210,7 @@ mod test {
         let ctx = create_compute_context();
 
         let x = ~[1, 2, 3, 4, 5, 6];
-        let gx = Unique::from_vec(ctx, x.clone());
+        let gx = Unique::from_vec(&ctx, x.clone());
         let y = gx.to_vec();
         expect!(y, x);
     }
@@ -219,7 +220,7 @@ mod test {
       let ctx = create_compute_context();
 
       let x = ~[1, 2, 3, 4, 5];
-      let gx = Vector::from_vec(ctx, x);
+      let gx = Vector::from_vec(&ctx, x);
       let y = gx.to_vec();
       expect!(x, y);
   }
