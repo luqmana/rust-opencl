@@ -911,4 +911,74 @@ mod test {
         let output: ~[int] = queue.get(buffer, ());
         expect!(input, output);
     }
+
+    #[test]
+    fn memory_read_unique()
+    {
+        let input = Unique(~[0, 1, 2, 3, 4, 5, 6, 7]);
+        let (_, ctx, queue) = util::create_compute_context().unwrap();
+        let buffer = ctx.create_buffer_from(&input, CL_MEM_READ_WRITE);
+        let output: Unique<int> = queue.get(buffer, ());
+        expect!(input.unwrap(), output.unwrap());
+    }
+
+
+    #[test]
+    fn kernel_unique_size()
+    {
+        let src = " struct vec { \
+                        long fill; \
+                        long alloc; \
+                        long dat[]; \
+                    }; \
+                    __kernel void test(__global struct vec *v) { \
+                        int idx = get_global_id(0); \
+                        if (idx == 0) { \
+                            v->fill = v->alloc; \
+                        } \
+                        if (idx < v->alloc / sizeof(long int)) { \
+                            v->dat[idx] = idx*idx; \
+                        } \
+                    } \
+                    ";
+
+        let (device, ctx, queue) = util::create_compute_context().unwrap();
+        let prog = ctx.create_program_from_source(src);
+
+        match prog.build(&device) {
+            Ok(()) => (),
+            Err(build_log) => {
+                println!("Error building program:\n");
+                println!("{:s}", build_log);
+                fail!("");
+            }
+        }
+
+        let mut expect: ~[int] = ~[];
+        for i in range(0, 16) {
+            expect.push(i*i);
+        }
+
+        let mut input: ~[int] = ~[];
+        input.reserve(16);
+
+
+        let k = prog.create_kernel("test");
+        let v = ctx.create_buffer_from(&Unique(input), CL_MEM_READ_WRITE);
+        
+        let out_check: Unique<int> = queue.get(v, ());
+        let out_check = out_check.unwrap();
+
+        expect!(out_check.len(), 0);
+
+        k.set_arg(0, &v);
+
+        queue.enqueue_async_kernel(&k, 512, None, ()).wait();
+        
+        let out_check: Unique<int> = queue.get(v, ());
+        let out_check = out_check.unwrap();
+        
+        expect!(out_check, expect);
+
+    }
 }

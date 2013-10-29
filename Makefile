@@ -8,7 +8,8 @@ OPENCL_SRC = \
 	CL.rs \
 	error.rs \
 	hl.rs \
-	util.rs
+	util.rs \
+	mem.rs
 
 .PHONY: all
 all: libOpenCL opencl-test
