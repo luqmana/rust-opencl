@@ -10,6 +10,7 @@ use std::str;
 use std::mem;
 use std::cast;
 use std::ptr;
+use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 
 enum DeviceType {
       CPU, GPU
@@ -206,21 +207,23 @@ impl Context {
         }
     }
 
+
     #[fixed_stack_segment] #[inline(never)]
-    pub fn create_buffer_from_vec<T>(&self, vec: &[T]) -> CLBuffer<T>
+    pub fn create_buffer_from<T, IN: Put<T>>(&self, create: IN, flags: cl_mem_flags) -> CLBuffer<T>
     {
-        unsafe {
-            do vec.as_imm_buf |p, len| {
-                let status = 0;
-                let buf = clCreateBuffer(self.ctx,
-                                         CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                                         (len*mem::size_of::<T>()) as libc::size_t ,
-                                         p as *libc::c_void,
-                                         ptr::to_unsafe_ptr(&status));
-                check(status, "Could not allocate buffer");
-                CLBuffer{cl_buffer: buf}
-            }
+        do create.put |p, len| {
+            let status = 0;
+            let buf = unsafe {
+                clCreateBuffer(self.ctx,
+                               flags | CL_MEM_COPY_HOST_PTR,
+                               len,
+                               p,
+                               ptr::to_unsafe_ptr(&status))
+            };
+            check(status, "Could not allocate buffer");
+            CLBuffer{cl_buffer: buf}
         }
+
     }
 
     #[fixed_stack_segment] #[inline(never)]
@@ -293,53 +296,6 @@ impl Drop for Context
     }
 }
 
-trait Buffer<T> {
-    fn id(&self) -> cl_mem;
-
-    #[fixed_stack_segment] #[inline(never)]
-    fn byte_len(&self) -> libc::size_t 
-    {
-        unsafe {
-            let size : libc::size_t = 0;
-            let err = clGetMemObjectInfo(self.id(),
-                                         CL_MEM_SIZE,
-                                         mem::size_of::<libc::size_t>() as libc::size_t,
-                                         ptr::to_unsafe_ptr(&size) as *libc::c_void,
-                                         ptr::null());
-
-            check(err, "Failed to read memory size");
-            size
-        }
-    }
-
-    #[fixed_stack_segment] #[inline(never)]
-    fn len(&self) -> uint 
-    {
-        self.byte_len() as uint / mem::size_of::<T>()
-    }
-}
-
-pub struct CLBuffer<T> {
-    cl_buffer: cl_mem
-}
-
-#[unsafe_destructor]
-impl<T> Drop for CLBuffer<T> {
-    #[fixed_stack_segment] #[inline(never)]
-    fn drop(&mut self) {
-        unsafe {
-            clReleaseMemObject(self.cl_buffer);
-        }
-    }
-}
-
-impl<T> Buffer<T> for CLBuffer<T> {
-    fn id(&self) -> cl_mem 
-    {
-        self.cl_buffer
-    }
-}
-
 impl<T> KernelArg for CLBuffer<T> {
     fn get_value(&self) -> (libc::size_t, *libc::c_void)
     {
@@ -381,18 +337,31 @@ impl CommandQueue
         }
     }
 
-    pub fn read<T, B: Buffer<T>, E: EventList>(&self, mem: &B, event: E) -> ~[T]
+    #[fixed_stack_segment] #[inline(never)]
+    pub fn get<U, T: Get<U>, E: EventList>(&self, buf: &Buffer<U>, event: E) -> T
     {
-        let mut v: ~[T] = vec::with_capacity(mem.len());
-        unsafe {
-            vec::raw::set_len(&mut v, mem.len());
+        do event.as_event_list |evt, evt_len| {
+            let out : T = do Get::get(buf) |offset, ptr, len| {
+                unsafe {
+                    let err = clEnqueueReadBuffer(self.cqueue,
+                                                  buf.id(),
+                                                  CL_TRUE,
+                                                  offset,
+                                                  len,
+                                                  ptr,
+                                                  evt_len,
+                                                  evt,
+                                                  ptr::null());
+
+                    check(err, "Failed to read buffer");
+                }
+            };
+            out
         }
-        self.read_buffer(mem, 0, v, event);
-        v
     }
 
     #[fixed_stack_segment] #[inline(never)]
-    pub fn write_buffer<T, B: Buffer<T>, E: EventList>(&self, mem: &B, offset: uint, write: &[T], event: E)
+    pub fn write<T: Write, B: Buffer<T>, E: EventList>(&self, mem: &B, offset: uint, write: &[T], event: E)
     {
         unsafe {
             do event.as_event_list |evt, evt_len| {
@@ -414,7 +383,7 @@ impl CommandQueue
     }
 
     #[fixed_stack_segment] #[inline(never)]
-    pub fn read_buffer<T, B: Buffer<T>, E: EventList>(&self, mem: &B, offset: uint, read: &mut [T], event: E)
+    pub fn read<T: Read, B: Buffer<T>, E: EventList>(&self, mem: &B, offset: uint, read: &mut [T], event: E)
     {
         unsafe {
             do event.as_event_list |evt, evt_len| {
@@ -424,61 +393,13 @@ impl CommandQueue
                                                   CL_TRUE,
                                                   (offset * mem::size_of::<T>()) as libc::size_t,
                                                   (len * mem::size_of::<T>()) as libc::size_t,
-                                                  p as *libc::c_void,
+                                                  p as *mut libc::c_void,
                                                   evt_len,
                                                   evt,
                                                   ptr::null());
 
                     check(err, "Failed to read buffer");
                 }
-            }
-        }
-    }
-
-    // this is unsafe since freeing of write after enqueueing
-    // can cause undefined behavior
-    #[fixed_stack_segment] #[inline(never)]
-    pub unsafe fn write_buffer_async<T, B: Buffer<T>, E: EventList>(&self, mem: &B, offset: uint, write: &[T], event: E) -> Event
-    {
-        do event.as_event_list |evt, evt_len| {
-            do write.as_imm_buf |p, len| {
-                let e: cl_event = ptr::null();
-                let err = clEnqueueWriteBuffer(self.cqueue,
-                                               mem.id(),
-                                               CL_FALSE,
-                                               (offset * mem::size_of::<T>()) as libc::size_t,
-                                               (len * mem::size_of::<T>()) as libc::size_t,
-                                               p as *libc::c_void,
-                                               evt_len,
-                                               evt,
-                                               ptr::to_unsafe_ptr(&e));
-
-                check(err, "Failed to write buffer");
-                Event{event: e}
-            }
-        }
-    }
-
-    // this is unsafe since freeing of write after enqueueing
-    // can cause undefined behavior
-    #[fixed_stack_segment] #[inline(never)]
-    pub unsafe fn read_buffer_async<T, B: Buffer<T>, E: EventList>(&self, mem: &B, offset: uint, read: &mut [T], event: E) -> Event
-    {
-        do event.as_event_list |evt, evt_len| {
-            do read.as_imm_buf |p, len| {
-                let e: cl_event = ptr::null();
-                let err = clEnqueueReadBuffer(self.cqueue,
-                                              mem.id(),
-                                              CL_FALSE,
-                                              (offset * mem::size_of::<T>()) as libc::size_t,
-                                              (len * mem::size_of::<T>()) as libc::size_t,
-                                              p as *libc::c_void,
-                                              evt_len,
-                                              evt,
-                                              ptr::to_unsafe_ptr(&e));
-
-                check(err, "Failed to read buffer");
-                Event{event: e}
             }
         }
     }
@@ -758,6 +679,7 @@ impl KernelIndex for (uint, uint)
 mod test {
     use CL::*;
     use hl::*;
+    use mem::*;
     use util;
 
     macro_rules! expect (
@@ -792,13 +714,13 @@ mod test {
         prog.build(&device);
 
         let k = prog.create_kernel("test");
-        let v = ctx.create_buffer_from_vec([1]);
+        let v : CLBuffer<int> = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
         
         k.set_arg(0, &v);
 
         queue.enqueue_async_kernel(&k, 1, None, ()).wait();
 
-        let v = queue.read(&v, ());
+        let v: ~[int] = queue.get(&v as &Buffer<int>, ());
 
         expect!(v[0], 2);
     }
@@ -815,14 +737,14 @@ mod test {
 
         let k = prog.create_kernel("test");
         
-        let v = ctx.create_buffer_from_vec([1]);
+        let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
         
         k.set_arg(0, &v);
         k.set_arg(1, &42);
 
         queue.enqueue_async_kernel(&k, 1, None, ()).wait();
 
-        let v = queue.read(&v, ());
+        let v: ~[int] = queue.get(&v as &Buffer<int>, ());
 
         expect!(v[0], 43);
     }
@@ -839,13 +761,13 @@ mod test {
 
         let k = prog.create_kernel("test");
 
-        let v = ctx.create_buffer_from_vec([1]);
+        let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
       
         k.set_arg(0, &v);
 
         queue.enqueue_async_kernel(&k, 1, None, ()).wait();
       
-        let v = queue.read(&v, ());
+        let v: ~[int] = queue.get(&v as &Buffer<int>, ());
 
         expect!(v[0], 2);
     }
@@ -861,7 +783,7 @@ mod test {
         prog.build(&device);
 
         let k = prog.create_kernel("test");
-        let v = ctx.create_buffer_from_vec([1]);
+        let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
       
         k.set_arg(0, &v);
 
@@ -871,7 +793,7 @@ mod test {
         }
         e.wait();
       
-        let v = queue.read(&v, ());
+        let v: ~[int] = queue.get(&v as &Buffer<int>, ());
 
         expect!(v[0], 9);
     }
@@ -893,9 +815,9 @@ mod test {
         let k_incB = prog.create_kernel("inc");
         let k_add = prog.create_kernel("add");
         
-        let a = ctx.create_buffer_from_vec([1]);
-        let b = ctx.create_buffer_from_vec([1]);
-        let c = ctx.create_buffer_from_vec([1]);
+        let a = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
+        let b = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
+        let c = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
       
         k_incA.set_arg(0, &a);
         k_incB.set_arg(0, &b);
@@ -911,7 +833,7 @@ mod test {
 
         let event = queue.enqueue_async_kernel(&k_add, 1, None, event_list);
       
-        let v = queue.read(&c, event);
+        let v: ~[int] = queue.get(&c as &Buffer<int>, event);
 
         expect!(v[0], 4);
     }
@@ -939,13 +861,13 @@ mod test {
 
         let k = prog.create_kernel("test");
         
-        let v = ctx.create_buffer_from_vec([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        let v = ctx.create_buffer_from(&[1, 2, 3, 4, 5, 6, 7, 8, 9], CL_MEM_READ_ONLY);
         
         k.set_arg(0, &v);
 
         queue.enqueue_async_kernel(&k, (3, 3), None, ()).wait();
         
-        let v = queue.read(&v, ());
+        let v: ~[int] = queue.get(&v as &Buffer<int>, ());
         
         expect!(v, ~[0, 0, 0, 0, 1, 2, 0, 2, 4]);
     }
@@ -959,8 +881,8 @@ mod test {
         let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
         let mut output = ~[0, 0, 0, 0, 0, 0, 0, 0];
 
-        queue.write_buffer(&buffer, 0, input, ());
-        queue.read_buffer(&buffer, 0, output, ());
+        queue.write(&buffer, 0, input, ());
+        queue.read(&buffer, 0, output, ());
 
         expect!(input, output);
     }
@@ -968,10 +890,10 @@ mod test {
     #[test]
     fn memory_read_vec()
     {
-        let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
+        let input = &[0, 1, 2, 3, 4, 5, 6, 7];
         let (_, ctx, queue) = util::create_compute_context().unwrap();
-        let buffer : CLBuffer<int> = ctx.create_buffer_from_vec(input);
-        let output = queue.read(&buffer, ());
+        let buffer = ctx.create_buffer_from(input, CL_MEM_READ_WRITE);
+        let output: ~[int] = queue.get(&buffer as &Buffer<int>, ());
         expect!(input, output);
     }
 }
