@@ -9,7 +9,7 @@ use std::vec;
 use std::str;
 use std::rt::io;
 use std::rt::io::file;
-use std::rt::io::extensions::ReaderUtil;
+use std::rt::io::Reader;
 use std::mem;
 use std::cast;
 use std::ptr;
