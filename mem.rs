@@ -88,7 +88,7 @@ impl<T> Unique<T>
 }
 
 impl<'self, T> Put<Unique<T>> for &'self Unique<T> {
-    fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> ~Buffer<Unique<T>>) -> ~Buffer<Unique<T>>
+    fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> ~Buffer<Unique<T>>
     {
         unsafe {
             let byte_size
@@ -99,7 +99,10 @@ impl<'self, T> Put<Unique<T>> for &'self Unique<T> {
                     
             let addr: *c_void = cast::transmute_copy(self.as_mut_ref());
 
-            f(addr, byte_size)
+            let out: ~CLBuffer<Unique<T>> = ~CLBuffer{
+                cl_buffer: f(addr, byte_size)
+            };
+            out as ~Buffer<Unique<T>>
         }
     }
 }
@@ -174,7 +177,7 @@ impl<T> Read for Unique<T> {
  **/
 
 pub trait Put<T> {
-    fn put(&self, &fn(ptr: *c_void, size: size_t) -> ~Buffer<T>) -> ~Buffer<T>;
+    fn put(&self, &fn(ptr: *c_void, size: size_t) -> cl_mem) -> ~Buffer<T>;
 }
 
 pub trait Get<T> {
@@ -191,9 +194,12 @@ pub trait Read {
 
 impl<'self, T> Put<T> for &'self [T]
 {
-    fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> ~Buffer<T>) -> ~Buffer<T> {
+    fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> ~Buffer<T> {
         do self.as_imm_buf |p, len| {
-            f(p as *c_void, (len * mem::size_of::<T>()) as size_t)
+            let out: ~CLBuffer<T> = ~CLBuffer {
+                cl_buffer: f(p as *c_void, (len * mem::size_of::<T>()) as size_t)
+            };
+            out as ~Buffer<T>
         }
     }
 }
@@ -253,8 +259,11 @@ get_arg!(f64)
 macro_rules! put_arg (
     ($t:ty) => (impl Put<$t> for $t
         {
-            fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> ~Buffer<$t>) -> ~Buffer<$t> {
-                f(ptr::to_unsafe_ptr(self) as *c_void, mem::size_of::<$t>() as size_t)
+            fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> ~Buffer<$t> {
+                let out: ~CLBuffer<$t> = ~CLBuffer {
+                    cl_buffer: f(ptr::to_unsafe_ptr(self) as *c_void, mem::size_of::<$t>() as size_t)
+                };
+                out as ~Buffer<$t>
             }
         })
 )

@@ -222,8 +222,7 @@ impl Context {
                                ptr::to_unsafe_ptr(&status))
             };
             check(status, "Could not allocate buffer");
-            let out: ~CLBuffer<T> = ~CLBuffer{cl_buffer: buf};
-            out as ~Buffer<T>
+            buf
         }
 
     }
