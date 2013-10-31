@@ -4,8 +4,6 @@ use std::rt::io;
 use std::rt::io::file;
 use std::rt::io::Reader;
 use std::str;
-
-use OpenCL::hl::EventList;
 use OpenCL::mem::CLBuffer;
 
 fn main()
@@ -38,9 +36,9 @@ fn main()
     kernel.set_arg(1, &B);
     kernel.set_arg(2, &C);
 
-    queue.enqueue_async_kernel(&kernel, 8, None, ()).wait();
+    let event = queue.enqueue_async_kernel(&kernel, vec_a.len(), None, ());
 
-    let vec_c: ~[int] = queue.get(&C, ());
+    let vec_c: ~[int] = queue.get(&C, &event);
 
     println!("  {:?}", vec_a);
     println!("+ {:?}", vec_b);
