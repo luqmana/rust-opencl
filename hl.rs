@@ -351,7 +351,7 @@ impl CommandQueue
     }
 
     #[fixed_stack_segment] #[inline(never)]
-    pub fn get<T, B: Buffer<T>, G: Get<B, T>, E: EventList>(&self, buf: &B, event: E) -> G
+    pub fn get<T, U, B: Buffer<T>, G: Get<B, U>, E: EventList>(&self, buf: &B, event: E) -> G
     {
         do event.as_event_list |evt, evt_len| {
             do Get::get(buf) |offset, ptr, len| {
@@ -669,6 +669,15 @@ impl KernelIndex for (int, int) {
     }
 }
 
+impl KernelIndex for (int, int, int)
+{
+    fn num_dimensions(_: Option<(int, int, int)>) -> cl_uint { 3 }
+
+    fn get_ptr(&self) -> *libc::size_t {
+        ptr::to_unsafe_ptr(self) as *libc::size_t
+    }
+}
+
 impl KernelIndex for uint
 {
     fn num_dimensions(_: Option<uint>) -> cl_uint { 1 }
@@ -681,6 +690,15 @@ impl KernelIndex for uint
 impl KernelIndex for (uint, uint)
 {
     fn num_dimensions(_: Option<(uint, uint)>) -> cl_uint { 2 }
+
+    fn get_ptr(&self) -> *libc::size_t {
+        ptr::to_unsafe_ptr(self) as *libc::size_t
+    }
+}
+
+impl KernelIndex for (uint, uint, uint)
+{
+    fn num_dimensions(_: Option<(uint, uint, uint)>) -> cl_uint { 3 }
 
     fn get_ptr(&self) -> *libc::size_t {
         ptr::to_unsafe_ptr(self) as *libc::size_t
