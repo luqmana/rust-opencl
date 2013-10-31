@@ -37,7 +37,7 @@ fn main()
 	kernel.set_arg(1, &B);
 	kernel.set_arg(2, &C);
 
-	OpenCL::hl::enqueue_nd_range_kernel(&ctx.borrow().q, &kernel, 1, 0, 64, 64);
+	OpenCL::hl::enqueue_nd_range_kernel(&ctx.borrow().q, &kernel, 1, 0, [64], [64]);
 
 	let mut vec_c: ~[int];
 	unsafe {

@@ -533,16 +533,16 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
 
 #[fixed_stack_segment] #[inline(never)]
 pub fn enqueue_nd_range_kernel(cqueue: & CommandQueue, kernel: & Kernel, work_dim: cl_uint,
-                               _global_work_offset: int, global_work_size: int,
-                               local_work_size: int)
+                               _global_work_offset: int, global_work_size: &[int],
+                               local_work_size: &[int])
 {
   unsafe
     {
       let ret = clEnqueueNDRangeKernel(cqueue.cqueue, kernel.kernel, work_dim,
                                        // ptr::to_unsafe_ptr(&global_work_offset) as *libc::size_t,
                                        ptr::null(),
-                                       ptr::to_unsafe_ptr(&global_work_size) as *libc::size_t,
-                                       ptr::to_unsafe_ptr(&local_work_size) as *libc::size_t,
+                                       vec::raw::to_ptr(global_work_size) as *libc::size_t,
+                                       vec::raw::to_ptr(local_work_size) as *libc::size_t,
                                        0, ptr::null(), ptr::null());
       check(ret, "Failed to enqueue nd range kernel!");
   }
