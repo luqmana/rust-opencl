@@ -6,43 +6,43 @@ use std::rt::io::Reader;
 use std::str;
 
 use OpenCL::hl::EventList;
-use OpenCL::mem::Buffer;
+use OpenCL::mem::CLBuffer;
 
 fn main()
 {
-	let ker = file::open(&std::path::Path::new("./test.ocl"), io::Open, io::Read).read_to_end();
+    let ker = file::open(&std::path::Path::new("./test.ocl"), io::Open, io::Read).read_to_end();
     let ker = str::from_utf8(ker);
 
-	let vec_a: &[int] = &[0, 1, 2, -3, 4, 5, 6, 7];
-	let vec_b: &[int] = &[-7, -6, 5, -4, 0, -1, 2, 3];
+    let vec_a = &[0, 1, 2, -3, 4, 5, 6, 7];
+    let vec_b = &[-7, -6, 5, -4, 0, -1, 2, 3];
 
-	let (device, ctx, queue) = OpenCL::util::create_compute_context().unwrap();
+    let (device, ctx, queue) = OpenCL::util::create_compute_context().unwrap();
 
-	println!("{:?}", device.name());
+    println!("{:?}", device.name());
 
-	let A : ~Buffer<int> = ctx.create_buffer(vec_a.len(), OpenCL::CL::CL_MEM_READ_ONLY);
-	let B : ~Buffer<int> = ctx.create_buffer(vec_a.len(), OpenCL::CL::CL_MEM_READ_ONLY);
-	let C : ~Buffer<int> = ctx.create_buffer(vec_a.len(), OpenCL::CL::CL_MEM_WRITE_ONLY);
+    let A: CLBuffer<int> = ctx.create_buffer(vec_a.len(), OpenCL::CL::CL_MEM_READ_ONLY);
+    let B: CLBuffer<int> = ctx.create_buffer(vec_a.len(), OpenCL::CL::CL_MEM_READ_ONLY);
+    let C: CLBuffer<int> = ctx.create_buffer(vec_a.len(), OpenCL::CL::CL_MEM_WRITE_ONLY);
 
-	queue.write(A, &vec_a, ());
-	queue.write(A, &vec_a, ());
-	queue.write(B, &vec_b, ());
+    queue.write(&A, &vec_a, ());
+    queue.write(&B, &vec_b, ());
 
-	let program = ctx.create_program_from_source(ker);
+    let program = ctx.create_program_from_source(ker);
 
-	program.build(&device);
+    program.build(&device);
 
-	let kernel = program.create_kernel("vector_add");
 
-	kernel.set_arg(0, &A);
-	kernel.set_arg(1, &B);
-	kernel.set_arg(2, &C);
+    let kernel = program.create_kernel("vector_add");
 
-	queue.enqueue_async_kernel(&kernel, 8, None, ()).wait();
+    kernel.set_arg(0, &A);
+    kernel.set_arg(1, &B);
+    kernel.set_arg(2, &C);
 
-	let vec_c: ~[int] = queue.get(C, ());
+    queue.enqueue_async_kernel(&kernel, 8, None, ()).wait();
 
-	println!("	{:?}", vec_a);
-	println!("+	{:?}", vec_b);
-	println!("=	{:?}", vec_c);
+    let vec_c: ~[int] = queue.get(&C, ());
+
+    println!("  {:?}", vec_a);
+    println!("+ {:?}", vec_b);
+    println!("= {:?}", vec_c);
 }

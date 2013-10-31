@@ -10,6 +10,7 @@ use std::cast;
 use CL::*;
 use CL::ll::*;
 
+use hl::KernelArg;
 use error::check;
 
 pub trait Buffer<T> {
@@ -61,6 +62,16 @@ impl<T> Buffer<T> for CLBuffer<T> {
     }
 }
 
+impl<T> KernelArg for CLBuffer<T> {
+    fn get_value(&self) -> (size_t, *c_void)
+    {
+        unsafe {
+            (mem::size_of::<cl_mem>() as size_t,
+             self.id_ptr() as *c_void)
+        }
+    }
+} 
+
 pub struct Unique<T>(~[T]);
 
 impl<T> Unique<T>
@@ -87,8 +98,8 @@ impl<T> Unique<T>
     }
 }
 
-impl<'self, T> Put<Unique<T>> for &'self Unique<T> {
-    fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> ~Buffer<Unique<T>>
+impl<'self, T> Put<Unique<T>, CLBuffer<Unique<T>>> for &'self Unique<T> {
+    fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> CLBuffer<Unique<T>>
     {
         unsafe {
             let byte_size
@@ -99,16 +110,15 @@ impl<'self, T> Put<Unique<T>> for &'self Unique<T> {
                     
             let addr: *c_void = cast::transmute_copy(self.as_mut_ref());
 
-            let out: ~CLBuffer<Unique<T>> = ~CLBuffer{
+            CLBuffer{
                 cl_buffer: f(addr, byte_size)
-            };
-            out as ~Buffer<Unique<T>>
+            }
         }
     }
 }
 
-impl<T> Get<Unique<T>> for Unique<T> {
-    fn get(_: &Buffer<Unique<T>>, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> Unique<T>
+impl<T> Get<CLBuffer<Unique<T>>, Unique<T>> for Unique<T> {
+    fn get<>(_: &CLBuffer<Unique<T>>, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> Unique<T>
     {
         // read header first
         let mut fill: uint = 0;
@@ -176,12 +186,12 @@ impl<T> Read for Unique<T> {
  * | Read   | X              | X                | opencl -> rust |
  **/
 
-pub trait Put<T> {
-    fn put(&self, &fn(ptr: *c_void, size: size_t) -> cl_mem) -> ~Buffer<T>;
+pub trait Put<T, B> {
+    fn put(&self, &fn(ptr: *c_void, size: size_t) -> cl_mem) -> B;
 }
 
-pub trait Get<T> {
-    fn get(mem: &Buffer<T>, &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> Self;
+pub trait Get<B, T> {
+    fn get(mem: &B, &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> Self;
 }
 
 pub trait Write {
@@ -192,21 +202,22 @@ pub trait Read {
     fn read(&mut self, &fn(offset: size_t, ptr: *mut c_void, size: size_t));
 }
 
-impl<'self, T> Put<T> for &'self [T]
+impl<'self, T> Put<T, CLBuffer<T>> for &'self [T]
 {
-    fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> ~Buffer<T> {
+    fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> CLBuffer<T>
+    {
         do self.as_imm_buf |p, len| {
-            let out: ~CLBuffer<T> = ~CLBuffer {
+            CLBuffer {
                 cl_buffer: f(p as *c_void, (len * mem::size_of::<T>()) as size_t)
-            };
-            out as ~Buffer<T>
+            }
         }
     }
 }
 
-impl<T> Get<T> for ~[T]
+impl<T> Get<CLBuffer<T>, T> for ~[T]
 {
-    fn get(mem: &Buffer<T>, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> ~[T] {
+    fn get(mem: &CLBuffer<T>, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> ~[T]
+    {
         let mut v: ~[T] = vec::with_capacity(mem.len());
         unsafe {
             vec::raw::set_len(&mut v, mem.len());
@@ -220,7 +231,8 @@ impl<T> Get<T> for ~[T]
 
 impl<'self, T> Write for &'self [T]
 {
-    fn write(&self, f: &fn(offset: size_t, ptr: *c_void, size: size_t)) {
+    fn write(&self, f: &fn(offset: size_t, ptr: *c_void, size: size_t))
+    {
         do self.as_imm_buf |p, len| {
             f(0, p as *c_void, (len * mem::size_of::<T>()) as size_t)
         }
@@ -229,7 +241,8 @@ impl<'self, T> Write for &'self [T]
 
 impl<'self, T> Read for &'self mut [T]
 {
-    fn read(&mut self, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t)) {
+    fn read(&mut self, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t))
+    {
         do self.as_mut_buf |p, len| {
             f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t)
         }
@@ -237,9 +250,9 @@ impl<'self, T> Read for &'self mut [T]
 }
 
 macro_rules! get_arg (
-    ($t:ty) => (impl Get<$t> for $t
+    ($t:ty) => (impl Get<CLBuffer<$t>, $t> for $t
         {
-            fn get(_: &Buffer<$t>, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> $t {
+            fn get(_: &CLBuffer<$t>, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> $t {
                 let mut v = zero();
                 f(0, ptr::to_unsafe_ptr(&mut v) as *mut c_void, mem::size_of::<$t>() as size_t);
                 v
@@ -257,13 +270,12 @@ get_arg!(f32)
 get_arg!(f64)
 
 macro_rules! put_arg (
-    ($t:ty) => (impl Put<$t> for $t
+    ($t:ty) => (impl Put<$t, CLBuffer<$t>> for $t
         {
-            fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> ~Buffer<$t> {
-                let out: ~CLBuffer<$t> = ~CLBuffer {
+            fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> CLBuffer<$t> {
+                CLBuffer {
                     cl_buffer: f(ptr::to_unsafe_ptr(self) as *c_void, mem::size_of::<$t>() as size_t)
-                };
-                out as ~Buffer<$t>
+                }
             }
         })
 )
