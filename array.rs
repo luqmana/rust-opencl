@@ -297,7 +297,7 @@ mod test {
 
 
     #[test]
-    fn kerenl_2D()
+    fn kernel_2D()
     {
         let (device, ctx, queue) = create_compute_context().unwrap();
         let mut a = do Array2D::new(8, 8) |_, _| {(0) as i32};
@@ -375,7 +375,7 @@ mod test {
 
 
     #[test]
-    fn kerenl_3D()
+    fn kernel_3D()
     {
         let (device, ctx, queue) = create_compute_context().unwrap();
         let mut a = do Array3D::new(8, 8, 8) |_, _, _| {(0) as i32};
