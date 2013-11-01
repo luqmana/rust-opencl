@@ -214,6 +214,30 @@ impl<'self, T> Put<T, CLBuffer<T>> for &'self [T]
     }
 }
 
+impl<'self, T> Put<T, CLBuffer<T>> for &'self ~[T]
+{
+    fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> CLBuffer<T>
+    {
+        do self.as_imm_buf |p, len| {
+            CLBuffer {
+                cl_buffer: f(p as *c_void, (len * mem::size_of::<T>()) as size_t)
+            }
+        }
+    }
+}
+
+impl<T> Put<T, CLBuffer<T>> for ~[T]
+{
+    fn put(&self, f: &fn(ptr: *c_void, size: size_t) -> cl_mem) -> CLBuffer<T>
+    {
+        do self.as_imm_buf |p, len| {
+            CLBuffer {
+                cl_buffer: f(p as *c_void, (len * mem::size_of::<T>()) as size_t)
+            }
+        }
+    }
+}
+
 impl<T> Get<CLBuffer<T>, T> for ~[T]
 {
     fn get(mem: &CLBuffer<T>, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> ~[T]

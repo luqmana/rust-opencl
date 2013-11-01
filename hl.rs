@@ -927,6 +927,27 @@ mod test {
         expect!(input, output);
     }
 
+
+    #[test]
+    fn memory_read_owned()
+    {
+        let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
+        let (_, ctx, queue) = util::create_compute_context().unwrap();
+        let buffer = ctx.create_buffer_from(&input, CL_MEM_READ_WRITE);
+        let output: ~[int] = queue.get(&buffer, ());
+        expect!(input, output);
+    }
+
+    #[test]
+    fn memory_read_owned_clone()
+    {
+        let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
+        let (_, ctx, queue) = util::create_compute_context().unwrap();
+        let buffer = ctx.create_buffer_from(input.clone(), CL_MEM_READ_WRITE);
+        let output: ~[int] = queue.get(&buffer, ());
+        expect!(input, output);
+    }
+
     #[test]
     fn memory_read_unique()
     {
