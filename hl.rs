@@ -233,7 +233,9 @@ impl Context {
         {
             let errcode = 0;
             
-            let cqueue = clCreateCommandQueue(self.ctx, device.id, 0,
+            let cqueue = clCreateCommandQueue(self.ctx,
+                                              device.id,
+                                              CL_QUEUE_PROFILING_ENABLE,
                                               ptr::to_unsafe_ptr(&errcode));
             
             check(errcode, "Failed to create command queue!");
@@ -574,6 +576,44 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
 pub struct Event
 {
     event: cl_event,
+}
+
+impl Event {
+    #[fixed_stack_segment] #[inline(never)]
+    fn get_time(&self, param: cl_uint) -> u64
+    {
+        unsafe {
+            let time: cl_ulong = 0;
+            let ret = clGetEventProfilingInfo(self.event,
+                                    param, 
+                                    mem::size_of::<cl_ulong>() as libc::size_t,
+                                    ptr::to_unsafe_ptr(&time) as *libc::c_void,
+                                    ptr::null());
+
+            check(ret, "Failed to get profiling info");
+            time as u64
+        }
+    }
+
+    pub fn queue_time(&self) -> u64
+    {
+        self.get_time(CL_PROFILING_COMMAND_QUEUED)
+    }
+
+    pub fn submit_time(&self) -> u64
+    {
+        self.get_time(CL_PROFILING_COMMAND_SUBMIT)
+    }
+
+    pub fn start_time(&self) -> u64
+    {
+        self.get_time(CL_PROFILING_COMMAND_START)
+    }
+
+    pub fn end_time(&self) -> u64
+    {
+        self.get_time(CL_PROFILING_COMMAND_END)
+    }
 }
 
 impl Drop for Event
@@ -1027,4 +1067,31 @@ mod test {
             expect!(expect, out_check);
         }
     }
+
+    #[test]
+    fn event_get_times() {
+        let src = "__kernel void test(__global int *i) { \
+                   *i += 1; \
+                   }";
+
+        let (device, ctx, queue) = util::create_compute_context().unwrap();
+        let prog = ctx.create_program_from_source(src);
+        prog.build(&device);
+
+        let k = prog.create_kernel("test");
+        let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
+      
+        k.set_arg(0, &v);
+
+        let e = queue.enqueue_async_kernel(&k, 1, None, ());
+        e.wait();
+
+        // the that are returned are not useful for unit test, this test
+        // is mostly testing that opencl returns no error
+        e.queue_time();
+        e.submit_time();
+        e.start_time();
+        e.end_time();
+    }
+
 }
