@@ -187,7 +187,7 @@ impl Device {
     }
 }
 
-struct Context {
+pub struct Context {
     ctx: cl_context,
 }
 
