@@ -17,3 +17,18 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), ~str>
 
     Ok((devices[0], context, queue))
 }
+
+
+#[cfg(test)]
+pub fn test_all_platforms_devices(test: &fn(Device, Context, CommandQueue))
+{
+    let platforms = get_platforms();
+    for p in platforms.iter() {
+        let devices = p.get_devices();
+        for d in devices.iter() {
+            let context = d.create_context();
+            let queue = context.create_command_queue(d);
+            test(*d, context, queue);
+        }
+    }
+}

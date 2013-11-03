@@ -242,7 +242,7 @@ impl<T> KernelArg for Array2D_cl<T> {
 
 #[cfg(test)]
 mod test {
-    use util::create_compute_context;
+    use util;
     use array::*;
     use CL::CL_MEM_READ_WRITE;
 
@@ -261,14 +261,15 @@ mod test {
     #[test]
     fn put_get_2D()
     {
-        let (_, ctx, queue) = create_compute_context().unwrap();
-        let arr_in = do Array2D::new(8, 8) |x, y| {(x+y) as int};
-        let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
-        let arr_out: Array2D<int> = queue.get(&arr_cl, ());
+        do util::test_all_platforms_devices |_, ctx, queue| {
+            let arr_in = do Array2D::new(8, 8) |x, y| {(x+y) as int};
+            let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
+            let arr_out: Array2D<int> = queue.get(&arr_cl, ());
 
-        for x in range(0u, 8u) {
-            for y in range(0u, 8u) {
-                expect!(arr_in.get(x, y), arr_out.get(x, y));
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    expect!(arr_in.get(x, y), arr_out.get(x, y));
+                }
             }
         }
     }
@@ -277,20 +278,21 @@ mod test {
     #[test]
     fn read_write_2D()
     {
-        let (_, ctx, queue) = create_compute_context().unwrap();
-        let added = do Array2D::new(8, 8) |x, y| {(x+y) as int};
-        let zero = do Array2D::new(8, 8) |_, _| {(0) as int};
-        let mut out = do Array2D::new(8, 8) |_, _| {(0) as int};
+        do util::test_all_platforms_devices |_, ctx, queue| {
+            let added = do Array2D::new(8, 8) |x, y| {(x+y) as int};
+            let zero = do Array2D::new(8, 8) |_, _| {(0) as int};
+            let mut out = do Array2D::new(8, 8) |_, _| {(0) as int};
 
-        /* both are zeroed */
-        let a_cl = ctx.create_buffer_from(&zero, CL_MEM_READ_WRITE);
+            /* both are zeroed */
+            let a_cl = ctx.create_buffer_from(&zero, CL_MEM_READ_WRITE);
 
-        queue.write(&a_cl, &added, ());
-        queue.read(&a_cl, &mut out, ());
+            queue.write(&a_cl, &added, ());
+            queue.read(&a_cl, &mut out, ());
 
-        for x in range(0u, 8u) {
-            for y in range(0u, 8u) {
-                expect!(added.get(x, y), out.get(x, y));
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    expect!(added.get(x, y), out.get(x, y));
+                }
             }
         }
     }
@@ -299,35 +301,36 @@ mod test {
     #[test]
     fn kernel_2D()
     {
-        let (device, ctx, queue) = create_compute_context().unwrap();
-        let mut a = do Array2D::new(8, 8) |_, _| {(0) as i32};
-        let b = do Array2D::new(8, 8) |x, y| {(x*y) as i32};
-        let a_cl = ctx.create_buffer_from(&a, CL_MEM_READ_WRITE);
+        do util::test_all_platforms_devices |device, ctx, queue| {
+            let mut a = do Array2D::new(8, 8) |_, _| {(0) as i32};
+            let b = do Array2D::new(8, 8) |x, y| {(x*y) as i32};
+            let a_cl = ctx.create_buffer_from(&a, CL_MEM_READ_WRITE);
 
-        let src =  "__kernel void test(__global int *a) { \
-                        int x = get_global_id(0); \
-                        int y = get_global_id(1); \
-                        int size_x = get_global_size(0); \
-                        a[size_x*y + x] = x*y; \
-                    }";
-        let prog = ctx.create_program_from_source(src);
-        match prog.build(&device) {
-            Ok(()) => (),
-            Err(build_log) => {
-                println!("Error building program:\n");
-                println!("{:s}", build_log);
-                fail!("");
+            let src =  "__kernel void test(__global int *a) { \
+                            int x = get_global_id(0); \
+                            int y = get_global_id(1); \
+                            int size_x = get_global_size(0); \
+                            a[size_x*y + x] = x*y; \
+                        }";
+            let prog = ctx.create_program_from_source(src);
+            match prog.build(&device) {
+                Ok(()) => (),
+                Err(build_log) => {
+                    println!("Error building program:\n");
+                    println!("{:s}", build_log);
+                    fail!("");
+                }
             }
-        }
-        let k = prog.create_kernel("test");
+            let k = prog.create_kernel("test");
 
-        k.set_arg(0, &a_cl);
-        let event = queue.enqueue_async_kernel(&k, (8, 8), None, ());
-        queue.read(&a_cl, &mut a, &event);
+            k.set_arg(0, &a_cl);
+            let event = queue.enqueue_async_kernel(&k, (8, 8), None, ());
+            queue.read(&a_cl, &mut a, &event);
 
-        for x in range(0u, 8u) {
-            for y in range(0u, 8u) {
-                expect!(a.get(x, y), b.get(x, y));
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    expect!(a.get(x, y), b.get(x, y));
+                }
             }
         }
     }
@@ -335,15 +338,16 @@ mod test {
     #[test]
     fn put_get_3D()
     {
-        let (_, ctx, queue) = create_compute_context().unwrap();
-        let arr_in = do Array3D::new(8, 8, 8) |x, y, z| {(x+y+z) as int};
-        let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
-        let arr_out: Array3D<int> = queue.get(&arr_cl, ());
+        do util::test_all_platforms_devices |_, ctx, queue| {
+            let arr_in = do Array3D::new(8, 8, 8) |x, y, z| {(x+y+z) as int};
+            let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
+            let arr_out: Array3D<int> = queue.get(&arr_cl, ());
 
-        for x in range(0u, 8u) {
-            for y in range(0u, 8u) {
-                for z in range(0u, 8u) {
-                    expect!(arr_in.get(x, y, z), arr_out.get(x, y, z));
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    for z in range(0u, 8u) {
+                        expect!(arr_in.get(x, y, z), arr_out.get(x, y, z));
+                    }
                 }
             }
         }
@@ -353,21 +357,22 @@ mod test {
     #[test]
     fn read_write_3D()
     {
-        let (_, ctx, queue) = create_compute_context().unwrap();
-        let added = do Array3D::new(8, 8, 8) |x, y, z| {(x+y+z) as int};
-        let zero = do Array3D::new(8, 8, 8) |_, _, _| {(0) as int};
-        let mut out = do Array3D::new(8, 8, 8) |_, _, _| {(0) as int};
+        do util::test_all_platforms_devices |_, ctx, queue| {
+            let added = do Array3D::new(8, 8, 8) |x, y, z| {(x+y+z) as int};
+            let zero = do Array3D::new(8, 8, 8) |_, _, _| {(0) as int};
+            let mut out = do Array3D::new(8, 8, 8) |_, _, _| {(0) as int};
 
-        /* both are zeroed */
-        let a_cl = ctx.create_buffer_from(&zero, CL_MEM_READ_WRITE);
+            /* both are zeroed */
+            let a_cl = ctx.create_buffer_from(&zero, CL_MEM_READ_WRITE);
 
-        queue.write(&a_cl, &added, ());
-        queue.read(&a_cl, &mut out, ());
+            queue.write(&a_cl, &added, ());
+            queue.read(&a_cl, &mut out, ());
 
-        for x in range(0u, 8u) {
-            for y in range(0u, 8u) {
-                for z in range(0u, 8u) {
-                    expect!(added.get(x, y, z), out.get(x, y, z));
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    for z in range(0u, 8u) {
+                        expect!(added.get(x, y, z), out.get(x, y, z));
+                    }
                 }
             }
         }
@@ -377,38 +382,39 @@ mod test {
     #[test]
     fn kernel_3D()
     {
-        let (device, ctx, queue) = create_compute_context().unwrap();
-        let mut a = do Array3D::new(8, 8, 8) |_, _, _| {(0) as i32};
-        let b = do Array3D::new(8, 8, 8) |x, y, z| {(x*y*z) as i32};
-        let a_cl = ctx.create_buffer_from(&a, CL_MEM_READ_WRITE);
+        do util::test_all_platforms_devices |device, ctx, queue| {
+            let mut a = do Array3D::new(8, 8, 8) |_, _, _| {(0) as i32};
+            let b = do Array3D::new(8, 8, 8) |x, y, z| {(x*y*z) as i32};
+            let a_cl = ctx.create_buffer_from(&a, CL_MEM_READ_WRITE);
 
-        let src =  "__kernel void test(__global int *a) { \
-                        int x = get_global_id(0); \
-                        int y = get_global_id(1); \
-                        int z = get_global_id(2); \
-                        int size_x = get_global_size(0); \
-                        int size_y = get_global_size(1); \
-                        a[size_x*size_y*z + size_x*y + x] = x*y*z; \
-                    }";
-        let prog = ctx.create_program_from_source(src);
-        match prog.build(&device) {
-            Ok(()) => (),
-            Err(build_log) => {
-                println!("Error building program:\n");
-                println!("{:s}", build_log);
-                fail!("");
+            let src =  "__kernel void test(__global int *a) { \
+                            int x = get_global_id(0); \
+                            int y = get_global_id(1); \
+                            int z = get_global_id(2); \
+                            int size_x = get_global_size(0); \
+                            int size_y = get_global_size(1); \
+                            a[size_x*size_y*z + size_x*y + x] = x*y*z; \
+                        }";
+            let prog = ctx.create_program_from_source(src);
+            match prog.build(&device) {
+                Ok(()) => (),
+                Err(build_log) => {
+                    println!("Error building program:\n");
+                    println!("{:s}", build_log);
+                    fail!("");
+                }
             }
-        }
-        let k = prog.create_kernel("test");
+            let k = prog.create_kernel("test");
 
-        k.set_arg(0, &a_cl);
-        let event = queue.enqueue_async_kernel(&k, (8, 8, 8), None, ());
-        queue.read(&a_cl, &mut a, &event);
+            k.set_arg(0, &a_cl);
+            let event = queue.enqueue_async_kernel(&k, (8, 8, 8), None, ());
+            queue.read(&a_cl, &mut a, &event);
 
-        for x in range(0u, 8u) {
-            for y in range(0u, 8u) {
-                for z in range(0u, 8u) {
-                    expect!(a.get(x, y, z), b.get(x, y, z));
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    for z in range(0u, 8u) {
+                        expect!(a.get(x, y, z), b.get(x, y, z));
+                    }
                 }
             }
         }

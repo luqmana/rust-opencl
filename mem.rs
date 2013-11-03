@@ -107,7 +107,7 @@ impl<'self, T> Put<Unique<T>, CLBuffer<Unique<T>>> for &'self Unique<T> {
                 - mem::size_of::<T>() 
                 + self.capacity() * mem::size_of::<T>();
             let byte_size = byte_size as size_t;
-                    
+            
             let addr: *c_void = cast::transmute_copy(self.as_mut_ref());
 
             CLBuffer{
@@ -118,7 +118,7 @@ impl<'self, T> Put<Unique<T>, CLBuffer<Unique<T>>> for &'self Unique<T> {
 }
 
 impl<T> Get<CLBuffer<Unique<T>>, Unique<T>> for Unique<T> {
-    fn get<>(_: &CLBuffer<Unique<T>>, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> Unique<T>
+    fn get(_: &CLBuffer<Unique<T>>, f: &fn(offset: size_t, ptr: *mut c_void, size: size_t)) -> Unique<T>
     {
         // read header first
         let mut fill: uint = 0;
@@ -131,8 +131,10 @@ impl<T> Get<CLBuffer<Unique<T>>, Unique<T>> for Unique<T> {
             vec::raw::set_len(&mut result, fill);
 
             let header_offset = mem::size_of::<unstable::raw::Vec<T>>() - mem::size_of::<T>();
-            do result.as_imm_buf |p, len| {
-                f(header_offset as size_t, p as *mut c_void, (len * mem::size_of::<T>()) as size_t);
+            do result.as_mut_buf |p, len| {
+                if len != 0 {
+                    f(header_offset as size_t, p as *mut c_void, (len * mem::size_of::<T>()) as size_t);
+                }
             }
             Unique(result)
         }
