@@ -21,4 +21,6 @@ extern { }
 pub mod CL;
 pub mod error;
 pub mod hl;
-pub mod vector;
+pub mod util;
+pub mod mem;
+pub mod array;

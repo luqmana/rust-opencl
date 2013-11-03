@@ -657,7 +657,7 @@ pub mod ll {
                            blocking_read: cl_bool,
                            offset: libc::size_t,
                            cb: libc::size_t,
-                           ptr: *libc::c_void,
+                           ptr: *mut libc::c_void,
                            num_events_in_wait_list: cl_uint,
                            event_wait_list: *cl_event,
                            event: *cl_event) -> cl_int;
