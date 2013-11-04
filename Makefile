@@ -3,6 +3,10 @@ ifndef RUSTC
 	RUSTC = rustc
 endif
 
+ifndef RUSTPKG
+	RUSTPKG = rustpkg
+endif
+
 OPENCL_SRC = \
 	lib.rs \
 	CL.rs \
@@ -16,13 +20,9 @@ OPENCL_SRC = \
 all: libOpenCL opencl-test
 
 .PHONY: libOpenCL
-libOpenCL : $(OPENCL_SRC)
-	$(RUSTC) -O --lib lib.rs
+libOpenCL :
+	$(RUSTPKG) build OpenCL
 
 .PHONY: check
-check: opencl-test
-	RUST_THREADS=1 ./opencl-test
-
-opencl-test : libOpenCL test.rs
-	$(RUSTC) -L . test.rs
-	$(RUSTC) -O --test --cfg test lib.rs -o opencl-test
+check:
+	RUST_THREADS=1 $(RUSTPKG) test OpenCL

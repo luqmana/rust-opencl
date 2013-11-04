@@ -18,8 +18,6 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), ~str>
     Ok((devices[0], context, queue))
 }
 
-
-#[cfg(test)]
 pub fn test_all_platforms_devices(test: &fn(Device, Context, CommandQueue))
 {
     let platforms = get_platforms();
