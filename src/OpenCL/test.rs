@@ -4,6 +4,8 @@
 extern mod std;
 extern mod OpenCL;
 
+use OpenCL::hl::*;
+
 macro_rules! expect (
     ($test: expr, $expected: expr) => ({
             let test     = $test;
@@ -15,6 +17,20 @@ macro_rules! expect (
             }
         })
         )
+
+
+pub fn test_all_platforms_devices(test: &fn(Device, Context, CommandQueue))
+{
+    let platforms = get_platforms();
+    for p in platforms.iter() {
+        let devices = p.get_devices();
+        for d in devices.iter() {
+            let context = d.create_context();
+            let queue = context.create_command_queue(d);
+            test(*d, context, queue);
+        }
+    }
+}
 
 #[cfg(disable)]
 mod mem {
@@ -122,7 +138,6 @@ mod hl {
     use OpenCL::CL::*;
     use OpenCL::hl::*;
     use OpenCL::mem::*;
-    use OpenCL::util;
 
     macro_rules! expect (
         ($test: expr, $expected: expr) => ({
@@ -141,7 +156,7 @@ mod hl {
         let src = "__kernel void test(__global int *i) { \
                    *i += 1; \
                    }";
-        do util::test_all_platforms_devices |device, ctx, _| {
+        do ::test_all_platforms_devices |device, ctx, _| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);            
         }
@@ -152,7 +167,7 @@ mod hl {
         let src = "__kernel void test(__global int *i) { \
                    *i += 1; \
                    }";
-        do util::test_all_platforms_devices |device, ctx, queue| {
+        do ::test_all_platforms_devices |device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);
 
@@ -175,7 +190,7 @@ mod hl {
                    *i += k; \
                    }";
 
-        do util::test_all_platforms_devices |device, ctx, queue| {
+        do ::test_all_platforms_devices |device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);
 
@@ -200,7 +215,7 @@ mod hl {
                    *i += 1; \
                    }";
 
-        do util::test_all_platforms_devices |device, ctx, queue| {
+        do ::test_all_platforms_devices |device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);
 
@@ -224,7 +239,7 @@ mod hl {
                    *i += 1; \
                    }";
 
-        do util::test_all_platforms_devices |device, ctx, queue| {
+        do ::test_all_platforms_devices |device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);
 
@@ -254,7 +269,7 @@ mod hl {
                    *c = *a + *b; \
                    }";
 
-        do util::test_all_platforms_devices |device, ctx, queue| {
+        do ::test_all_platforms_devices |device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);
 
@@ -295,7 +310,7 @@ mod hl {
                    int s = get_global_size(0); \
                    N[i * s + j] = i * j;
 }";
-        do util::test_all_platforms_devices |device, ctx, queue| {
+        do ::test_all_platforms_devices |device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
 
             match prog.build(&device) {
@@ -324,7 +339,7 @@ mod hl {
     #[test]
     fn memory_read_write()
     {
-        do util::test_all_platforms_devices |_, ctx, queue| {
+        do ::test_all_platforms_devices |_, ctx, queue| {
             let buffer: CLBuffer<int> = ctx.create_buffer(8, CL_MEM_READ_ONLY);
 
             let input = &[0, 1, 2, 3, 4, 5, 6, 7];
@@ -340,7 +355,7 @@ mod hl {
     #[test]
     fn memory_read_vec()
     {
-        do util::test_all_platforms_devices |_, ctx, queue| {
+        do ::test_all_platforms_devices |_, ctx, queue| {
             let input = &[0, 1, 2, 3, 4, 5, 6, 7];
             let buffer = ctx.create_buffer_from(input, CL_MEM_READ_WRITE);
             let output: ~[int] = queue.get(&buffer, ());
@@ -352,7 +367,7 @@ mod hl {
     #[test]
     fn memory_read_owned()
     {
-        do util::test_all_platforms_devices |_, ctx, queue| {
+        do ::test_all_platforms_devices |_, ctx, queue| {
             let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
             let buffer = ctx.create_buffer_from(&input, CL_MEM_READ_WRITE);
             let output: ~[int] = queue.get(&buffer, ());
@@ -363,7 +378,7 @@ mod hl {
     #[test]
     fn memory_read_owned_clone()
     {
-        do util::test_all_platforms_devices |_, ctx, queue| {
+        do ::test_all_platforms_devices |_, ctx, queue| {
             let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
             let buffer = ctx.create_buffer_from(input.clone(), CL_MEM_READ_WRITE);
             let output: ~[int] = queue.get(&buffer, ());
@@ -375,7 +390,7 @@ mod hl {
     #[cfg(disable)]
     fn memory_read_unique()
     {
-        do util::test_all_platforms_devices |_, ctx, queue| {
+        do ::test_all_platforms_devices |_, ctx, queue| {
             let input = Unique(~[0, 1, 2, 3, 4, 5, 6, 7]);
             let buffer = ctx.create_buffer_from(&input, CL_MEM_READ_WRITE);
             let output: Unique<int> = queue.get(&buffer, ());
@@ -403,7 +418,7 @@ mod hl {
                     } \
                     ";
 
-        do util::test_all_platforms_devices |device, ctx, queue| {
+        do ::test_all_platforms_devices |device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
 
             match prog.build(&device) {
@@ -440,5 +455,203 @@ mod hl {
 
             expect!(expect, out_check);
         }
+    }
+}
+
+#[cfg(test)]
+mod array {
+    use OpenCL::array::*;
+    use OpenCL::CL::CL_MEM_READ_WRITE;
+
+    macro_rules! expect (
+        ($test: expr, $expected: expr) => ({
+            let test     = $test;
+            let expected = $expected;
+            if test != expected {
+                fail!(format!("Test failure in {:s}: expected {:?}, got {:?}",
+                           stringify!($test),
+                           expected, test))
+            }
+        })
+    )
+
+    #[test]
+    fn put_get_2D()
+    {
+        do ::test_all_platforms_devices |_, ctx, queue| {
+            let arr_in = do Array2D::new(8, 8) |x, y| {(x+y) as int};
+            let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
+            let arr_out: Array2D<int> = queue.get(&arr_cl, ());
+
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    expect!(arr_in.get(x, y), arr_out.get(x, y));
+                }
+            }
+        }
+    }
+
+
+    #[test]
+    fn read_write_2D()
+    {
+        do ::test_all_platforms_devices |_, ctx, queue| {
+            let added = do Array2D::new(8, 8) |x, y| {(x+y) as int};
+            let zero = do Array2D::new(8, 8) |_, _| {(0) as int};
+            let mut out = do Array2D::new(8, 8) |_, _| {(0) as int};
+
+            /* both are zeroed */
+            let a_cl = ctx.create_buffer_from(&zero, CL_MEM_READ_WRITE);
+
+            queue.write(&a_cl, &added, ());
+            queue.read(&a_cl, &mut out, ());
+
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    expect!(added.get(x, y), out.get(x, y));
+                }
+            }
+        }
+    }
+
+
+    #[test]
+    fn kernel_2D()
+    {
+        do ::test_all_platforms_devices |device, ctx, queue| {
+            let mut a = do Array2D::new(8, 8) |_, _| {(0) as i32};
+            let b = do Array2D::new(8, 8) |x, y| {(x*y) as i32};
+            let a_cl = ctx.create_buffer_from(&a, CL_MEM_READ_WRITE);
+
+            let src =  "__kernel void test(__global int *a) { \
+                            int x = get_global_id(0); \
+                            int y = get_global_id(1); \
+                            int size_x = get_global_size(0); \
+                            a[size_x*y + x] = x*y; \
+                        }";
+            let prog = ctx.create_program_from_source(src);
+            match prog.build(&device) {
+                Ok(()) => (),
+                Err(build_log) => {
+                    println!("Error building program:\n");
+                    println!("{:s}", build_log);
+                    fail!("");
+                }
+            }
+            let k = prog.create_kernel("test");
+
+            k.set_arg(0, &a_cl);
+            let event = queue.enqueue_async_kernel(&k, (8, 8), None, ());
+            queue.read(&a_cl, &mut a, &event);
+
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    expect!(a.get(x, y), b.get(x, y));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn put_get_3D()
+    {
+        do ::test_all_platforms_devices |_, ctx, queue| {
+            let arr_in = do Array3D::new(8, 8, 8) |x, y, z| {(x+y+z) as int};
+            let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
+            let arr_out: Array3D<int> = queue.get(&arr_cl, ());
+
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    for z in range(0u, 8u) {
+                        expect!(arr_in.get(x, y, z), arr_out.get(x, y, z));
+                    }
+                }
+            }
+        }
+    }
+
+
+    #[test]
+    fn read_write_3D()
+    {
+        do ::test_all_platforms_devices |_, ctx, queue| {
+            let added = do Array3D::new(8, 8, 8) |x, y, z| {(x+y+z) as int};
+            let zero = do Array3D::new(8, 8, 8) |_, _, _| {(0) as int};
+            let mut out = do Array3D::new(8, 8, 8) |_, _, _| {(0) as int};
+
+            /* both are zeroed */
+            let a_cl = ctx.create_buffer_from(&zero, CL_MEM_READ_WRITE);
+
+            queue.write(&a_cl, &added, ());
+            queue.read(&a_cl, &mut out, ());
+
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    for z in range(0u, 8u) {
+                        expect!(added.get(x, y, z), out.get(x, y, z));
+                    }
+                }
+            }
+        }
+    }
+
+
+    #[test]
+    fn kernel_3D()
+    {
+        do ::test_all_platforms_devices |device, ctx, queue| {
+            let mut a = do Array3D::new(8, 8, 8) |_, _, _| {(0) as i32};
+            let b = do Array3D::new(8, 8, 8) |x, y, z| {(x*y*z) as i32};
+            let a_cl = ctx.create_buffer_from(&a, CL_MEM_READ_WRITE);
+
+            let src =  "__kernel void test(__global int *a) { \
+                            int x = get_global_id(0); \
+                            int y = get_global_id(1); \
+                            int z = get_global_id(2); \
+                            int size_x = get_global_size(0); \
+                            int size_y = get_global_size(1); \
+                            a[size_x*size_y*z + size_x*y + x] = x*y*z; \
+                        }";
+            let prog = ctx.create_program_from_source(src);
+            match prog.build(&device) {
+                Ok(()) => (),
+                Err(build_log) => {
+                    println!("Error building program:\n");
+                    println!("{:s}", build_log);
+                    fail!("");
+                }
+            }
+            let k = prog.create_kernel("test");
+
+            k.set_arg(0, &a_cl);
+            let event = queue.enqueue_async_kernel(&k, (8, 8, 8), None, ());
+            queue.read(&a_cl, &mut a, &event);
+
+            for x in range(0u, 8u) {
+                for y in range(0u, 8u) {
+                    for z in range(0u, 8u) {
+                        expect!(a.get(x, y, z), b.get(x, y, z));
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod error {
+    use OpenCL::CL::*;
+    use OpenCL::error::*;
+
+    #[test]
+    fn test_convert() {
+        expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),
+                CL_INVALID_GLOBAL_OFFSET)
+    }
+    
+    #[test]
+    fn convert_to_str() {
+        expect!(convert(CL_INVALID_BUFFER_SIZE as cl_int).to_str(),
+                ~"CL_INVALID_BUFFER_SIZE");
     }
 }

@@ -117,7 +117,7 @@ pub fn get_platforms() -> ~[Platform]
     }
 }
 
-struct Device {
+pub struct Device {
     id: cl_device_id
 }
 
