@@ -32,7 +32,6 @@ pub fn test_all_platforms_devices(test: &fn(Device, Context, CommandQueue))
     }
 }
 
-#[cfg(disable)]
 mod mem {
     use std::vec;
     use std::cast;
