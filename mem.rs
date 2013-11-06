@@ -356,7 +356,6 @@ write_arg!(f64)
 
 #[cfg(test)]
 mod test {
-    use std::unstable::intrinsics;
     use std::vec;
     use mem::{Read, Write, Unique};
 
@@ -391,17 +390,27 @@ mod test {
 
         // copy from input into buffer
         do src.write |off, ptr, len| {
+            let off = off as uint;
+            let len = len as uint;
             assert!(buffer.len() >= (off + len) as uint);
+            let target = buffer.mut_slice(off, off + len);
             unsafe {
-                intrinsics::memcpy64(buffer.unsafe_ref(off as uint) as *mut u8, ptr as *u8, len);
+                do vec::raw::buf_as_slice(ptr as *u8, len) |src| {
+                    vec::bytes::copy_memory(target, src, len);
+                }
             }
         }
 
         // copy from buffer into output
         do dst.read |off, ptr, len| {
+            let off = off as uint;
+            let len = len as uint;
             assert!(buffer.len() >= (off + len) as uint);
+            let src = buffer.slice(off, off + len);
             unsafe {
-                intrinsics::memcpy64(ptr as *mut u8, buffer.unsafe_ref(off as uint) as *u8, len);
+                do vec::raw::mut_buf_as_slice(ptr as *mut u8, len) |dst| {
+                    vec::bytes::copy_memory(dst, src, len);
+                }
             }
         }
     }
