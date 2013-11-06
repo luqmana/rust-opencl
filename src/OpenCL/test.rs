@@ -57,22 +57,26 @@ mod mem {
 
         // copy from input into buffer
         do src.write |off, ptr, len| {
+            let off = off as uint;
+            let len = len as uint;
             assert!(buffer.len() >= (off + len) as uint);
+            let target = buffer.mut_slice(off, off + len);
             unsafe {
-                do vec::raw::mut_buf_as_slice(cast::transmute(ptr), len as uint) |ptr| {
-                    vec::bytes::copy_memory(ptr, buffer.slice_from(off as uint), len as uint);
+                do vec::raw::buf_as_slice(ptr as *u8, len) |src| {
+                    vec::bytes::copy_memory(target, src, len);
                 }
             }
         }
 
         // copy from buffer into output
         do dst.read |off, ptr, len| {
+            let off = off as uint;
+            let len = len as uint;
             assert!(buffer.len() >= (off + len) as uint);
+            let src = buffer.slice(off, off + len);
             unsafe {
-                do vec::raw::buf_as_slice(cast::transmute(ptr), len as uint) |ptr| {
-                    vec::bytes::copy_memory(buffer.mut_slice_from(off as uint),
-                                            ptr,
-                                            len as uint);
+                do vec::raw::mut_buf_as_slice(ptr as *mut u8, len) |dst| {
+                    vec::bytes::copy_memory(dst, src, len);
                 }
             }
         }

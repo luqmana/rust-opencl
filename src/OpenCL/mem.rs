@@ -352,4 +352,3 @@ write_arg!(i32)
 write_arg!(i64)
 write_arg!(f32)
 write_arg!(f64)
-
