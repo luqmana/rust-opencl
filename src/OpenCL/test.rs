@@ -45,7 +45,7 @@ pub fn test_all_platforms_devices(test: &fn(Device, Context, CommandQueue))
 mod mem {
     use std::vec;
     use std::cast;
-    use OpenCL::mem::{Read, Write, Unique};
+    use OpenCL::mem::{Read, Write};
 
     fn read_write<R: Read, W: Write>(src: &W, dst: &mut R)
     {
@@ -134,16 +134,6 @@ mod mem {
         let mut output : f64 = 0.; 
         read_write(&input, &mut output);
         expect!(input, output);
-    }
-
-    #[test]
-    #[cfg(disable)]
-    fn read_write_unique()
-    {
-        let input : Unique<int> = Unique(~[1, 2, 3, 4]);
-        let mut output : Unique<int> = Unique(~[]); 
-        read_write(&input, &mut output);
-        expect!(input.unwrap(), output.unwrap());
     }
 }
 
@@ -398,77 +388,6 @@ mod hl {
             let buffer = ctx.create_buffer_from(input.clone(), CL_MEM_READ_WRITE);
             let output: ~[int] = queue.get(&buffer, ());
             expect!(input, output);
-        }
-    }
-
-    #[test]
-    #[cfg(disable)]
-    fn memory_read_unique()
-    {
-        do ::test_all_platforms_devices |_, ctx, queue| {
-            let input = Unique(~[0, 1, 2, 3, 4, 5, 6, 7]);
-            let buffer = ctx.create_buffer_from(&input, CL_MEM_READ_WRITE);
-            let output: Unique<int> = queue.get(&buffer, ());
-            expect!(input.unwrap(), output.unwrap());
-        }
-    }
-
-    #[test]
-    #[cfg(disable)]
-    fn kernel_unique_size()
-    {
-        let src = " struct vec { \
-                        long fill; \
-                        long alloc; \
-                    }; \
-                    __kernel void test(__global struct vec *v) { \
-                        int idx = get_global_id(0); \
-                        global long *dat = (global long*)(v+1);
-                        if (idx == 0) { \
-                            v->fill = v->alloc; \
-                        } \
-                        if (idx < (v->alloc / sizeof(long))) { \
-                            dat[idx] = idx*idx; \
-                        } \
-                    } \
-                    ";
-
-        do ::test_all_platforms_devices |device, ctx, queue| {
-            let prog = ctx.create_program_from_source(src);
-
-            match prog.build(&device) {
-                Ok(()) => (),
-                Err(build_log) => {
-                    println!("Error building program:\n");
-                    println!("{:s}", build_log);
-                    fail!("");
-                }
-            }
-
-            let mut expect: ~[int] = ~[];
-            for i in range(0, 16) {
-                expect.push(i*i);
-            }
-
-            let mut input: ~[int] = ~[];
-            input.reserve(16);
-
-
-            let k = prog.create_kernel("test");
-            let v = ctx.create_buffer_from(&Unique(input), CL_MEM_READ_WRITE);
-            
-            let out_check: Unique<int> = queue.get(&v, ());
-            let out_check = out_check.unwrap();
-
-            expect!(out_check.len(), 0);
-
-            k.set_arg(0, &v);
-            queue.enqueue_async_kernel(&k, 16, None, ()).wait();
-            
-            let out_check: Unique<int> = queue.get(&v, ());
-            let out_check = out_check.unwrap();
-
-            expect!(expect, out_check);
         }
     }
 
