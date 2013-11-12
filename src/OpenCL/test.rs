@@ -142,6 +142,7 @@ mod hl {
     use OpenCL::CL::*;
     use OpenCL::hl::*;
     use OpenCL::mem::*;
+    use OpenCL::util;
 
     macro_rules! expect (
         ($test: expr, $expected: expr) => ({
@@ -459,6 +460,32 @@ mod hl {
 
             expect!(expect, out_check);
         }
+    }
+
+    #[test]
+    fn event_get_times() {
+        let src = "__kernel void test(__global int *i) { \
+                   *i += 1; \
+                   }";
+
+        let (device, ctx, queue) = util::create_compute_context().unwrap();
+        let prog = ctx.create_program_from_source(src);
+        prog.build(&device);
+
+        let k = prog.create_kernel("test");
+        let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
+      
+        k.set_arg(0, &v);
+
+        let e = queue.enqueue_async_kernel(&k, 1, None, ());
+        e.wait();
+
+        // the that are returned are not useful for unit test, this test
+        // is mostly testing that opencl returns no error
+        e.queue_time();
+        e.submit_time();
+        e.start_time();
+        e.end_time();
     }
 }
 
