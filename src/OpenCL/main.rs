@@ -5,6 +5,16 @@ use std::rt::io::Reader;
 use std::str;
 use OpenCL::mem::CLBuffer;
 
+#[nolink]
+#[link_args = "-framework OpenCL"]
+#[cfg(target_os = "macos")]
+extern { }
+
+#[nolink]
+#[link_args = "-lOpenCL"]
+#[cfg(target_os = "linux")]
+extern { }
+
 fn main()
 {
     let ker = File::open(&std::path::Path::new("./test.ocl")).read_to_end();
