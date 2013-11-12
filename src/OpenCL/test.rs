@@ -6,6 +6,16 @@ extern mod OpenCL;
 
 use OpenCL::hl::*;
 
+#[nolink]
+#[link_args = "-framework OpenCL"]
+#[cfg(target_os = "macos")]
+extern { }
+
+#[nolink]
+#[link_args = "-lOpenCL"]
+#[cfg(target_os = "linux")]
+extern { }
+
 macro_rules! expect (
     ($test: expr, $expected: expr) => ({
             let test     = $test;
