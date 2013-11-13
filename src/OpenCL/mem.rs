@@ -3,9 +3,6 @@ use std::mem;
 use std::ptr;
 use std::vec;
 use std::num::zero;
-use std::unstable;
-use std::unstable::raw::Vec;
-use std::cast;
 
 use CL::*;
 use CL::ll::*;

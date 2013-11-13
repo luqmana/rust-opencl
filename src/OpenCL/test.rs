@@ -44,7 +44,6 @@ pub fn test_all_platforms_devices(test: &fn(Device, Context, CommandQueue))
 
 mod mem {
     use std::vec;
-    use std::cast;
     use OpenCL::mem::{Read, Write};
 
     fn read_write<R: Read, W: Write>(src: &W, dst: &mut R)
@@ -144,19 +143,7 @@ mod hl {
     use OpenCL::mem::*;
     use OpenCL::util;
 
-    macro_rules! expect (
-        ($test: expr, $expected: expr) => ({
-            let test     = $test;
-            let expected = $expected;
-            if test != expected {
-                fail!(format!("Test failure in {:s}: expected {:?}, got {:?}",
-                           stringify!($test),
-                           expected, test))
-            }
-        })
-    )
-
-      #[test]
+    #[test]
     fn program_build() {
         let src = "__kernel void test(__global int *i) { \
                    *i += 1; \
@@ -422,18 +409,6 @@ mod hl {
 mod array {
     use OpenCL::array::*;
     use OpenCL::CL::CL_MEM_READ_WRITE;
-
-    macro_rules! expect (
-        ($test: expr, $expected: expr) => ({
-            let test     = $test;
-            let expected = $expected;
-            if test != expected {
-                fail!(format!("Test failure in {:s}: expected {:?}, got {:?}",
-                           stringify!($test),
-                           expected, test))
-            }
-        })
-    )
 
     #[test]
     fn put_get_2D()
