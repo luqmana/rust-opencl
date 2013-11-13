@@ -4,3 +4,6 @@
 *.dSYM
 test
 opencl-test
+build
+.rust
+bin

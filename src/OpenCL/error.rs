@@ -89,33 +89,3 @@ pub fn check(status: cl_int, message: &str) {
         fail!(format!("{:?} ({:?})", message, error_str(status)))
     }
 }
-
-macro_rules! expect (
-    ($test: expr, $expected: expr) => ({
-        let test = $test;
-        let expected = $expected;
-        if test != expected {
-            fail!(format!("Test failure in {:s}: expected {:?}, got {:?}",
-                       stringify!($test),
-                       expected, test))
-        }
-    })
-)
-
-#[cfg(test)]
-mod test {
-    use CL::*;
-    use error::*;
-
-    #[test]
-    fn test_convert() {
-        expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),
-                CL_INVALID_GLOBAL_OFFSET)
-    }
-    
-    #[test]
-    fn convert_to_str() {
-        expect!(convert(CL_INVALID_BUFFER_SIZE as cl_int).to_str(),
-                ~"CL_INVALID_BUFFER_SIZE");
-    }
-}
