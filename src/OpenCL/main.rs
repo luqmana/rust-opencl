@@ -1,7 +1,7 @@
 extern mod OpenCL;
 
-use std::rt::io::fs::File;
-use std::rt::io::Reader;
+use std::io::fs::File;
+use std::io::Reader;
 use std::str;
 use OpenCL::mem::CLBuffer;
 
