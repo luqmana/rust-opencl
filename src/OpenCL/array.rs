@@ -1,5 +1,6 @@
 use std::ptr;
 use CL::*;
+use CL::ll::*;
 use mem::*;
 use std::mem;
 use std::vec;
@@ -52,6 +53,15 @@ impl<T: Clone> Array3D<T> {
     }
 }
 
+#[unsafe_destructor]
+impl<T> Drop for Array3D_cl<T> {
+    #[fixed_stack_segment] #[inline(never)]
+    fn drop(&mut self) {
+        unsafe {
+            clReleaseMemObject(self.buf);
+        }
+    }
+}
 
 impl<'self, T> Put<Array3D<T>, Array3D_cl<T>> for &'self Array3D<T>
 {
@@ -163,6 +173,16 @@ impl<T: Clone> Array2D<T> {
 
     pub fn get(&self, x: uint, y: uint) -> T {
         self.dat[self.width*y + x].clone()
+    }
+}
+
+#[unsafe_destructor]
+impl<T> Drop for Array2D_cl<T> {
+    #[fixed_stack_segment] #[inline(never)]
+    fn drop(&mut self) {
+        unsafe {
+            clReleaseMemObject(self.buf);
+        }
     }
 }
 
