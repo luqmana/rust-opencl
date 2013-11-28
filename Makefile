@@ -26,3 +26,7 @@ libOpenCL :
 .PHONY: check
 check:
 	RUST_THREADS=1 $(RUSTPKG) test OpenCL
+
+.PHONY: clean
+clean:
+	rustpkg clean OpenCL

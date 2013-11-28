@@ -29,7 +29,7 @@ macro_rules! expect (
         )
 
 
-pub fn test_all_platforms_devices(test: &fn(Device, Context, CommandQueue))
+pub fn test_all_platforms_devices(test: |Device, Context, CommandQueue|)
 {
     let platforms = get_platforms();
     for p in platforms.iter() {
@@ -50,51 +50,51 @@ mod mem {
     {
         // find the max size of the input buffer
         let mut max = 0;
-        do src.write |off, _, len| {
+        src.write(|off, _, len| {
             if max < off + len {
                 max = off + len;
             }
-        }
+        });
         let max = max as uint;
 
         let mut buffer: ~[u8] = ~[];
         unsafe {
             buffer.reserve(max);
-            vec::raw::set_len(&mut buffer, max);          
+            vec::raw::set_len(&mut buffer, max);
         }
 
         // copy from input into buffer
-        do src.write |off, ptr, len| {
+        src.write(|off, ptr, len| {
             let off = off as uint;
             let len = len as uint;
             assert!(buffer.len() >= (off + len) as uint);
             let target = buffer.mut_slice(off, off + len);
             unsafe {
-                do vec::raw::buf_as_slice(ptr as *u8, len) |src| {
+                vec::raw::buf_as_slice(ptr as *u8, len, |src| {
                     vec::bytes::copy_memory(target, src, len);
-                }
+                })
             }
-        }
+        });
 
         // copy from buffer into output
-        do dst.read |off, ptr, len| {
+        dst.read(|off, ptr, len| {
             let off = off as uint;
             let len = len as uint;
             assert!(buffer.len() >= (off + len) as uint);
             let src = buffer.slice(off, off + len);
             unsafe {
-                do vec::raw::mut_buf_as_slice(ptr as *mut u8, len) |dst| {
+                vec::raw::mut_buf_as_slice(ptr as *mut u8, len, |dst| {
                     vec::bytes::copy_memory(dst, src, len);
-                }
+                })
             }
-        }
+        })
     }
 
     #[test]
     fn read_write_vec()
     {
         let input :&[int] = &[0, 1, 2, 3, 4, 5, 6, 7];
-        let mut output :&mut [int] = &mut [0, 0, 0, 0, 0, 0, 0, 0]; 
+        let mut output :&mut [int] = &mut [0, 0, 0, 0, 0, 0, 0, 0];
         read_write(&input, &mut output);
         expect!(input, output);
     }
@@ -103,7 +103,7 @@ mod mem {
     fn read_write_int()
     {
         let input : int = 3141;
-        let mut output : int = 0; 
+        let mut output : int = 0;
         read_write(&input, &mut output);
         expect!(input, output);
     }
@@ -112,7 +112,7 @@ mod mem {
     fn read_write_uint()
     {
         let input : uint = 3141;
-        let mut output : uint = 0; 
+        let mut output : uint = 0;
         read_write(&input, &mut output);
         expect!(input, output);
     }
@@ -121,7 +121,7 @@ mod mem {
     fn read_write_f32()
     {
         let input : f32 = 3141.;
-        let mut output : f32 = 0.; 
+        let mut output : f32 = 0.;
         read_write(&input, &mut output);
         expect!(input, output);
     }
@@ -130,7 +130,7 @@ mod mem {
     fn read_write_f64()
     {
         let input : f64 = 3141.;
-        let mut output : f64 = 0.; 
+        let mut output : f64 = 0.;
         read_write(&input, &mut output);
         expect!(input, output);
     }
@@ -148,10 +148,10 @@ mod hl {
         let src = "__kernel void test(__global int *i) { \
                    *i += 1; \
                    }";
-        do ::test_all_platforms_devices |device, ctx, _| {
+        ::test_all_platforms_devices(|device, ctx, _| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device);            
-        }
+            prog.build(&device);
+        })
     }
 
     #[test]
@@ -159,13 +159,13 @@ mod hl {
         let src = "__kernel void test(__global int *i) { \
                    *i += 1; \
                    }";
-        do ::test_all_platforms_devices |device, ctx, queue| {
+        ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);
 
             let k = prog.create_kernel("test");
             let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
-            
+
             k.set_arg(0, &v);
 
             queue.enqueue_async_kernel(&k, 1, None, ()).wait();
@@ -173,7 +173,7 @@ mod hl {
             let v: ~[int] = queue.get(&v, ());
 
             expect!(v[0], 2);
-        }
+        })
     }
 
     #[test]
@@ -182,14 +182,14 @@ mod hl {
                    *i += k; \
                    }";
 
-        do ::test_all_platforms_devices |device, ctx, queue| {
+        ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);
 
             let k = prog.create_kernel("test");
-            
+
             let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
-            
+
             k.set_arg(0, &v);
             k.set_arg(1, &42);
 
@@ -198,7 +198,7 @@ mod hl {
             let v: ~[int] = queue.get(&v, ());
 
             expect!(v[0], 43);
-        }
+        })
     }
 
     #[test]
@@ -207,22 +207,22 @@ mod hl {
                    *i += 1; \
                    }";
 
-        do ::test_all_platforms_devices |device, ctx, queue| {
+        ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);
 
             let k = prog.create_kernel("test");
 
             let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
-          
+
             k.set_arg(0, &v);
 
             queue.enqueue_async_kernel(&k, 1, None, ()).wait();
-          
+
             let v: ~[int] = queue.get(&v, ());
 
             expect!(v[0], 2);
-        }
+        })
     }
 
     #[test]
@@ -231,13 +231,13 @@ mod hl {
                    *i += 1; \
                    }";
 
-        do ::test_all_platforms_devices |device, ctx, queue| {
+        ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);
 
             let k = prog.create_kernel("test");
             let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
-          
+
             k.set_arg(0, &v);
 
             let mut e : Option<Event> = None;
@@ -245,11 +245,11 @@ mod hl {
                 e = Some(queue.enqueue_async_kernel(&k, 1, None, e));
             }
             e.wait();
-          
+
             let v: ~[int] = queue.get(&v, ());
 
             expect!(v[0], 9);
-        }
+        })
     }
 
     #[test]
@@ -261,18 +261,18 @@ mod hl {
                    *c = *a + *b; \
                    }";
 
-        do ::test_all_platforms_devices |device, ctx, queue| {
+        ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device);
 
             let k_incA = prog.create_kernel("inc");
             let k_incB = prog.create_kernel("inc");
             let k_add = prog.create_kernel("add");
-            
+
             let a = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
             let b = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
             let c = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
-          
+
             k_incA.set_arg(0, &a);
             k_incB.set_arg(0, &b);
 
@@ -286,11 +286,11 @@ mod hl {
             k_add.set_arg(2, &c);
 
             let event = queue.enqueue_async_kernel(&k_add, 1, None, event_list);
-          
+
             let v: ~[int] = queue.get(&c, event);
 
             expect!(v[0], 4);
-        }
+        })
     }
 
     #[test]
@@ -302,7 +302,7 @@ mod hl {
                    int s = get_global_size(0); \
                    N[i * s + j] = i * j;
 }";
-        do ::test_all_platforms_devices |device, ctx, queue| {
+        ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
 
             match prog.build(&device) {
@@ -315,23 +315,23 @@ mod hl {
             }
 
             let k = prog.create_kernel("test");
-            
+
             let v = ctx.create_buffer_from(&[1, 2, 3, 4, 5, 6, 7, 8, 9], CL_MEM_READ_ONLY);
-            
+
             k.set_arg(0, &v);
 
             queue.enqueue_async_kernel(&k, (3, 3), None, ()).wait();
-            
+
             let v: ~[int] = queue.get(&v, ());
-            
+
             expect!(v, ~[0, 0, 0, 0, 1, 2, 0, 2, 4]);
-        }
+        })
     }
 
     #[test]
     fn memory_read_write()
     {
-        do ::test_all_platforms_devices |_, ctx, queue| {
+        ::test_all_platforms_devices(|_, ctx, queue| {
             let buffer: CLBuffer<int> = ctx.create_buffer(8, CL_MEM_READ_ONLY);
 
             let input = &[0, 1, 2, 3, 4, 5, 6, 7];
@@ -341,41 +341,41 @@ mod hl {
             queue.read(&buffer, &mut output, ());
 
             expect!(input, output);
-        }
+        })
     }
 
     #[test]
     fn memory_read_vec()
     {
-        do ::test_all_platforms_devices |_, ctx, queue| {
+        ::test_all_platforms_devices(|_, ctx, queue| {
             let input = &[0, 1, 2, 3, 4, 5, 6, 7];
             let buffer = ctx.create_buffer_from(input, CL_MEM_READ_WRITE);
             let output: ~[int] = queue.get(&buffer, ());
             expect!(input, output);
-        }
+        })
     }
 
 
     #[test]
     fn memory_read_owned()
     {
-        do ::test_all_platforms_devices |_, ctx, queue| {
+        ::test_all_platforms_devices(|_, ctx, queue| {
             let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
             let buffer = ctx.create_buffer_from(&input, CL_MEM_READ_WRITE);
             let output: ~[int] = queue.get(&buffer, ());
             expect!(input, output);
-        }
+        })
     }
 
     #[test]
     fn memory_read_owned_clone()
     {
-        do ::test_all_platforms_devices |_, ctx, queue| {
+        ::test_all_platforms_devices(|_, ctx, queue| {
             let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
             let buffer = ctx.create_buffer_from(input.clone(), CL_MEM_READ_WRITE);
             let output: ~[int] = queue.get(&buffer, ());
             expect!(input, output);
-        }
+        })
     }
 
     #[test]
@@ -390,7 +390,7 @@ mod hl {
 
         let k = prog.create_kernel("test");
         let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
-      
+
         k.set_arg(0, &v);
 
         let e = queue.enqueue_async_kernel(&k, 1, None, ());
@@ -413,8 +413,8 @@ mod array {
     #[test]
     fn put_get_2D()
     {
-        do ::test_all_platforms_devices |_, ctx, queue| {
-            let arr_in = do Array2D::new(8, 8) |x, y| {(x+y) as int};
+        ::test_all_platforms_devices(|_, ctx, queue| {
+            let arr_in = Array2D::new(8, 8, |x, y| {(x+y) as int});
             let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
             let arr_out: Array2D<int> = queue.get(&arr_cl, ());
 
@@ -423,17 +423,17 @@ mod array {
                     expect!(arr_in.get(x, y), arr_out.get(x, y));
                 }
             }
-        }
+        })
     }
 
 
     #[test]
     fn read_write_2D()
     {
-        do ::test_all_platforms_devices |_, ctx, queue| {
-            let added = do Array2D::new(8, 8) |x, y| {(x+y) as int};
-            let zero = do Array2D::new(8, 8) |_, _| {(0) as int};
-            let mut out = do Array2D::new(8, 8) |_, _| {(0) as int};
+        ::test_all_platforms_devices(|_, ctx, queue| {
+            let added = Array2D::new(8, 8, |x, y| {(x+y) as int});
+            let zero = Array2D::new(8, 8, |_, _| {(0) as int});
+            let mut out = Array2D::new(8, 8, |_, _| {(0) as int});
 
             /* both are zeroed */
             let a_cl = ctx.create_buffer_from(&zero, CL_MEM_READ_WRITE);
@@ -446,16 +446,16 @@ mod array {
                     expect!(added.get(x, y), out.get(x, y));
                 }
             }
-        }
+        })
     }
 
 
     #[test]
     fn kernel_2D()
     {
-        do ::test_all_platforms_devices |device, ctx, queue| {
-            let mut a = do Array2D::new(8, 8) |_, _| {(0) as i32};
-            let b = do Array2D::new(8, 8) |x, y| {(x*y) as i32};
+        ::test_all_platforms_devices(|device, ctx, queue| {
+            let mut a = Array2D::new(8, 8, |_, _| {(0) as i32});
+            let b = Array2D::new(8, 8, |x, y| {(x*y) as i32});
             let a_cl = ctx.create_buffer_from(&a, CL_MEM_READ_WRITE);
 
             let src =  "__kernel void test(__global int *a) { \
@@ -484,14 +484,14 @@ mod array {
                     expect!(a.get(x, y), b.get(x, y));
                 }
             }
-        }
+        })
     }
 
     #[test]
     fn put_get_3D()
     {
-        do ::test_all_platforms_devices |_, ctx, queue| {
-            let arr_in = do Array3D::new(8, 8, 8) |x, y, z| {(x+y+z) as int};
+        ::test_all_platforms_devices(|_, ctx, queue| {
+            let arr_in = Array3D::new(8, 8, 8, |x, y, z| {(x+y+z) as int});
             let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
             let arr_out: Array3D<int> = queue.get(&arr_cl, ());
 
@@ -502,17 +502,17 @@ mod array {
                     }
                 }
             }
-        }
+        })
     }
 
 
     #[test]
     fn read_write_3D()
     {
-        do ::test_all_platforms_devices |_, ctx, queue| {
-            let added = do Array3D::new(8, 8, 8) |x, y, z| {(x+y+z) as int};
-            let zero = do Array3D::new(8, 8, 8) |_, _, _| {(0) as int};
-            let mut out = do Array3D::new(8, 8, 8) |_, _, _| {(0) as int};
+        ::test_all_platforms_devices(|_, ctx, queue| {
+            let added = Array3D::new(8, 8, 8, |x, y, z| {(x+y+z) as int});
+            let zero = Array3D::new(8, 8, 8, |_, _, _| {(0) as int});
+            let mut out = Array3D::new(8, 8, 8, |_, _, _| {(0) as int});
 
             /* both are zeroed */
             let a_cl = ctx.create_buffer_from(&zero, CL_MEM_READ_WRITE);
@@ -527,16 +527,16 @@ mod array {
                     }
                 }
             }
-        }
+        })
     }
 
 
     #[test]
     fn kernel_3D()
     {
-        do ::test_all_platforms_devices |device, ctx, queue| {
-            let mut a = do Array3D::new(8, 8, 8) |_, _, _| {(0) as i32};
-            let b = do Array3D::new(8, 8, 8) |x, y, z| {(x*y*z) as i32};
+        ::test_all_platforms_devices(|device, ctx, queue| {
+            let mut a = Array3D::new(8, 8, 8, |_, _, _| {(0) as i32});
+            let b = Array3D::new(8, 8, 8, |x, y, z| {(x*y*z) as i32});
             let a_cl = ctx.create_buffer_from(&a, CL_MEM_READ_WRITE);
 
             let src =  "__kernel void test(__global int *a) { \
@@ -569,7 +569,7 @@ mod array {
                     }
                 }
             }
-        }
+        })
     }
 }
 
@@ -583,7 +583,7 @@ mod error {
         expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),
                 CL_INVALID_GLOBAL_OFFSET)
     }
-    
+
     #[test]
     fn convert_to_str() {
         expect!(convert(CL_INVALID_BUFFER_SIZE as cl_int).to_str(),

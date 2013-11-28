@@ -23,30 +23,29 @@ fn convert_device_type(device: DeviceType) -> cl_device_type {
     }
 }
 
-struct Platform {
+pub struct Platform {
     id: cl_platform_id
 }
 
 impl Platform {
-    #[fixed_stack_segment] #[inline(never)]
     fn get_devices_internal(&self, dtype: cl_device_type) -> ~[Device]
     {
         unsafe
         {
             let num_devices = 0;
-            
+
             info!("Looking for devices matching {:?}", dtype);
-            
-            clGetDeviceIDs(self.id, dtype, 0, ptr::null(), 
+
+            clGetDeviceIDs(self.id, dtype, 0, ptr::null(),
                            ptr::to_unsafe_ptr(&num_devices));
 
             let ids = vec::from_elem(num_devices as uint, 0 as cl_device_id);
-            do ids.as_imm_buf |ids, len| {
+            ids.as_imm_buf(|ids, len| {
                 clGetDeviceIDs(self.id, dtype, len as cl_uint,
                                ids, ptr::to_unsafe_ptr(&num_devices));
-            };
+            });
 
-            do ids.map |id| { Device {id: *id }}
+            ids.map(|id| { Device {id: *id }})
         }
     }
 
@@ -65,7 +64,6 @@ impl Platform {
         self.get_devices_internal(dtype)
     }
 
-    #[fixed_stack_segment] #[inline(never)]
     pub fn name(&self) -> ~str
     {
         unsafe {
@@ -79,20 +77,19 @@ impl Platform {
 
             let name = " ".repeat(size as uint);
 
-            do name.as_imm_buf |p, len| {
+            name.as_imm_buf(|p, len| {
             clGetPlatformInfo(self.id,
                               CL_PLATFORM_NAME,
                               len as libc::size_t,
                               p as *libc::c_void,
                               ptr::to_mut_unsafe_ptr(&mut size));
-            };
+            });
 
             name
         }
     }
 }
 
-#[fixed_stack_segment] #[inline(never)]
 pub fn get_platforms() -> ~[Platform]
 {
     let num_platforms = 0;
@@ -106,14 +103,14 @@ pub fn get_platforms() -> ~[Platform]
 
         let ids = vec::from_elem(num_platforms as uint, 0 as cl_platform_id);
 
-        do ids.as_imm_buf |ids, len| {
+        ids.as_imm_buf(|ids, len| {
             let status = clGetPlatformIDs(len as cl_uint,
                                           ids,
                                           ptr::to_unsafe_ptr(&num_platforms));
             check(status, "could not get platforms.");
-        };
+        });
 
-        do ids.map |id| { Platform { id: *id } }
+        ids.map(|id| { Platform { id: *id } })
     }
 }
 
@@ -122,7 +119,6 @@ pub struct Device {
 }
 
 impl Device {
-    #[fixed_stack_segment] #[inline(never)]
     pub fn name(&self) -> ~str { unsafe {
         let size = 0;
         let status = clGetDeviceInfo(
@@ -135,7 +131,7 @@ impl Device {
 
         let buf = vec::from_elem(size as uint, 0);
 
-        do buf.as_imm_buf |p, len| {
+        buf.as_imm_buf(|p, len| {
             let status = clGetDeviceInfo(
                 self.id,
                 CL_DEVICE_NAME,
@@ -145,10 +141,9 @@ impl Device {
             check(status, "Could not get device name");
 
             str::raw::from_c_str(p as *i8)
-        }
+        })
     } }
 
-    #[fixed_stack_segment] #[inline(never)]
 	pub fn computeUnits(&self) -> uint {
 		unsafe {
 			let mut ct: uint = 0;
@@ -164,7 +159,6 @@ impl Device {
 	}
 
 
-    #[fixed_stack_segment] #[inline(never)]
     pub fn create_context(&self) -> Context
     {
         unsafe
@@ -176,7 +170,7 @@ impl Device {
             let ctx = clCreateContext(ptr::null(),
                                       1,
                                       ptr::to_unsafe_ptr(&self.id),
-                                      cast::transmute(ptr::null::<&fn ()>()),
+                                      cast::transmute(ptr::null::<||>()),
                                       ptr::null(),
                                       ptr::to_unsafe_ptr(&errcode));
 
@@ -192,7 +186,6 @@ pub struct Context {
 }
 
 impl Context {
-    #[fixed_stack_segment] #[inline(never)]
     pub fn create_buffer<T>(&self, size: uint, flags: cl_mem_flags) -> CLBuffer<T>
     {
         unsafe {
@@ -208,10 +201,9 @@ impl Context {
     }
 
 
-    #[fixed_stack_segment] #[inline(never)]
     pub fn create_buffer_from<T, U, IN: Put<T, U>>(&self, create: IN, flags: cl_mem_flags) -> U
     {
-        do create.put |p, len| {
+        create.put(|p, len| {
             let status = 0;
             let buf = unsafe {
                 clCreateBuffer(self.ctx,
@@ -222,36 +214,34 @@ impl Context {
             };
             check(status, "Could not allocate buffer");
             buf
-        }
+        })
 
     }
 
-    #[fixed_stack_segment] #[inline(never)]
     pub fn create_command_queue(&self, device: &Device) -> CommandQueue
     {
         unsafe
         {
             let errcode = 0;
-            
+
             let cqueue = clCreateCommandQueue(self.ctx,
                                               device.id,
                                               CL_QUEUE_PROFILING_ENABLE,
                                               ptr::to_unsafe_ptr(&errcode));
-            
+
             check(errcode, "Failed to create command queue!");
-            
+
             CommandQueue {
                 cqueue: cqueue
             }
         }
     }
 
-    #[fixed_stack_segment] #[inline(never)]
     pub fn create_program_from_source(&self, src: &str) -> Program
     {
         unsafe
         {
-            do src.to_c_str().with_ref |src| {
+            src.to_c_str().with_ref(|src| {
                 let status = CL_SUCCESS as cl_int;
                 let program = clCreateProgramWithSource(
                     self.ctx,
@@ -262,13 +252,12 @@ impl Context {
                 check(status, "Could not create program");
 
                 Program { prg: program }
-            }
+            })
         }
     }
 
-    #[fixed_stack_segment] #[inline(never)]
     pub fn create_program_from_binary(&self, bin: &str, device: &Device) -> Program {
-        do bin.to_c_str().with_ref |src| {
+        bin.to_c_str().with_ref(|src| {
             let status = CL_SUCCESS as cl_int;
             let len = bin.len() as libc::size_t;
             let program = unsafe {
@@ -284,13 +273,12 @@ impl Context {
             check(status, "Could not create program");
 
             Program {prg: program}
-        }
+        })
     }
 }
 
 impl Drop for Context
 {
-    #[fixed_stack_segment] #[inline(never)]
     fn drop(&mut self) {
         unsafe {
             clReleaseContext(self.ctx);
@@ -316,7 +304,7 @@ impl<T> KernelArg for ~Buffer<T> {
              self.id_ptr() as *libc::c_void)
         }
     }
-} 
+}
 
 
 pub struct CommandQueue {
@@ -325,13 +313,12 @@ pub struct CommandQueue {
 
 impl CommandQueue
 {
-    #[fixed_stack_segment] #[inline(never)]
     pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
         -> Event
     {
         unsafe
         {
-            do wait_on.as_event_list |event, event_count| {
+            wait_on.as_event_list(|event, event_count| {
                 let e: cl_event = ptr::null();
                 let status = clEnqueueNDRangeKernel(
                     self.cqueue,
@@ -348,15 +335,14 @@ impl CommandQueue
                     ptr::to_unsafe_ptr(&e));
                 check(status, "Error enqueuing kernel.");
                 Event { event: e }
-            }
+            })
         }
     }
 
-    #[fixed_stack_segment] #[inline(never)]
     pub fn get<T, U, B: Buffer<T>, G: Get<B, U>, E: EventList>(&self, buf: &B, event: E) -> G
     {
-        do event.as_event_list |evt, evt_len| {
-            do Get::get(buf) |offset, ptr, len| {
+        event.as_event_list(|evt, evt_len| {
+            Get::get(buf, |offset, ptr, len| {
                 unsafe {
                     let err = clEnqueueReadBuffer(self.cqueue,
                                                   buf.id(),
@@ -370,16 +356,15 @@ impl CommandQueue
 
                     check(err, "Failed to read buffer");
                 }
-            }
-        }
+            })
+        })
     }
 
-    #[fixed_stack_segment] #[inline(never)]
     pub fn write<U: Write, T, E: EventList, B: Buffer<T>>(&self, mem: &B, write: &U, event: E)
     {
         unsafe {
-            do event.as_event_list |evt, evt_len| {
-                do write.write |offset, p, len| {
+            event.as_event_list(|evt, evt_len| {
+                write.write(|offset, p, len| {
                     let err = clEnqueueWriteBuffer(self.cqueue,
                                                    mem.id(),
                                                    CL_TRUE,
@@ -391,17 +376,16 @@ impl CommandQueue
                                                    ptr::null());
 
                     check(err, "Failed to write buffer");
-                }
-            }
+                })
+            })
         }
     }
 
-    #[fixed_stack_segment] #[inline(never)]
     pub fn read<T, U: Read, E: EventList, B: Buffer<T>>(&self, mem: &B, read: &mut U, event: E)
     {
         unsafe {
-            do event.as_event_list |evt, evt_len| {
-                do read.read |offset, p, len| {
+            event.as_event_list(|evt, evt_len| {
+                read.read(|offset, p, len| {
                     let err = clEnqueueReadBuffer(self.cqueue,
                                                   mem.id(),
                                                   CL_TRUE,
@@ -413,15 +397,14 @@ impl CommandQueue
                                                   ptr::null());
 
                     check(err, "Failed to read buffer");
-                }
-            }
+                })
+            })
         }
     }
 }
 
 impl Drop for CommandQueue
 {
-    #[fixed_stack_segment] #[inline(never)]
     fn drop(&mut self) {
         unsafe {
             clReleaseCommandQueue(self.cqueue);
@@ -437,7 +420,6 @@ pub struct Program
 
 impl Drop for Program
 {
-    #[fixed_stack_segment] #[inline(never)]
     fn drop(&mut self) {
         unsafe {
             clReleaseProgram(self.prg);
@@ -447,14 +429,13 @@ impl Drop for Program
 
 impl Program
 {
-    #[fixed_stack_segment]
-    pub fn build(&self, device: &Device) -> Result<(), ~str> 
+    pub fn build(&self, device: &Device) -> Result<(), ~str>
     {
         unsafe
         {
             let ret = clBuildProgram(self.prg, 1, ptr::to_unsafe_ptr(&device.id),
                                      ptr::null(),
-                                     cast::transmute(ptr::null::<&fn ()>()),
+                                     cast::transmute(ptr::null::<||>()),
                                      ptr::null());
             if ret == CL_SUCCESS as cl_int {
                 Ok(())
@@ -471,7 +452,7 @@ impl Program
                 check(status, "Could not get build log");
 
                 let buf = vec::from_elem(size as uint, 0u8);
-                do buf.as_imm_buf |p, len| {
+                buf.as_imm_buf(|p, len| {
                     let status = clGetProgramBuildInfo(
                         self.prg,
                         device.id,
@@ -482,7 +463,7 @@ impl Program
                     check(status, "Could not get build log");
 
                     Err(str::raw::from_c_str(p as *libc::c_char))
-                }
+                })
             }
         }
     }
@@ -498,7 +479,6 @@ pub struct Kernel {
 
 impl Drop for Kernel
 {
-    #[fixed_stack_segment] #[inline(never)]
     fn drop(&mut self) {
         unsafe {
             clReleaseKernel(self.kernel);
@@ -513,13 +493,12 @@ impl Kernel {
     }
 }
 
-#[fixed_stack_segment] #[inline(never)]
 pub fn create_kernel(program: & Program, kernel: & str) -> Kernel
 {
     unsafe {
         let errcode = 0;
         // let bytes = str::to_bytes(kernel);
-        do kernel.to_c_str().with_ref |str_ptr|
+        kernel.to_c_str().with_ref(|str_ptr|
         {
             let kernel = clCreateKernel(program.prg,
                                         str_ptr,
@@ -530,7 +509,7 @@ pub fn create_kernel(program: & Program, kernel: & str) -> Kernel
             Kernel {
                 kernel: kernel,
             }
-        }
+        })
     }
 }
 
@@ -556,7 +535,6 @@ scalar_kernel_arg!(i64)
 scalar_kernel_arg!(f32)
 scalar_kernel_arg!(f64)
 
-#[fixed_stack_segment] #[inline(never)]
 pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
                                     position: cl_uint,
                                     arg: &T)
@@ -579,13 +557,12 @@ pub struct Event
 }
 
 impl Event {
-    #[fixed_stack_segment] #[inline(never)]
     fn get_time(&self, param: cl_uint) -> u64
     {
         unsafe {
             let time: cl_ulong = 0;
             let ret = clGetEventProfilingInfo(self.event,
-                                    param, 
+                                    param,
                                     mem::size_of::<cl_ulong>() as libc::size_t,
                                     ptr::to_unsafe_ptr(&time) as *libc::c_void,
                                     ptr::null());
@@ -618,7 +595,6 @@ impl Event {
 
 impl Drop for Event
 {
-    #[fixed_stack_segment] #[inline(never)]
     fn drop(&mut self) {
         unsafe {
             clReleaseEvent(self.event);
@@ -627,35 +603,34 @@ impl Drop for Event
 }
 
 trait EventList {
-    fn as_event_list<T>(&self, &fn(*cl_event, cl_uint) -> T) -> T;
+    fn as_event_list<T>(&self, |*cl_event, cl_uint| -> T) -> T;
 
-    #[fixed_stack_segment] #[inline(never)]
     fn wait(&self) {
-        do self.as_event_list |p, len| {
+        self.as_event_list(|p, len| {
             unsafe {
                 let status = clWaitForEvents(len, p);
                 check(status, "Error waiting for event(s)");
             }
-        }
+        })
     }
 }
 
 impl<'self> EventList for &'self Event {
-    fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
+    fn as_event_list<T>(&self, f: |*cl_event, cl_uint| -> T) -> T
     {
         f(ptr::to_unsafe_ptr(&self.event), 1 as cl_uint)
     }
 }
 
 impl EventList for Event {
-    fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
+    fn as_event_list<T>(&self, f: |*cl_event, cl_uint| -> T) -> T
     {
         f(ptr::to_unsafe_ptr(&self.event), 1 as cl_uint)
     }
 }
 
 impl<T: EventList> EventList for Option<T> {
-    fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
+    fn as_event_list<T>(&self, f: |*cl_event, cl_uint| -> T) -> T
     {
         match *self {
             None => f(ptr::null(), 0),
@@ -665,27 +640,27 @@ impl<T: EventList> EventList for Option<T> {
 }
 
 impl<'self> EventList for &'self [Event] {
-    fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
+    fn as_event_list<T>(&self, f: |*cl_event, cl_uint| -> T) -> T
     {
         /* this is wasteful */
         let events = self.iter().map(|event| event.event).to_owned_vec();
 
-        do events.as_imm_buf |p, len| {
+        events.as_imm_buf(|p, len| {
             f(p as **libc::c_void, len as cl_uint)
-        }
+        })
     }
 }
 
 /* this seems VERY hackey */
 impl EventList for () {
-    fn as_event_list<T>(&self, f: &fn(*cl_event, cl_uint) -> T) -> T
+    fn as_event_list<T>(&self, f: |*cl_event, cl_uint| -> T) -> T
     {
         f(ptr::null(), 0)
     }
 }
 
 
-trait KernelIndex
+pub trait KernelIndex
 {
     fn num_dimensions(dummy_self: Option<Self>) -> cl_uint;
     fn get_ptr(&self) -> *libc::size_t;
