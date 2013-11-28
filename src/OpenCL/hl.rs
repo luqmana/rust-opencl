@@ -56,9 +56,9 @@ impl Platform {
 
     pub fn get_devices_by_types(&self, types: &[DeviceType]) -> ~[Device]
     {
-        let dtype = 0;
+        let mut dtype = 0;
         for &t in types.iter() {
-          dtype != convert_device_type(t);
+          dtype |= convert_device_type(t);
         }
 
         self.get_devices_internal(dtype)
