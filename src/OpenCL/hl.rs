@@ -12,7 +12,7 @@ use std::cast;
 use std::ptr;
 use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 
-enum DeviceType {
+pub enum DeviceType {
       CPU, GPU
 }
 
@@ -56,37 +56,62 @@ impl Platform {
 
     pub fn get_devices_by_types(&self, types: &[DeviceType]) -> ~[Device]
     {
-        let dtype = 0;
+        let mut dtype = 0;
         for &t in types.iter() {
-          dtype != convert_device_type(t);
+          dtype |= convert_device_type(t);
         }
 
         self.get_devices_internal(dtype)
     }
 
-    pub fn name(&self) -> ~str
+    fn profile_info(&self, name: cl_platform_info) -> ~str
     {
         unsafe {
             let mut size = 0;
 
             clGetPlatformInfo(self.id,
-                            CL_PLATFORM_NAME,
+                            name,
                             0,
                             ptr::null(),
                             ptr::to_mut_unsafe_ptr(&mut size));
 
-            let name = " ".repeat(size as uint);
+            let value = " ".repeat(size as uint);
 
-            name.as_imm_buf(|p, len| {
+            value.as_imm_buf(|p, len| {
             clGetPlatformInfo(self.id,
-                              CL_PLATFORM_NAME,
+                              name,
                               len as libc::size_t,
                               p as *libc::c_void,
                               ptr::to_mut_unsafe_ptr(&mut size));
             });
 
-            name
+            value
         }
+    }
+    
+    pub fn name(&self) -> ~str
+    {
+        self.profile_info(CL_PLATFORM_NAME)
+    }
+    
+    pub fn version(&self) -> ~str
+    {
+        self.profile_info(CL_PLATFORM_VERSION)
+    }
+    
+    pub fn profile(&self) -> ~str
+    {
+        self.profile_info(CL_PLATFORM_PROFILE)
+    }
+    
+    pub fn vendor(&self) -> ~str
+    {
+        self.profile_info(CL_PLATFORM_VENDOR)
+    }
+    
+    pub fn extensions(&self) -> ~str
+    {
+        self.profile_info(CL_PLATFORM_EXTENSIONS)
     }
 }
 
