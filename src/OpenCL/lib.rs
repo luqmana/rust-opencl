@@ -5,6 +5,7 @@
 #[feature(macro_rules)];
 #[feature(globs)];
 #[feature(managed_boxes)];
+#[feature(link_args)];
 
 extern mod std;
 
@@ -13,8 +14,7 @@ extern mod std;
 #[cfg(target_os = "macos")]
 extern { }
 
-#[nolink]
-#[link_args = "-lOpenCL"]
+#[link(name = "OpenCL")]
 #[cfg(target_os = "linux")]
 extern { }
 

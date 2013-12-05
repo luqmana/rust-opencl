@@ -1,3 +1,4 @@
+#[feature(link_args)];
 #[feature(macro_rules)];
 #[feature(globs)];
 
@@ -11,8 +12,7 @@ use OpenCL::hl::*;
 #[cfg(target_os = "macos")]
 extern { }
 
-#[nolink]
-#[link_args = "-lOpenCL"]
+#[link(name = "OpenCL")]
 #[cfg(target_os = "linux")]
 extern { }
 

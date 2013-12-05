@@ -1,3 +1,4 @@
+#[feature(link_args)];
 extern mod OpenCL;
 
 use std::io::fs::File;
