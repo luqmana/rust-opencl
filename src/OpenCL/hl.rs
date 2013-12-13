@@ -311,7 +311,7 @@ impl Drop for Context
     }
 }
 
-impl<'self, T> KernelArg for &'self Buffer<T> {
+impl<'r, T> KernelArg for &'r Buffer<T> {
     fn get_value(&self) -> (libc::size_t, *libc::c_void)
     {
         unsafe {
@@ -640,7 +640,7 @@ trait EventList {
     }
 }
 
-impl<'self> EventList for &'self Event {
+impl<'r> EventList for &'r Event {
     fn as_event_list<T>(&self, f: |*cl_event, cl_uint| -> T) -> T
     {
         f(ptr::to_unsafe_ptr(&self.event), 1 as cl_uint)
@@ -664,7 +664,7 @@ impl<T: EventList> EventList for Option<T> {
     }
 }
 
-impl<'self> EventList for &'self [Event] {
+impl<'r> EventList for &'r [Event] {
     fn as_event_list<T>(&self, f: |*cl_event, cl_uint| -> T) -> T
     {
         /* this is wasteful */

@@ -91,7 +91,7 @@ pub trait Read {
     fn read(&mut self, |offset: size_t, ptr: *mut c_void, size: size_t|);
 }
 
-impl<'self, T> Put<T, CLBuffer<T>> for &'self [T]
+impl<'r, T> Put<T, CLBuffer<T>> for &'r [T]
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> CLBuffer<T>
     {
@@ -103,7 +103,7 @@ impl<'self, T> Put<T, CLBuffer<T>> for &'self [T]
     }
 }
 
-impl<'self, T> Put<T, CLBuffer<T>> for &'self ~[T]
+impl<'r, T> Put<T, CLBuffer<T>> for &'r ~[T]
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> CLBuffer<T>
     {
@@ -142,7 +142,7 @@ impl<T> Get<CLBuffer<T>, T> for ~[T]
     }
 }
 
-impl<'self, T> Write for &'self [T]
+impl<'r, T> Write for &'r [T]
 {
     fn write(&self, f: |offset: size_t, ptr: *c_void, size: size_t|)
     {
@@ -152,7 +152,7 @@ impl<'self, T> Write for &'self [T]
     }
 }
 
-impl<'self, T> Read for &'self mut [T]
+impl<'r, T> Read for &'r mut [T]
 {
     fn read(&mut self, f: |offset: size_t, ptr: *mut c_void, size: size_t|)
     {

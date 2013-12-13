@@ -55,7 +55,6 @@ impl<T: Clone> Array3D<T> {
 
 #[unsafe_destructor]
 impl<T> Drop for Array3D_cl<T> {
-    #[fixed_stack_segment] #[inline(never)]
     fn drop(&mut self) {
         unsafe {
             clReleaseMemObject(self.buf);
@@ -63,7 +62,7 @@ impl<T> Drop for Array3D_cl<T> {
     }
 }
 
-impl<'self, T> Put<Array3D<T>, Array3D_cl<T>> for &'self Array3D<T>
+impl<'r, T> Put<Array3D<T>, Array3D_cl<T>> for &'r Array3D<T>
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> Array3D_cl<T>
     {
@@ -178,7 +177,6 @@ impl<T: Clone> Array2D<T> {
 
 #[unsafe_destructor]
 impl<T> Drop for Array2D_cl<T> {
-    #[fixed_stack_segment] #[inline(never)]
     fn drop(&mut self) {
         unsafe {
             clReleaseMemObject(self.buf);
@@ -186,7 +184,7 @@ impl<T> Drop for Array2D_cl<T> {
     }
 }
 
-impl<'self, T> Put<Array2D<T>, Array2D_cl<T>> for &'self Array2D<T>
+impl<'r, T> Put<Array2D<T>, Array2D_cl<T>> for &'r Array2D<T>
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> Array2D_cl<T>
     {
