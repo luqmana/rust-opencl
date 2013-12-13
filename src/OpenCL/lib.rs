@@ -7,6 +7,8 @@
 #[feature(managed_boxes)];
 #[feature(link_args)];
 
+//! OpenCL bindings for Rust.
+
 extern mod std;
 
 #[nolink]

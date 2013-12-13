@@ -30,3 +30,7 @@ check:
 .PHONY: clean
 clean:
 	rustpkg clean OpenCL
+
+.PHONY: docs
+docs:
+	rustdoc src/OpenCL/lib.rs
