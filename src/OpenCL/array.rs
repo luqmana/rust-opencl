@@ -86,7 +86,7 @@ impl<T> Get<Array3D_cl<T>, Array3D<T>> for Array3D<T>
     {
         let mut v: ~[T] = vec::with_capacity(arr.len());
         unsafe {
-            vec::raw::set_len(&mut v, arr.len());
+            v.set_len(arr.len());
         }
 
         v.as_mut_buf(|p, len| {
@@ -207,7 +207,7 @@ impl<T> Get<Array2D_cl<T>, Array2D<T>> for Array2D<T>
     {
         let mut v: ~[T] = vec::with_capacity(arr.len());
         unsafe {
-            vec::raw::set_len(&mut v, arr.len());
+            v.set_len(arr.len())
         }
 
         v.as_mut_buf(|p, len| {

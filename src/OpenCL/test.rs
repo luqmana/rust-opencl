@@ -60,7 +60,7 @@ mod mem {
         let mut buffer: ~[u8] = ~[];
         unsafe {
             buffer.reserve(max);
-            vec::raw::set_len(&mut buffer, max);
+            buffer.set_len(max);
         }
 
         // copy from input into buffer
@@ -71,7 +71,7 @@ mod mem {
             let target = buffer.mut_slice(off, off + len);
             unsafe {
                 vec::raw::buf_as_slice(ptr as *u8, len, |src| {
-                    vec::bytes::copy_memory(target, src, len);
+                    vec::bytes::copy_memory(target, src);
                 })
             }
         });
@@ -84,7 +84,7 @@ mod mem {
             let src = buffer.slice(off, off + len);
             unsafe {
                 vec::raw::mut_buf_as_slice(ptr as *mut u8, len, |dst| {
-                    vec::bytes::copy_memory(dst, src, len);
+                    vec::bytes::copy_memory(dst, src);
                 })
             }
         })

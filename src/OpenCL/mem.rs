@@ -133,7 +133,7 @@ impl<T> Get<CLBuffer<T>, T> for ~[T]
     {
         let mut v: ~[T] = vec::with_capacity(mem.len());
         unsafe {
-            vec::raw::set_len(&mut v, mem.len());
+            v.set_len(mem.len());
         }
         v.as_imm_buf(|p, len| {
             f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t);
