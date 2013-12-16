@@ -20,6 +20,8 @@ extern { }
 #[cfg(target_os = "linux")]
 extern { }
 
+/// Low-level OpenCL bindings. These should primarily be used by the
+/// higher level features in this library.
 pub mod CL;
 pub mod error;
 pub mod hl;
