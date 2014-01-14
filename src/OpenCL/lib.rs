@@ -1,7 +1,4 @@
-#[pkgid = "OpenCL"];
-#[link(name = "OpenCL",
-       version = "0.1",
-       uuid = "26bc3ce8-7720-41a7-9280-c522285f2e70")];
+#[crate_id = "OpenCL#0.1"];
 #[crate_type = "lib"];
 #[feature(macro_rules)];
 #[feature(globs)];

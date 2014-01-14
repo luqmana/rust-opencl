@@ -66,9 +66,9 @@ impl<'r, T> Put<Array3D<T>, Array3D_cl<T>> for &'r Array3D<T>
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> Array3D_cl<T>
     {
-        let out = self.dat.as_imm_buf(|p, len| {
-            f(p as *c_void, (len * mem::size_of::<T>()) as size_t)
-        });
+        let p = self.dat.as_ptr();
+        let len = self.dat.len();
+        let out = f(p as *c_void, (len * mem::size_of::<T>()) as size_t);
 
         Array3D_cl{
             width: self.width,
@@ -89,9 +89,9 @@ impl<T> Get<Array3D_cl<T>, Array3D<T>> for Array3D<T>
             v.set_len(arr.len());
         }
 
-        v.as_mut_buf(|p, len| {
-            f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t)
-        });
+        let p = v.as_mut_ptr();
+        let len = v.len();
+        f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t);
 
         Array3D {
             width: arr.width,
@@ -105,18 +105,18 @@ impl<T> Get<Array3D_cl<T>, Array3D<T>> for Array3D<T>
 impl<T> Write for Array3D<T> {
     fn write(&self, f: |offset: size_t, ptr: *c_void, size: size_t|)
     {
-        self.dat.as_imm_buf(|p, len| {
-            f(0, p as *c_void, (len * mem::size_of::<T>()) as size_t)
-        });
+        let p = self.dat.as_ptr();
+        let len = self.dat.len();
+        f(0, p as *c_void, (len * mem::size_of::<T>()) as size_t)
     }
 }
 
 impl<T> Read for Array3D<T> {
     fn read(&mut self, f: |offset: size_t, ptr: *mut c_void, size: size_t|)
     {
-        self.dat.as_mut_buf(|p, len| {
-            f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t)
-        });
+        let p = self.dat.as_ptr();
+        let len = self.dat.len();
+        f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t)
     }
 }
 
@@ -188,9 +188,9 @@ impl<'r, T> Put<Array2D<T>, Array2D_cl<T>> for &'r Array2D<T>
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> Array2D_cl<T>
     {
-        let out = self.dat.as_imm_buf(|p, len| {
-            f(p as *c_void, (len * mem::size_of::<T>()) as size_t)
-        });
+        let p = self.dat.as_ptr();
+        let len = self.dat.len();
+        let out = f(p as *c_void, (len * mem::size_of::<T>()) as size_t);
 
         Array2D_cl{
             width: self.width,
@@ -210,10 +210,10 @@ impl<T> Get<Array2D_cl<T>, Array2D<T>> for Array2D<T>
             v.set_len(arr.len())
         }
 
-        v.as_mut_buf(|p, len| {
-            f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t)
-        });
-
+        let p = v.as_mut_ptr();
+        let len = v.len();
+        f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t);
+    
         Array2D {
             width: arr.width,
             height: arr.height,
@@ -225,18 +225,18 @@ impl<T> Get<Array2D_cl<T>, Array2D<T>> for Array2D<T>
 impl<T> Write for Array2D<T> {
     fn write(&self, f: |offset: size_t, ptr: *c_void, size: size_t|)
     {
-        self.dat.as_imm_buf(|p, len| {
-            f(0, p as *c_void, (len * mem::size_of::<T>()) as size_t)
-        });
+        let p = self.dat.as_ptr();
+        let len = self.dat.len();
+        f(0, p as *c_void, (len * mem::size_of::<T>()) as size_t)
     }
 }
 
 impl<T> Read for Array2D<T> {
     fn read(&mut self, f: |offset: size_t, ptr: *mut c_void, size: size_t|)
     {
-        self.dat.as_mut_buf(|p, len| {
-            f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t)
-        });
+        let p = self.dat.as_ptr();
+        let len = self.dat.len();
+        f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t)
     }
 }
 

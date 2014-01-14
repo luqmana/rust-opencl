@@ -29,8 +29,12 @@ check:
 
 .PHONY: clean
 clean:
-	rustpkg clean OpenCL
+	$(RUSTPKG) clean OpenCL
 
 .PHONY: docs
 docs:
 	rustdoc src/OpenCL/lib.rs
+
+.PHONY: install
+install:
+	$(RUSTPKG) install OpenCL

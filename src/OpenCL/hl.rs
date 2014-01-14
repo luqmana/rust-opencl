@@ -40,11 +40,8 @@ impl Platform {
                            ptr::to_unsafe_ptr(&num_devices));
 
             let ids = vec::from_elem(num_devices as uint, 0 as cl_device_id);
-            ids.as_imm_buf(|ids, len| {
-                clGetDeviceIDs(self.id, dtype, len as cl_uint,
-                               ids, ptr::to_unsafe_ptr(&num_devices));
-            });
-
+            clGetDeviceIDs(self.id, dtype, ids.len() as cl_uint,
+                           ids.as_ptr(), ptr::to_unsafe_ptr(&num_devices));
             ids.map(|id| { Device {id: *id }})
         }
     }
@@ -77,14 +74,11 @@ impl Platform {
 
             let value = " ".repeat(size as uint);
 
-            value.as_imm_buf(|p, len| {
             clGetPlatformInfo(self.id,
                               name,
-                              len as libc::size_t,
-                              p as *libc::c_void,
+                              value.len() as libc::size_t,
+                              value.as_ptr() as *libc::c_void,
                               ptr::to_mut_unsafe_ptr(&mut size));
-            });
-
             value
         }
     }
@@ -128,13 +122,11 @@ pub fn get_platforms() -> ~[Platform]
 
         let ids = vec::from_elem(num_platforms as uint, 0 as cl_platform_id);
 
-        ids.as_imm_buf(|ids, len| {
-            let status = clGetPlatformIDs(len as cl_uint,
-                                          ids,
-                                          ptr::to_unsafe_ptr(&num_platforms));
-            check(status, "could not get platforms.");
-        });
-
+        let status = clGetPlatformIDs(ids.len() as cl_uint,
+                                      ids.as_ptr(),
+                                      ptr::to_unsafe_ptr(&num_platforms));
+        check(status, "could not get platforms.");
+        
         ids.map(|id| { Platform { id: *id } })
     }
 }
@@ -144,30 +136,30 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn name(&self) -> ~str { unsafe {
-        let size = 0;
-        let status = clGetDeviceInfo(
-            self.id,
-            CL_DEVICE_NAME,
-            0,
-            ptr::null(),
-            ptr::to_unsafe_ptr(&size));
-        check(status, "Could not determine name length");
-
-        let buf = vec::from_elem(size as uint, 0);
-
-        buf.as_imm_buf(|p, len| {
+    pub fn name(&self) -> ~str {
+        unsafe {
+            let size = 0;
             let status = clGetDeviceInfo(
                 self.id,
                 CL_DEVICE_NAME,
-                len as libc::size_t,
-                p as *libc::c_void,
+                0,
+                ptr::null(),
+                ptr::to_unsafe_ptr(&size));
+            check(status, "Could not determine name length");
+            
+            let buf = vec::from_elem(size as uint, 0);
+            
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_NAME,
+                buf.len() as libc::size_t,
+                buf.as_ptr() as *libc::c_void,
                 ptr::null());
             check(status, "Could not get device name");
-
-            str::raw::from_c_str(p as *i8)
-        })
-    } }
+            
+            str::raw::from_c_str(buf.as_ptr() as *i8)
+        }
+    }
 
 	pub fn computeUnits(&self) -> uint {
 		unsafe {
@@ -475,20 +467,18 @@ impl Program
                     ptr::null(),
                     ptr::to_unsafe_ptr(&size));
                 check(status, "Could not get build log");
-
+                
                 let buf = vec::from_elem(size as uint, 0u8);
-                buf.as_imm_buf(|p, len| {
-                    let status = clGetProgramBuildInfo(
-                        self.prg,
-                        device.id,
-                        CL_PROGRAM_BUILD_LOG,
-                        len as libc::size_t,
-                        p as *libc::c_void,
-                        ptr::null());
-                    check(status, "Could not get build log");
-
-                    Err(str::raw::from_c_str(p as *libc::c_char))
-                })
+                let status = clGetProgramBuildInfo(
+                    self.prg,
+                    device.id,
+                    CL_PROGRAM_BUILD_LOG,
+                    buf.len() as libc::size_t,
+                    buf.len() as *libc::c_void,
+                    ptr::null());
+                check(status, "Could not get build log");
+                
+                Err(str::raw::from_c_str(buf.len() as *libc::c_char))
             }
         }
     }
@@ -670,9 +660,7 @@ impl<'r> EventList for &'r [Event] {
         /* this is wasteful */
         let events = self.iter().map(|event| event.event).to_owned_vec();
 
-        events.as_imm_buf(|p, len| {
-            f(p as **libc::c_void, len as cl_uint)
-        })
+        f(events.as_ptr() as **libc::c_void, events.len() as cl_uint)
     }
 }
 

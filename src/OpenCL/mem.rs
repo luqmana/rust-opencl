@@ -95,11 +95,9 @@ impl<'r, T> Put<T, CLBuffer<T>> for &'r [T]
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> CLBuffer<T>
     {
-        self.as_imm_buf(|p, len| {
-            CLBuffer {
-                cl_buffer: f(p as *c_void, (len * mem::size_of::<T>()) as size_t)
-            }
-        })
+        CLBuffer {
+            cl_buffer: f(self.as_ptr() as *c_void, (self.len() * mem::size_of::<T>()) as size_t)
+        }
     }
 }
 
@@ -107,11 +105,9 @@ impl<'r, T> Put<T, CLBuffer<T>> for &'r ~[T]
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> CLBuffer<T>
     {
-        self.as_imm_buf(|p, len| {
-            CLBuffer {
-                cl_buffer: f(p as *c_void, (len * mem::size_of::<T>()) as size_t)
-            }
-        })
+        CLBuffer {
+            cl_buffer: f(self.as_ptr() as *c_void, (self.len() * mem::size_of::<T>()) as size_t)
+        }
     }
 }
 
@@ -119,11 +115,9 @@ impl<T> Put<T, CLBuffer<T>> for ~[T]
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> CLBuffer<T>
     {
-        self.as_imm_buf(|p, len| {
-            CLBuffer {
-                cl_buffer: f(p as *c_void, (len * mem::size_of::<T>()) as size_t)
-            }
-        })
+        CLBuffer {
+            cl_buffer: f(self.as_ptr() as *c_void, (self.len() * mem::size_of::<T>()) as size_t)
+        }
     }
 }
 
@@ -135,9 +129,7 @@ impl<T> Get<CLBuffer<T>, T> for ~[T]
         unsafe {
             v.set_len(mem.len());
         }
-        v.as_imm_buf(|p, len| {
-            f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t);
-        });
+        f(0, v.as_ptr() as *mut c_void, (v.len() * mem::size_of::<T>()) as size_t);
         v
     }
 }
@@ -146,9 +138,7 @@ impl<'r, T> Write for &'r [T]
 {
     fn write(&self, f: |offset: size_t, ptr: *c_void, size: size_t|)
     {
-        self.as_imm_buf(|p, len| {
-            f(0, p as *c_void, (len * mem::size_of::<T>()) as size_t)
-        })
+        f(0, self.as_ptr() as *c_void, (self.len() * mem::size_of::<T>()) as size_t)
     }
 }
 
@@ -156,9 +146,9 @@ impl<'r, T> Read for &'r mut [T]
 {
     fn read(&mut self, f: |offset: size_t, ptr: *mut c_void, size: size_t|)
     {
-        self.as_mut_buf(|p, len| {
-            f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t)
-        })
+        let p = self.as_mut_ptr();
+        let len = self.len();
+        f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t)
     }
 }
 
