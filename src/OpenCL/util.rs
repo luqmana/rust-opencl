@@ -1,3 +1,5 @@
+//! Utility functions
+
 use hl::*;
 
 pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), ~str>

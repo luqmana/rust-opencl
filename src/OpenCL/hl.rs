@@ -1,4 +1,4 @@
-// Higher level OpenCL wrappers.
+//! A higher level API.
 
 use CL;
 use CL::*;

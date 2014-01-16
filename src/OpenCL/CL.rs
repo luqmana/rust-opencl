@@ -82,7 +82,7 @@ pub struct cl_buffer_region {
 }
 
 
-/* Error Codes */
+/// OpenCL error codes.
 #[deriving(Eq)]
 pub enum CLStatus {
     CL_SUCCESS = 0,

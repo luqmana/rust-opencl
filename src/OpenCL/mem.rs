@@ -1,3 +1,5 @@
+//! High level buffer management.
+
 use std::libc::{size_t, c_void};
 use std::mem;
 use std::ptr;

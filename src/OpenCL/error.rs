@@ -1,3 +1,5 @@
+//! Error handling utilities.
+
 use CL::*;
 
 impl ToStr for CLStatus {

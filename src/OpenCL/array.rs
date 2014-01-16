@@ -1,3 +1,5 @@
+//! Two- and three-dimensional array support.
+
 use std::ptr;
 use CL::*;
 use CL::ll::*;
