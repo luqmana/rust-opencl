@@ -10,6 +10,7 @@ use std::str;
 use std::mem;
 use std::cast;
 use std::ptr;
+use std::unstable::mutex;
 use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 
 pub enum DeviceType {
@@ -109,22 +110,32 @@ impl Platform {
     }
 }
 
+// This mutex is used to work around weak OpenCL implementations.
+// On some implementations concurrent calls to clGetPlatformIDs
+// will cause the implantation to return invalid status. 
+static mut platforms_mutex: mutex::Mutex = mutex::MUTEX_INIT;
+
 pub fn get_platforms() -> ~[Platform]
 {
     let num_platforms = 0;
 
     unsafe
     {
+        platforms_mutex.lock();
         let status = clGetPlatformIDs(0,
                                       ptr::null(),
                                       ptr::to_unsafe_ptr(&num_platforms));
+        // unlock this before the check in case the check fails
+        platforms_mutex.unlock();
         check(status, "could not get platform count.");
 
         let ids = vec::from_elem(num_platforms as uint, 0 as cl_platform_id);
 
+        platforms_mutex.lock();
         let status = clGetPlatformIDs(ids.len() as cl_uint,
                                       ids.as_ptr(),
                                       ptr::to_unsafe_ptr(&num_platforms));
+        platforms_mutex.unlock();
         check(status, "could not get platforms.");
         
         ids.map(|id| { Platform { id: *id } })
