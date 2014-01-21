@@ -628,7 +628,7 @@ impl Drop for Event
     }
 }
 
-trait EventList {
+pub trait EventList {
     fn as_event_list<T>(&self, |*cl_event, cl_uint| -> T) -> T;
 
     fn wait(&self) {

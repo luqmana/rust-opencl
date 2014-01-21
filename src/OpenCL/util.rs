@@ -37,9 +37,9 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
     let platforms = get_platforms();
     for platform in platforms.iter() {
         let types = match cltype {
-            ANY => &[CPU, GPU],
-            CPU_PREFERED | CPU_ONLY => &[CPU],
-            GPU_PREFERED | GPU_ONLY => &[GPU]
+            ANY => ~[CPU, GPU],
+            CPU_PREFERED | CPU_ONLY => ~[CPU],
+            GPU_PREFERED | GPU_ONLY => ~[GPU]
         };
 
         let devices = platform.get_devices_by_types(types);
