@@ -25,7 +25,7 @@ libOpenCL :
 
 .PHONY: check
 check:
-	RUST_THREADS=4 $(RUSTPKG) test OpenCL
+	$(RUSTPKG) test OpenCL
 
 .PHONY: clean
 clean:

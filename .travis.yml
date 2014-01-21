@@ -5,3 +5,5 @@ install:
   - sudo apt-get install rust-nightly fglrx opencl-headers
 script:
   - make check
+env:
+  - RUST_THREADS=4
