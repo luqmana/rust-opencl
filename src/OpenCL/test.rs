@@ -3,7 +3,7 @@
 #[feature(globs)];
 
 extern mod std;
-extern mod OpenCL;
+extern mod OpenCL = "OpenCL#0.2";
 
 use OpenCL::hl::*;
 
