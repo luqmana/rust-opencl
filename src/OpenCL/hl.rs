@@ -485,11 +485,11 @@ impl Program
                     device.id,
                     CL_PROGRAM_BUILD_LOG,
                     buf.len() as libc::size_t,
-                    buf.len() as *libc::c_void,
+                    buf.as_ptr() as *libc::c_void,
                     ptr::null());
                 check(status, "Could not get build log");
                 
-                Err(str::raw::from_c_str(buf.len() as *libc::c_char))
+                Err(str::raw::from_c_str(buf.as_ptr() as *libc::c_char))
             }
         }
     }
