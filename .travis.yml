@@ -8,7 +8,6 @@ before_install:
   - sudo apt-get update
 install:
   - sudo apt-get install rust-nightly fglrx opencl-headers
-  - sudo modprobe fglrx
 script:
   - make check
   - make docs
