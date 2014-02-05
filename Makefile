@@ -3,9 +3,7 @@ ifndef RUSTC
 	RUSTC = rustc
 endif
 
-ifndef RUSTPKG
-	RUSTPKG = rustpkg
-endif
+RUSTC_OPTS = -L./build --out-dir ./build -O
 
 OPENCL_SRC = \
 	lib.rs \
@@ -17,24 +15,24 @@ OPENCL_SRC = \
 	array.rs
 
 .PHONY: all
-all: libOpenCL opencl-test
+all: libOpenCL
+
+build:
+	mkdir -p build
 
 .PHONY: libOpenCL
-libOpenCL :
-	$(RUSTPKG) build OpenCL
+libOpenCL : build
+	rustc $(RUSTC_OPTS) src/OpenCL/lib.rs
 
 .PHONY: check
-check:
-	$(RUSTPKG) test OpenCL
+check: libOpenCL
+	rustc $(RUSTC_OPTS) --test src/OpenCL/test.rs
+	./build/test
 
 .PHONY: clean
 clean:
-	$(RUSTPKG) clean OpenCL
+	rm -rf build
 
 .PHONY: docs
 docs:
 	rustdoc src/OpenCL/lib.rs
-
-.PHONY: install
-install:
-	$(RUSTPKG) install OpenCL
