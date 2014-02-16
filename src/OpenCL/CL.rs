@@ -1,4 +1,4 @@
-extern mod std;
+extern crate std;
 
 use std::libc;
 
@@ -458,8 +458,8 @@ pub mod ll {
     pub fn clGetDeviceInfo(device: cl_device_id,
                        param_name: cl_device_info,
                        param_value_size: libc::size_t,
-                       param_value: *libc::c_void,
-                       param_value_size_ret: *libc::size_t) -> cl_int;
+                       param_value: *mut libc::c_void,
+                       param_value_size_ret: *mut libc::size_t) -> cl_int;
 
     /* Context APIs */
     pub fn clCreateContext(properties: *cl_context_properties,
@@ -592,8 +592,8 @@ pub mod ll {
                              device: cl_device_id,
                              param_name: cl_program_info,
                              param_value_size: libc::size_t,
-                             param_value: *libc::c_void,
-                             param_value_size_ret: *libc::size_t) -> cl_int;
+                             param_value: *mut libc::c_void,
+                             param_value_size_ret: *mut libc::size_t) -> cl_int;
 
     /* Kernel Object APIs */
     pub fn clCreateKernel(program: cl_program,

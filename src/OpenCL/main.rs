@@ -1,5 +1,5 @@
 #[feature(link_args)];
-extern mod OpenCL;
+extern crate OpenCL;
 
 use std::io::fs::File;
 use std::io::Reader;

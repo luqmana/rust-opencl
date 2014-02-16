@@ -28,7 +28,7 @@ pub trait Buffer<T> {
             let err = clGetMemObjectInfo(self.id(),
                                          CL_MEM_SIZE,
                                          mem::size_of::<size_t>() as size_t,
-                                         ptr::to_unsafe_ptr(&size) as *c_void,
+                                         (&size as *u64) as *c_void,
                                          ptr::null());
 
             check(err, "Failed to read memory size");
@@ -55,7 +55,7 @@ impl<T> Drop for CLBuffer<T> {
 impl<T> Buffer<T> for CLBuffer<T> {
     unsafe fn id_ptr(&self) -> *cl_mem
     {
-        ptr::to_unsafe_ptr(&self.cl_buffer)
+        &self.cl_buffer as *cl_mem
     }
 }
 
@@ -158,9 +158,9 @@ macro_rules! get_arg (
     ($t:ty) => (impl Get<CLBuffer<$t>, $t> for $t
         {
             fn get(_: &CLBuffer<$t>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> $t {
-                let mut v = zero();
-                f(0, ptr::to_unsafe_ptr(&mut v) as *mut c_void, mem::size_of::<$t>() as size_t);
-                v
+                let mut v: $t = zero();
+                f(0, (&mut v as *mut $t) as *mut c_void, mem::size_of::<$t>() as size_t);
+                v as $t
             }
         })
 )
@@ -179,7 +179,7 @@ macro_rules! put_arg (
         {
             fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> CLBuffer<$t> {
                 CLBuffer {
-                    cl_buffer: f(ptr::to_unsafe_ptr(self) as *c_void, mem::size_of::<$t>() as size_t)
+                    cl_buffer: f((self as *$t) as *c_void, mem::size_of::<$t>() as size_t)
                 }
             }
         })
@@ -199,7 +199,7 @@ macro_rules! read_arg (
         impl Read for $t
         {
             fn read(&mut self, f: |offset: size_t, ptr: *mut c_void, size: size_t|) {
-                f(0, ptr::to_unsafe_ptr(self) as *mut c_void, mem::size_of::<$t>() as size_t)
+                f(0, (self as *mut $t) as *mut c_void, mem::size_of::<$t>() as size_t)
             }
         }
     )
@@ -218,7 +218,7 @@ macro_rules! write_arg (
     ($t:ty) => (impl Write for $t
         {
             fn write(&self, f: |offset: size_t, ptr: *c_void, size: size_t|) {
-                f(0, ptr::to_unsafe_ptr(self) as *c_void, mem::size_of::<$t>() as size_t)
+                f(0, (self as *$t) as *c_void, mem::size_of::<$t>() as size_t)
             }
         })
 )
