@@ -10,7 +10,7 @@ use std::str;
 use std::mem;
 use std::cast;
 use std::ptr;
-use std::unstable::mutex;
+use sync::mutex;
 use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 
 pub enum DeviceType {
@@ -38,11 +38,11 @@ impl Platform {
             info!("Looking for devices matching {:?}", dtype);
 
             clGetDeviceIDs(self.id, dtype, 0, ptr::null(),
-                           ptr::to_unsafe_ptr(&num_devices));
+                           (&num_devices));
 
             let ids = vec::from_elem(num_devices as uint, 0 as cl_device_id);
             clGetDeviceIDs(self.id, dtype, ids.len() as cl_uint,
-                           ids.as_ptr(), ptr::to_unsafe_ptr(&num_devices));
+                           ids.as_ptr(), (&num_devices));
             ids.map(|id| { Device {id: *id }})
         }
     }
@@ -71,7 +71,7 @@ impl Platform {
                             name,
                             0,
                             ptr::null(),
-                            ptr::to_mut_unsafe_ptr(&mut size));
+                            &mut size);
 
             let value = " ".repeat(size as uint);
 
@@ -79,7 +79,7 @@ impl Platform {
                               name,
                               value.len() as libc::size_t,
                               value.as_ptr() as *libc::c_void,
-                              ptr::to_mut_unsafe_ptr(&mut size));
+                              &mut size);
             value
         }
     }
@@ -113,7 +113,7 @@ impl Platform {
 // This mutex is used to work around weak OpenCL implementations.
 // On some implementations concurrent calls to clGetPlatformIDs
 // will cause the implantation to return invalid status. 
-static mut platforms_mutex: mutex::Mutex = mutex::MUTEX_INIT;
+static mut platforms_mutex: mutex::StaticMutex = mutex::MUTEX_INIT;
 
 pub fn get_platforms() -> ~[Platform]
 {
@@ -121,23 +121,22 @@ pub fn get_platforms() -> ~[Platform]
 
     unsafe
     {
-        platforms_mutex.lock();
+        let guard = platforms_mutex.lock();
         let status = clGetPlatformIDs(0,
                                       ptr::null(),
-                                      ptr::to_unsafe_ptr(&num_platforms));
+                                      (&num_platforms));
         // unlock this before the check in case the check fails
-        platforms_mutex.unlock();
         check(status, "could not get platform count.");
 
         let ids = vec::from_elem(num_platforms as uint, 0 as cl_platform_id);
 
-        platforms_mutex.lock();
         let status = clGetPlatformIDs(ids.len() as cl_uint,
                                       ids.as_ptr(),
-                                      ptr::to_unsafe_ptr(&num_platforms));
-        platforms_mutex.unlock();
+                                      (&num_platforms));
         check(status, "could not get platforms.");
         
+        let _ = guard;
+
         ids.map(|id| { Platform { id: *id } })
     }
 }
@@ -149,23 +148,23 @@ pub struct Device {
 impl Device {
     pub fn name(&self) -> ~str {
         unsafe {
-            let size = 0;
+            let mut size = 0;
             let status = clGetDeviceInfo(
                 self.id,
                 CL_DEVICE_NAME,
                 0,
-                ptr::null(),
-                ptr::to_unsafe_ptr(&size));
+                ptr::mut_null(),
+                (&mut size));
             check(status, "Could not determine name length");
             
-            let buf = vec::from_elem(size as uint, 0);
+            let mut buf = vec::from_elem(size as uint, 0);
             
             let status = clGetDeviceInfo(
                 self.id,
                 CL_DEVICE_NAME,
                 buf.len() as libc::size_t,
-                buf.as_ptr() as *libc::c_void,
-                ptr::null());
+                buf.as_mut_ptr() as *mut libc::c_void,
+                ptr::mut_null());
             check(status, "Could not get device name");
             
             str::raw::from_c_str(buf.as_ptr() as *i8)
@@ -179,8 +178,8 @@ impl Device {
                 self.id,
                 CL_DEVICE_MAX_COMPUTE_UNITS,
                 8,
-                ptr::to_mut_unsafe_ptr(&mut ct) as *libc::c_void,
-                ptr::null());
+                (&mut ct as *mut uint) as *mut libc::c_void,
+                ptr::mut_null());
             check(status, "Could not get number of device compute units.");
 			return ct;
 		}
@@ -197,10 +196,10 @@ impl Device {
             // TODO: Proper error messages
             let ctx = clCreateContext(ptr::null(),
                                       1,
-                                      ptr::to_unsafe_ptr(&self.id),
+                                      &self.id,
                                       cast::transmute(ptr::null::<||>()),
                                       ptr::null(),
-                                      ptr::to_unsafe_ptr(&errcode));
+                                      (&errcode));
 
             check(errcode, "Failed to create opencl context!");
 
@@ -222,7 +221,7 @@ impl Context {
                                      flags,
                                      (size*mem::size_of::<T>()) as libc::size_t ,
                                      ptr::null(),
-                                     ptr::to_unsafe_ptr(&status));
+                                     (&status));
             check(status, "Could not allocate buffer");
             CLBuffer{cl_buffer: buf}
         }
@@ -238,7 +237,7 @@ impl Context {
                                flags | CL_MEM_COPY_HOST_PTR,
                                len,
                                p,
-                               ptr::to_unsafe_ptr(&status))
+                               (&status))
             };
             check(status, "Could not allocate buffer");
             buf
@@ -255,7 +254,7 @@ impl Context {
             let cqueue = clCreateCommandQueue(self.ctx,
                                               device.id,
                                               CL_QUEUE_PROFILING_ENABLE,
-                                              ptr::to_unsafe_ptr(&errcode));
+                                              (&errcode));
 
             check(errcode, "Failed to create command queue!");
 
@@ -274,9 +273,9 @@ impl Context {
                 let program = clCreateProgramWithSource(
                     self.ctx,
                     1,
-                    ptr::to_unsafe_ptr(&src),
+                    (&src),
                     ptr::null(),
-                    ptr::to_unsafe_ptr(&status));
+                    (&status));
                 check(status, "Could not create program");
 
                 Program { prg: program }
@@ -292,11 +291,11 @@ impl Context {
                 clCreateProgramWithBinary(
                     self.ctx,
                     1,
-                    ptr::to_unsafe_ptr(&device.id),
-                    ptr::to_unsafe_ptr(&len),
-                    ptr::to_unsafe_ptr(&src) as **libc::c_uchar,
+                    &device.id,
+                    (&len),
+                    (&src as **i8) as **libc::c_uchar,
                     ptr::null(),
-                    ptr::to_unsafe_ptr(&status))
+                    (&status))
             };
             check(status, "Could not create program");
 
@@ -360,7 +359,7 @@ impl CommandQueue
                     },
                     event_count,
                     event,
-                    ptr::to_unsafe_ptr(&e));
+                    (&e));
                 check(status, "Error enqueuing kernel.");
                 Event { event: e }
             })
@@ -461,7 +460,7 @@ impl Program
     {
         unsafe
         {
-            let ret = clBuildProgram(self.prg, 1, ptr::to_unsafe_ptr(&device.id),
+            let ret = clBuildProgram(self.prg, 1, &device.id,
                                      ptr::null(),
                                      cast::transmute(ptr::null::<||>()),
                                      ptr::null());
@@ -469,24 +468,24 @@ impl Program
                 Ok(())
             }
             else {
-                let size = 0 as libc::size_t;
+                let mut size = 0 as libc::size_t;
                 let status = clGetProgramBuildInfo(
                     self.prg,
                     device.id,
                     CL_PROGRAM_BUILD_LOG,
                     0,
-                    ptr::null(),
-                    ptr::to_unsafe_ptr(&size));
+                    ptr::mut_null(),
+                    (&mut size));
                 check(status, "Could not get build log");
                 
-                let buf = vec::from_elem(size as uint, 0u8);
+                let mut buf = vec::from_elem(size as uint, 0u8);
                 let status = clGetProgramBuildInfo(
                     self.prg,
                     device.id,
                     CL_PROGRAM_BUILD_LOG,
                     buf.len() as libc::size_t,
-                    buf.as_ptr() as *libc::c_void,
-                    ptr::null());
+                    buf.as_mut_ptr() as *mut libc::c_void,
+                    ptr::mut_null());
                 check(status, "Could not get build log");
                 
                 Err(str::raw::from_c_str(buf.as_ptr() as *libc::c_char))
@@ -528,7 +527,7 @@ pub fn create_kernel(program: & Program, kernel: & str) -> Kernel
         {
             let kernel = clCreateKernel(program.prg,
                                         str_ptr,
-                                        ptr::to_unsafe_ptr(&errcode));
+                                        (&errcode));
 
             check(errcode, "Failed to create kernel!");
 
@@ -547,7 +546,7 @@ macro_rules! scalar_kernel_arg (
     ($t:ty) => (impl KernelArg for $t {
         fn get_value(&self) -> (libc::size_t, *libc::c_void) {
             (mem::size_of::<$t>() as libc::size_t,
-             ptr::to_unsafe_ptr(self) as *libc::c_void)
+             (self as *$t) as *libc::c_void)
         }
     })
 )
@@ -590,7 +589,7 @@ impl Event {
             let ret = clGetEventProfilingInfo(self.event,
                                     param,
                                     mem::size_of::<cl_ulong>() as libc::size_t,
-                                    ptr::to_unsafe_ptr(&time) as *libc::c_void,
+                                    (&time as *u64) as *libc::c_void,
                                     ptr::null());
 
             check(ret, "Failed to get profiling info");
@@ -644,14 +643,14 @@ pub trait EventList {
 impl<'r> EventList for &'r Event {
     fn as_event_list<T>(&self, f: |*cl_event, cl_uint| -> T) -> T
     {
-        f(ptr::to_unsafe_ptr(&self.event), 1 as cl_uint)
+        f(&self.event, 1 as cl_uint)
     }
 }
 
 impl EventList for Event {
     fn as_event_list<T>(&self, f: |*cl_event, cl_uint| -> T) -> T
     {
-        f(ptr::to_unsafe_ptr(&self.event), 1 as cl_uint)
+        f(&self.event, 1 as cl_uint)
     }
 }
 
@@ -696,7 +695,7 @@ impl KernelIndex for int
 
     fn get_ptr(&self) -> *libc::size_t
     {
-        ptr::to_unsafe_ptr(self) as *libc::size_t
+        (self as *int) as *libc::size_t
     }
 }
 
@@ -704,7 +703,7 @@ impl KernelIndex for (int, int) {
     fn num_dimensions(_: Option<(int, int)>) -> cl_uint { 2 }
 
     fn get_ptr(&self) -> *libc::size_t {
-        ptr::to_unsafe_ptr(self) as *libc::size_t
+        (self as *(int, int)) as *libc::size_t
     }
 }
 
@@ -713,7 +712,7 @@ impl KernelIndex for (int, int, int)
     fn num_dimensions(_: Option<(int, int, int)>) -> cl_uint { 3 }
 
     fn get_ptr(&self) -> *libc::size_t {
-        ptr::to_unsafe_ptr(self) as *libc::size_t
+        (self as *(int, int, int)) as *libc::size_t
     }
 }
 
@@ -722,7 +721,7 @@ impl KernelIndex for uint
     fn num_dimensions(_: Option<uint>) -> cl_uint { 1 }
 
     fn get_ptr(&self) -> *libc::size_t {
-        ptr::to_unsafe_ptr(self) as *libc::size_t
+        (self as *uint) as *libc::size_t
     }
 }
 
@@ -731,7 +730,7 @@ impl KernelIndex for (uint, uint)
     fn num_dimensions(_: Option<(uint, uint)>) -> cl_uint { 2 }
 
     fn get_ptr(&self) -> *libc::size_t {
-        ptr::to_unsafe_ptr(self) as *libc::size_t
+        (self as *(uint, uint)) as *libc::size_t
     }
 }
 
@@ -740,6 +739,6 @@ impl KernelIndex for (uint, uint, uint)
     fn num_dimensions(_: Option<(uint, uint, uint)>) -> cl_uint { 3 }
 
     fn get_ptr(&self) -> *libc::size_t {
-        ptr::to_unsafe_ptr(self) as *libc::size_t
+        (self as *(uint, uint, uint)) as *libc::size_t
     }
 }

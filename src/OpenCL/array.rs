@@ -1,6 +1,5 @@
 //! Two- and three-dimensional array support.
 
-use std::ptr;
 use CL::*;
 use CL::ll::*;
 use mem::*;
@@ -124,7 +123,7 @@ impl<T> Read for Array3D<T> {
 
 impl<T> Buffer<T> for Array3D_cl<T> {
     fn id_ptr(&self) -> *cl_mem {
-        ptr::to_unsafe_ptr(&self.buf)
+        &self.buf as *cl_mem
     }
 
     fn len(&self) -> uint {
@@ -244,7 +243,7 @@ impl<T> Read for Array2D<T> {
 
 impl<T> Buffer<T> for Array2D_cl<T> {
     fn id_ptr(&self) -> *cl_mem {
-        ptr::to_unsafe_ptr(&self.buf)
+        &self.buf as *cl_mem
     }
 
     fn len(&self) -> uint {

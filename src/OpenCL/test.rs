@@ -2,8 +2,8 @@
 #[feature(macro_rules)];
 #[feature(globs)];
 
-extern mod std;
-extern mod OpenCL = "OpenCL#0.2";
+extern crate std;
+extern crate OpenCL = "OpenCL#0.2";
 
 use OpenCL::hl::*;
 
@@ -150,7 +150,7 @@ mod hl {
                    }";
         ::test_all_platforms_devices(|device, ctx, _| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device);
+            prog.build(&device).unwrap();
         })
     }
 
@@ -161,7 +161,7 @@ mod hl {
                    }";
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device);
+            prog.build(&device).unwrap();
 
             let k = prog.create_kernel("test");
             let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
@@ -184,7 +184,7 @@ mod hl {
 
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device);
+            prog.build(&device).unwrap();
 
             let k = prog.create_kernel("test");
 
@@ -209,7 +209,7 @@ mod hl {
 
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device);
+            prog.build(&device).unwrap();
 
             let k = prog.create_kernel("test");
 
@@ -233,7 +233,7 @@ mod hl {
 
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device);
+            prog.build(&device).unwrap();
 
             let k = prog.create_kernel("test");
             let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);
@@ -263,7 +263,7 @@ mod hl {
 
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device);
+            prog.build(&device).unwrap();
 
             let k_incA = prog.create_kernel("inc");
             let k_incB = prog.create_kernel("inc");
@@ -386,7 +386,7 @@ mod hl {
 
         let (device, ctx, queue) = util::create_compute_context().unwrap();
         let prog = ctx.create_program_from_source(src);
-        prog.build(&device);
+        prog.build(&device).unwrap();
 
         let k = prog.create_kernel("test");
         let v = ctx.create_buffer_from(&[1], CL_MEM_READ_WRITE);

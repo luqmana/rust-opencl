@@ -7,7 +7,8 @@
 
 //! OpenCL bindings for Rust.
 
-extern mod std;
+extern crate std;
+extern crate sync;
 
 #[nolink]
 #[link_args = "-framework OpenCL"]
