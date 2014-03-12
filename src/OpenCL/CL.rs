@@ -1,3 +1,5 @@
+#[allow(non_camel_case_types)];
+
 extern crate std;
 
 use std::libc;

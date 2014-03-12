@@ -22,13 +22,13 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), ~str>
 
 
 pub enum PreferedType {
-    ANY,
+    Any,
 
-    CPU_PREFERED,
-    GPU_PREFERED,
+    CPUPrefered,
+    GPUPrefered,
 
-    CPU_ONLY,
-    GPU_ONLY,
+    CPUOnly,
+    GPUOnly,
 
 }
 
@@ -37,9 +37,9 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
     let platforms = get_platforms();
     for platform in platforms.iter() {
         let types = match cltype {
-            ANY => ~[CPU, GPU],
-            CPU_PREFERED | CPU_ONLY => ~[CPU],
-            GPU_PREFERED | GPU_ONLY => ~[GPU]
+            Any => ~[CPU, GPU],
+            CPUPrefered | CPUOnly => ~[CPU],
+            GPUPrefered | GPUOnly => ~[GPU]
         };
 
         let devices = platform.get_devices_by_types(types);
@@ -52,7 +52,7 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
 
 
     match cltype {
-        ANY | CPU_PREFERED | GPU_PREFERED => create_compute_context(),
-        _ => Err(~"Could not find valid implementation")    
+        Any | CPUPrefered | GPUPrefered => create_compute_context(),
+        _ => Err(~"Could not find valid implementation")   
     }
 }

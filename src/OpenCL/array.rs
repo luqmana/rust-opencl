@@ -16,7 +16,7 @@ pub struct Array3D<T> {
     dat: ~[T]
 }
 
-pub struct Array3D_cl<T> {
+pub struct Array3DCL<T> {
     width: uint,
     height: uint,
     depth: uint,
@@ -55,7 +55,7 @@ impl<T: Clone> Array3D<T> {
 }
 
 #[unsafe_destructor]
-impl<T> Drop for Array3D_cl<T> {
+impl<T> Drop for Array3DCL<T> {
     fn drop(&mut self) {
         unsafe {
             clReleaseMemObject(self.buf);
@@ -63,15 +63,15 @@ impl<T> Drop for Array3D_cl<T> {
     }
 }
 
-impl<'r, T> Put<Array3D<T>, Array3D_cl<T>> for &'r Array3D<T>
+impl<'r, T> Put<Array3D<T>, Array3DCL<T>> for &'r Array3D<T>
 {
-    fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> Array3D_cl<T>
+    fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> Array3DCL<T>
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
         let out = f(p as *c_void, (len * mem::size_of::<T>()) as size_t);
 
-        Array3D_cl{
+        Array3DCL{
             width: self.width,
             height: self.height,
             depth: self.depth,
@@ -81,9 +81,9 @@ impl<'r, T> Put<Array3D<T>, Array3D_cl<T>> for &'r Array3D<T>
 }
 
 
-impl<T> Get<Array3D_cl<T>, Array3D<T>> for Array3D<T>
+impl<T> Get<Array3DCL<T>, Array3D<T>> for Array3D<T>
 {
-    fn get(arr: &Array3D_cl<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Array3D<T>
+    fn get(arr: &Array3DCL<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Array3D<T>
     {
         let mut v: ~[T] = vec::with_capacity(arr.len());
         unsafe {
@@ -121,7 +121,7 @@ impl<T> Read for Array3D<T> {
     }
 }
 
-impl<T> Buffer<T> for Array3D_cl<T> {
+impl<T> Buffer<T> for Array3DCL<T> {
     fn id_ptr(&self) -> *cl_mem {
         &self.buf as *cl_mem
     }
@@ -131,7 +131,7 @@ impl<T> Buffer<T> for Array3D_cl<T> {
     }
 }
 
-impl<T> KernelArg for Array3D_cl<T> {
+impl<T> KernelArg for Array3DCL<T> {
     fn get_value(&self) -> (size_t, *c_void)
     {
         (mem::size_of::<cl_mem>() as size_t,
@@ -145,7 +145,7 @@ pub struct Array2D<T> {
     dat: ~[T],
 }
 
-pub struct Array2D_cl<T> {
+pub struct Array2DCL<T> {
     width: uint,
     height: uint,
     buf: cl_mem,
@@ -177,7 +177,7 @@ impl<T: Clone> Array2D<T> {
 }
 
 #[unsafe_destructor]
-impl<T> Drop for Array2D_cl<T> {
+impl<T> Drop for Array2DCL<T> {
     fn drop(&mut self) {
         unsafe {
             clReleaseMemObject(self.buf);
@@ -185,15 +185,15 @@ impl<T> Drop for Array2D_cl<T> {
     }
 }
 
-impl<'r, T> Put<Array2D<T>, Array2D_cl<T>> for &'r Array2D<T>
+impl<'r, T> Put<Array2D<T>, Array2DCL<T>> for &'r Array2D<T>
 {
-    fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> Array2D_cl<T>
+    fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> Array2DCL<T>
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
         let out = f(p as *c_void, (len * mem::size_of::<T>()) as size_t);
 
-        Array2D_cl{
+        Array2DCL{
             width: self.width,
             height: self.height,
             buf: out
@@ -202,9 +202,9 @@ impl<'r, T> Put<Array2D<T>, Array2D_cl<T>> for &'r Array2D<T>
 }
 
 
-impl<T> Get<Array2D_cl<T>, Array2D<T>> for Array2D<T>
+impl<T> Get<Array2DCL<T>, Array2D<T>> for Array2D<T>
 {
-    fn get(arr: &Array2D_cl<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Array2D<T>
+    fn get(arr: &Array2DCL<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Array2D<T>
     {
         let mut v: ~[T] = vec::with_capacity(arr.len());
         unsafe {
@@ -241,7 +241,7 @@ impl<T> Read for Array2D<T> {
     }
 }
 
-impl<T> Buffer<T> for Array2D_cl<T> {
+impl<T> Buffer<T> for Array2DCL<T> {
     fn id_ptr(&self) -> *cl_mem {
         &self.buf as *cl_mem
     }
@@ -251,7 +251,7 @@ impl<T> Buffer<T> for Array2D_cl<T> {
     }
 }
 
-impl<T> KernelArg for Array2D_cl<T> {
+impl<T> KernelArg for Array2DCL<T> {
     fn get_value(&self) -> (size_t, *c_void)
     {
         (mem::size_of::<cl_mem>() as size_t,
