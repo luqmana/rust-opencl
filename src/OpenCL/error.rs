@@ -1,10 +1,11 @@
 //! Error handling utilities.
 
 use CL::*;
+use std::fmt::{Show, Formatter, Result};
 
-impl ToStr for CLStatus {
-    fn to_str(&self) -> ~str {
-        format!("{:?}", *self)
+impl Show for CLStatus {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f.buf, "{:?}", *self)
     }
 }
 
