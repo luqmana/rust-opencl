@@ -4,6 +4,7 @@
 #[feature(globs)];
 #[feature(managed_boxes)];
 #[feature(link_args)];
+#[allow(non_camel_case_types)];
 
 //! OpenCL bindings for Rust.
 
