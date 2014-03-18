@@ -4,11 +4,12 @@
 #[feature(globs)];
 #[feature(managed_boxes)];
 #[feature(link_args)];
+#[feature(phase)];
 
 //! OpenCL bindings for Rust.
 
-extern crate std;
 extern crate sync;
+#[phase(syntax, link)] extern crate log;
 
 #[nolink]
 #[link_args = "-framework OpenCL"]
