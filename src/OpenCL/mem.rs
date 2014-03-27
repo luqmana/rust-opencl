@@ -3,7 +3,7 @@
 use std::libc::{size_t, c_void};
 use std::mem;
 use std::ptr;
-use std::vec;
+use std::slice;
 use std::num::zero;
 
 use CL::*;
@@ -127,7 +127,7 @@ impl<T> Get<CLBuffer<T>, T> for ~[T]
 {
     fn get(mem: &CLBuffer<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> ~[T]
     {
-        let mut v: ~[T] = vec::with_capacity(mem.len());
+        let mut v: ~[T] = slice::with_capacity(mem.len());
         unsafe {
             v.set_len(mem.len());
         }
