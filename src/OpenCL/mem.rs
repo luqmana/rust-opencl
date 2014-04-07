@@ -1,6 +1,6 @@
 //! High level buffer management.
 
-use std::libc::{size_t, c_void};
+use libc::{size_t, c_void};
 use std::mem;
 use std::ptr;
 use std::slice;
@@ -40,7 +40,7 @@ pub trait Buffer<T> {
 }
 
 pub struct CLBuffer<T> {
-    cl_buffer: cl_mem
+    pub cl_buffer: cl_mem
 }
 
 #[unsafe_destructor]

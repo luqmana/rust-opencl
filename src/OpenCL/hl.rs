@@ -4,7 +4,7 @@ use CL;
 use CL::*;
 use CL::ll::*;
 use error::check;
-use std::libc;
+use libc;
 use std::slice;
 use std::str;
 use std::mem;
@@ -43,7 +43,7 @@ impl Platform {
             let ids = slice::from_elem(num_devices as uint, 0 as cl_device_id);
             clGetDeviceIDs(self.id, dtype, ids.len() as cl_uint,
                            ids.as_ptr(), (&num_devices));
-            ids.map(|id| { Device {id: *id }})
+            ids.iter().map(|id| { Device {id: *id }}).collect()
         }
     }
 
@@ -137,7 +137,7 @@ pub fn get_platforms() -> ~[Platform]
         
         let _ = guard;
 
-        ids.map(|id| { Platform { id: *id } })
+        ids.iter().map(|id| { Platform { id: *id } }).collect()
     }
 }
 

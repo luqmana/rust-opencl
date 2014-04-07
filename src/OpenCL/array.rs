@@ -5,7 +5,7 @@ use CL::ll::*;
 use mem::*;
 use std::mem;
 use std::slice;
-use std::libc::{size_t, c_void};
+use libc::{size_t, c_void};
 
 use hl::KernelArg;
 

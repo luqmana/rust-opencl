@@ -1,17 +1,17 @@
-#[crate_id = "OpenCL#0.2"];
-#[crate_type = "lib"];
-#[feature(macro_rules)];
-#[feature(globs)];
-#[feature(managed_boxes)];
-#[feature(link_args)];
-#[feature(phase)];
+#![crate_id = "OpenCL#0.2"]
+#![crate_type = "lib"]
+#![feature(macro_rules)]
+#![feature(globs)]
+#![feature(managed_boxes)]
+#![feature(link_args)]
+#![feature(phase)]
 
 //! OpenCL bindings for Rust.
 
+extern crate libc;
 extern crate sync;
 #[phase(syntax, link)] extern crate log;
 
-#[nolink]
 #[link_args = "-framework OpenCL"]
 #[cfg(target_os = "macos")]
 extern { }

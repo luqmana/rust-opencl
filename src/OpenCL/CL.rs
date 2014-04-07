@@ -1,15 +1,13 @@
-#[allow(non_camel_case_types)];
+#![allow(non_camel_case_types)]
 
 extern crate std;
 
-use std::libc;
+use libc;
 
-#[nolink]
 #[link_args = "-framework OpenCL"]
 #[cfg(target_os = "macos")]
 mod dummy { extern { } }
 
-#[nolink]
 #[link_args = "-lOpenCL"]
 #[cfg(target_os = "linux")]
 mod dummy { extern { } }
@@ -433,10 +431,9 @@ pub static CL_PROFILING_COMMAND_START:                   cl_uint = 0x1282;
 pub static CL_PROFILING_COMMAND_END:                     cl_uint = 0x1283;
 
 
-#[nolink]
 pub mod ll {
   use CL::*;
-  use std::libc;
+  use libc;
 
 
   extern
