@@ -4,8 +4,8 @@ use CL::*;
 use CL::ll::*;
 use mem::*;
 use std::mem;
-use std::vec;
-use std::libc::{size_t, c_void};
+use std::slice;
+use libc::{size_t, c_void};
 
 use hl::KernelArg;
 
@@ -85,7 +85,7 @@ impl<T> Get<Array3DCL<T>, Array3D<T>> for Array3D<T>
 {
     fn get(arr: &Array3DCL<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Array3D<T>
     {
-        let mut v: ~[T] = vec::with_capacity(arr.len());
+        let mut v: ~[T] = slice::with_capacity(arr.len());
         unsafe {
             v.set_len(arr.len());
         }
@@ -206,7 +206,7 @@ impl<T> Get<Array2DCL<T>, Array2D<T>> for Array2D<T>
 {
     fn get(arr: &Array2DCL<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Array2D<T>
     {
-        let mut v: ~[T] = vec::with_capacity(arr.len());
+        let mut v: ~[T] = slice::with_capacity(arr.len());
         unsafe {
             v.set_len(arr.len())
         }

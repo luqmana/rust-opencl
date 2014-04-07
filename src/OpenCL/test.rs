@@ -43,7 +43,7 @@ pub fn test_all_platforms_devices(test: |Device, Context, CommandQueue|)
 }
 
 mod mem {
-    use std::vec;
+    use std::slice;
     use OpenCL::mem::{Read, Write};
 
     fn read_write<R: Read, W: Write>(src: &W, dst: &mut R)
@@ -70,8 +70,8 @@ mod mem {
             assert!(buffer.len() >= (off + len) as uint);
             let target = buffer.mut_slice(off, off + len);
             unsafe {
-                vec::raw::buf_as_slice(ptr as *u8, len, |src| {
-                    vec::bytes::copy_memory(target, src);
+                slice::raw::buf_as_slice(ptr as *u8, len, |src| {
+                    slice::bytes::copy_memory(target, src);
                 })
             }
         });
@@ -83,15 +83,15 @@ mod mem {
             assert!(buffer.len() >= (off + len) as uint);
             let src = buffer.slice(off, off + len);
             unsafe {
-                vec::raw::mut_buf_as_slice(ptr as *mut u8, len, |dst| {
-                    vec::bytes::copy_memory(dst, src);
+                slice::raw::mut_buf_as_slice(ptr as *mut u8, len, |dst| {
+                    slice::bytes::copy_memory(dst, src);
                 })
             }
         })
     }
 
     #[test]
-    fn read_write_vec()
+    fn read_write_slice()
     {
         let input :&[int] = &[0, 1, 2, 3, 4, 5, 6, 7];
         let mut output :&mut [int] = &mut [0, 0, 0, 0, 0, 0, 0, 0];
