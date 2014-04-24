@@ -1,6 +1,6 @@
-#[feature(link_args)];
-#[feature(macro_rules)];
-#[feature(globs)];
+#![feature(link_args)]
+#![feature(macro_rules)]
+#![feature(globs)]
 
 extern crate std;
 extern crate OpenCL = "OpenCL#0.2";
@@ -57,7 +57,7 @@ mod mem {
         });
         let max = max as uint;
 
-        let mut buffer: ~[u8] = ~[];
+        let mut buffer: Vec<u8> = Vec::new();
         unsafe {
             buffer.reserve(max);
             buffer.set_len(max);
@@ -170,9 +170,9 @@ mod hl {
 
             queue.enqueue_async_kernel(&k, 1, None, ()).wait();
 
-            let v: ~[int] = queue.get(&v, ());
+            let v: Vec<int> = queue.get(&v, ());
 
-            expect!(v[0], 2);
+            expect!(*v.get(0), 2);
         })
     }
 
@@ -195,9 +195,9 @@ mod hl {
 
             queue.enqueue_async_kernel(&k, 1, None, ()).wait();
 
-            let v: ~[int] = queue.get(&v, ());
+            let v: Vec<int> = queue.get(&v, ());
 
-            expect!(v[0], 43);
+            expect!(*v.get(0), 43);
         })
     }
 
@@ -219,9 +219,9 @@ mod hl {
 
             queue.enqueue_async_kernel(&k, 1, None, ()).wait();
 
-            let v: ~[int] = queue.get(&v, ());
+            let v: Vec<int> = queue.get(&v, ());
 
-            expect!(v[0], 2);
+            expect!(*v.get(0), 2);
         })
     }
 
@@ -246,9 +246,9 @@ mod hl {
             }
             e.wait();
 
-            let v: ~[int] = queue.get(&v, ());
+            let v: Vec<int> = queue.get(&v, ());
 
-            expect!(v[0], 9);
+            expect!(*v.get(0), 9);
         })
     }
 
@@ -287,9 +287,9 @@ mod hl {
 
             let event = queue.enqueue_async_kernel(&k_add, 1, None, event_list);
 
-            let v: ~[int] = queue.get(&c, event);
+            let v: Vec<int> = queue.get(&c, event);
 
-            expect!(v[0], 4);
+            expect!(*v.get(0), 4);
         })
     }
 
@@ -322,9 +322,9 @@ mod hl {
 
             queue.enqueue_async_kernel(&k, (3, 3), None, ()).wait();
 
-            let v: ~[int] = queue.get(&v, ());
+            let v: Vec<int> = queue.get(&v, ());
 
-            expect!(v, ~[0, 0, 0, 0, 1, 2, 0, 2, 4]);
+            expect!(v, vec!(0, 0, 0, 0, 1, 2, 0, 2, 4));
         })
     }
 
@@ -350,8 +350,8 @@ mod hl {
         ::test_all_platforms_devices(|_, ctx, queue| {
             let input = &[0, 1, 2, 3, 4, 5, 6, 7];
             let buffer = ctx.create_buffer_from(input, CL_MEM_READ_WRITE);
-            let output: ~[int] = queue.get(&buffer, ());
-            expect!(input, output);
+            let output: Vec<int> = queue.get(&buffer, ());
+            expect!(input, output.as_slice());
         })
     }
 
@@ -360,9 +360,9 @@ mod hl {
     fn memory_read_owned()
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
-            let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
+            let input = vec!(0, 1, 2, 3, 4, 5, 6, 7);
             let buffer = ctx.create_buffer_from(&input, CL_MEM_READ_WRITE);
-            let output: ~[int] = queue.get(&buffer, ());
+            let output: Vec<int> = queue.get(&buffer, ());
             expect!(input, output);
         })
     }
@@ -371,9 +371,9 @@ mod hl {
     fn memory_read_owned_clone()
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
-            let input = ~[0, 1, 2, 3, 4, 5, 6, 7];
+            let input = vec!(0, 1, 2, 3, 4, 5, 6, 7);
             let buffer = ctx.create_buffer_from(input.clone(), CL_MEM_READ_WRITE);
-            let output: ~[int] = queue.get(&buffer, ());
+            let output: Vec<int> = queue.get(&buffer, ());
             expect!(input, output);
         })
     }

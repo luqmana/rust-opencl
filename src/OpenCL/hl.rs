@@ -5,7 +5,7 @@ use CL::*;
 use CL::ll::*;
 use error::check;
 use libc;
-use std::slice;
+use std::vec::Vec;
 use std::str;
 use std::mem;
 use std::cast;
@@ -40,7 +40,7 @@ impl Platform {
             clGetDeviceIDs(self.id, dtype, 0, ptr::null(),
                            (&num_devices));
 
-            let ids = slice::from_elem(num_devices as uint, 0 as cl_device_id);
+            let ids = Vec::from_elem(num_devices as uint, 0 as cl_device_id);
             clGetDeviceIDs(self.id, dtype, ids.len() as cl_uint,
                            ids.as_ptr(), (&num_devices));
             ids.iter().map(|id| { Device {id: *id }}).collect()
@@ -128,7 +128,7 @@ pub fn get_platforms() -> ~[Platform]
         // unlock this before the check in case the check fails
         check(status, "could not get platform count.");
 
-        let ids = slice::from_elem(num_platforms as uint, 0 as cl_platform_id);
+        let ids = Vec::from_elem(num_platforms as uint, 0 as cl_platform_id);
 
         let status = clGetPlatformIDs(ids.len() as cl_uint,
                                       ids.as_ptr(),
@@ -157,7 +157,7 @@ impl Device {
                 (&mut size));
             check(status, "Could not determine name length");
             
-            let mut buf = slice::from_elem(size as uint, 0);
+            let mut buf = Vec::from_elem(size as uint, 0);
             
             let status = clGetDeviceInfo(
                 self.id,
@@ -478,7 +478,7 @@ impl Program
                     (&mut size));
                 check(status, "Could not get build log");
                 
-                let mut buf = slice::from_elem(size as uint, 0u8);
+                let mut buf = Vec::from_elem(size as uint, 0u8);
                 let status = clGetProgramBuildInfo(
                     self.prg,
                     device.id,
