@@ -3,7 +3,7 @@
 use libc::{size_t, c_void};
 use std::mem;
 use std::ptr;
-use std::slice;
+use std::vec::Vec;
 use std::num::zero;
 
 use CL::*;
@@ -103,7 +103,7 @@ impl<'r, T> Put<T, CLBuffer<T>> for &'r [T]
     }
 }
 
-impl<'r, T> Put<T, CLBuffer<T>> for &'r ~[T]
+impl<'r, T> Put<T, CLBuffer<T>> for &'r Vec<T>
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> CLBuffer<T>
     {
@@ -113,7 +113,7 @@ impl<'r, T> Put<T, CLBuffer<T>> for &'r ~[T]
     }
 }
 
-impl<T> Put<T, CLBuffer<T>> for ~[T]
+impl<T> Put<T, CLBuffer<T>> for Vec<T>
 {
     fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> CLBuffer<T>
     {
@@ -123,11 +123,11 @@ impl<T> Put<T, CLBuffer<T>> for ~[T]
     }
 }
 
-impl<T> Get<CLBuffer<T>, T> for ~[T]
+impl<T> Get<CLBuffer<T>, T> for Vec<T>
 {
-    fn get(mem: &CLBuffer<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> ~[T]
+    fn get(mem: &CLBuffer<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Vec<T>
     {
-        let mut v: ~[T] = slice::with_capacity(mem.len());
+        let mut v: Vec<T> = Vec::with_capacity(mem.len());
         unsafe {
             v.set_len(mem.len());
         }

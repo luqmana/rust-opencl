@@ -4,7 +4,7 @@ use CL::*;
 use CL::ll::*;
 use mem::*;
 use std::mem;
-use std::slice;
+use std::vec::Vec;
 use libc::{size_t, c_void};
 
 use hl::KernelArg;
@@ -13,7 +13,7 @@ pub struct Array3D<T> {
     width: uint,
     height: uint,
     depth: uint,
-    dat: ~[T]
+    dat: Vec<T>
 }
 
 pub struct Array3DCL<T> {
@@ -26,7 +26,7 @@ pub struct Array3DCL<T> {
 impl<T: Clone> Array3D<T> {
     pub fn new(width: uint, height: uint, depth: uint, val: |uint, uint, uint| -> T) -> Array3D<T>
     {
-        let mut dat: ~[T] = ~[];
+        let mut dat: Vec<T> = Vec::new();
         for x in range(0, width) {
             for y in range(0, height) {
                 for z in range(0, depth) {
@@ -45,12 +45,12 @@ impl<T: Clone> Array3D<T> {
 
     pub fn set(&mut self, x: uint, y: uint, z: uint, val: T)
     {
-        self.dat[self.width*self.height*z + self.width*y + x] = val;
+        self.dat.as_mut_slice()[self.width*self.height*z + self.width*y + x] = val;
     }
 
     pub fn get(&self, x: uint, y: uint, z: uint) -> T
     {
-        self.dat[self.width*self.height*z + self.width*y + x].clone()
+        self.dat.as_slice()[self.width*self.height*z + self.width*y + x].clone()
     }
 }
 
@@ -85,7 +85,7 @@ impl<T> Get<Array3DCL<T>, Array3D<T>> for Array3D<T>
 {
     fn get(arr: &Array3DCL<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Array3D<T>
     {
-        let mut v: ~[T] = slice::with_capacity(arr.len());
+        let mut v: Vec<T> = Vec::with_capacity(arr.len());
         unsafe {
             v.set_len(arr.len());
         }
@@ -142,7 +142,7 @@ impl<T> KernelArg for Array3DCL<T> {
 pub struct Array2D<T> {
     width: uint,
     height: uint,
-    dat: ~[T],
+    dat: Vec<T>,
 }
 
 pub struct Array2DCL<T> {
@@ -152,9 +152,8 @@ pub struct Array2DCL<T> {
 }
 
 impl<T: Clone> Array2D<T> {
-    pub fn new(width: uint, height: uint, val: |uint, uint| -> T) -> Array2D<T>
-    {
-        let mut dat: ~[T] = ~[];
+    pub fn new(width: uint, height: uint, val: |uint, uint| -> T) -> Array2D<T> {
+        let mut dat: Vec<T> = Vec::new();
         for x in range(0, width) {
             for y in range(0, height) {
                 dat.push(val(x, y));
@@ -168,11 +167,11 @@ impl<T: Clone> Array2D<T> {
     }
 
     pub fn set(&mut self, x: uint, y: uint, val: T) {
-        self.dat[self.width*y + x] = val;
+        self.dat.as_mut_slice()[self.width*y + x] = val;
     }
 
     pub fn get(&self, x: uint, y: uint) -> T {
-        self.dat[self.width*y + x].clone()
+        self.dat.as_slice()[self.width*y + x].clone()
     }
 }
 
@@ -206,7 +205,7 @@ impl<T> Get<Array2DCL<T>, Array2D<T>> for Array2D<T>
 {
     fn get(arr: &Array2DCL<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Array2D<T>
     {
-        let mut v: ~[T] = slice::with_capacity(arr.len());
+        let mut v: Vec<T> = Vec::with_capacity(arr.len());
         unsafe {
             v.set_len(arr.len())
         }
