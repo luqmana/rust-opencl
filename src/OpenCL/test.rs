@@ -587,6 +587,6 @@ mod error {
     #[test]
     fn convert_to_str() {
         expect!(convert(CL_INVALID_BUFFER_SIZE as cl_int).to_str(),
-                ~"CL_INVALID_BUFFER_SIZE");
+                "CL_INVALID_BUFFER_SIZE".to_owned());
     }
 }
