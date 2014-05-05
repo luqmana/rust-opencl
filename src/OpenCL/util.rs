@@ -2,16 +2,16 @@
 
 use hl::*;
 
-pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), ~str>
+pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &str>
 {
     let platforms = get_platforms();
     if platforms.len() == 0 {
-        return Err(~"No platform found");
+        return Err("No platform found");
     }
 
     let devices = platforms[0].get_devices();
     if devices.len() == 0 {
-        return Err(~"No devices found");
+        return Err("No devices found");
     }
 
     let context = devices[0].create_context();
@@ -32,7 +32,7 @@ pub enum PreferedType {
 
 }
 
-pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Context, CommandQueue), ~str>
+pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Context, CommandQueue), &str>
 {
     let platforms = get_platforms();
     for platform in platforms.iter() {
@@ -53,6 +53,6 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
 
     match cltype {
         Any | CPUPrefered | GPUPrefered => create_compute_context(),
-        _ => Err(~"Could not find valid implementation")   
+        _ => Err("Could not find valid implementation")   
     }
 }
