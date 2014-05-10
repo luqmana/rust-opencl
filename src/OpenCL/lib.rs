@@ -12,7 +12,7 @@ extern crate libc;
 extern crate sync;
 #[phase(syntax, link)] extern crate log;
 
-#[link_args = "-framework OpenCL"]
+#[link(name = "OpenCL", kind = "framework")]
 #[cfg(target_os = "macos")]
 extern { }
 
