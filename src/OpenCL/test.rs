@@ -7,7 +7,6 @@ extern crate OpenCL = "OpenCL#0.2";
 
 use OpenCL::hl::*;
 
-#[nolink]
 #[link_args = "-framework OpenCL"]
 #[cfg(target_os = "macos")]
 extern { }

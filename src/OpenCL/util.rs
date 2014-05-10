@@ -9,15 +9,15 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &str>
         return Err("No platform found");
     }
 
-    let devices = platforms[0].get_devices();
+    let devices = platforms.get(0).get_devices();
     if devices.len() == 0 {
         return Err("No devices found");
     }
 
-    let context = devices[0].create_context();
-    let queue = context.create_command_queue(&devices[0]);
+    let context = devices.get(0).create_context();
+    let queue = context.create_command_queue(devices.get(0));
 
-    Ok((devices[0], context, queue))
+    Ok((*devices.get(0), context, queue))
 }
 
 
@@ -44,9 +44,9 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
 
         let devices = platform.get_devices_by_types(types);
         if devices.len() != 0 {
-            let context = devices[0].create_context();
-            let queue = context.create_command_queue(&devices[0]);
-            return Ok((devices[0], context, queue));
+            let context = devices.get(0).create_context();
+            let queue = context.create_command_queue(devices.get(0));
+            return Ok((*devices.get(0), context, queue));
         } 
     }
 
