@@ -3,11 +3,13 @@ env:
     - secure: TUA5IHO5hwaQvgA1gAvslQ4QWhHEym5bFmmm7nAKHVIxRDchpCmjaLPmu3DirxRJBXi0b5zOZypIH75TMlivfnciQSWr9rj3PaaK+P6LpGScHvYsi/JEawtPJ8V5+xAvOKJ/HsNk5wGS+BBDv4YCPAG5itixMaFxQAVmKw1VMeo=
     - RUST_THREADS=4
 
-before_install:
-  - yes | sudo add-apt-repository ppa:hansjorg/rust
-  - sudo apt-get update
 install:
-  - sudo apt-get install rust-nightly fglrx opencl-headers
+  - sudo apt-get install fglrx opencl-headers
+  - wget http://static.rust-lang.org/dist/rust-nightly-x86_64-unknown-linux-gnu.tar.gz
+  - tar xzf rust-nightly-x86_64-unknown-linux-gnu.tar.gz
+  - export PATH=$PATH:$(pwd)/rust-nightly-x86_64-unknown-linux-gnu/bin
+  - rustc -v
+
 script:
   - make check
   - make docs
