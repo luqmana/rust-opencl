@@ -439,6 +439,12 @@ impl Drop for CommandQueue
 }
 
 
+/// Represents an OpenCL program, which is a collection of kernels.
+///
+/// Create these using
+/// [`Context::create_program_from_source`](struct.Context.html#method.create_program_from_source)
+/// or
+/// [`Context::create_program_from_binary`](struct.Context.html#method.create_program_from_binary).
 pub struct Program
 {
     prg: cl_program,
