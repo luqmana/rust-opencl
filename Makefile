@@ -3,7 +3,11 @@ ifndef RUSTC
 	RUSTC = rustc
 endif
 
-RUSTC_OPTS = -L./build --out-dir ./build -O
+ifndef TARGET_DIR
+	TARGET_DIR = ./build
+endif
+
+RUSTC_OPTS = -L$(TARGET_DIR) --out-dir $(TARGET_DIR) -O
 
 OPENCL_SRC = \
 	lib.rs \
