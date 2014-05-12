@@ -8,7 +8,6 @@ use libc;
 use std::vec::Vec;
 use std::str;
 use std::mem;
-use std::cast;
 use std::ptr;
 use sync::mutex;
 use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
@@ -197,7 +196,7 @@ impl Device {
             let ctx = clCreateContext(ptr::null(),
                                       1,
                                       &self.id,
-                                      cast::transmute(ptr::null::<||>()),
+                                      mem::transmute(ptr::null::<||>()),
                                       ptr::null(),
                                       (&errcode));
 
@@ -462,7 +461,7 @@ impl Program
         {
             let ret = clBuildProgram(self.prg, 1, &device.id,
                                      ptr::null(),
-                                     cast::transmute(ptr::null::<||>()),
+                                     mem::transmute(ptr::null::<||>()),
                                      ptr::null());
             if ret == CL_SUCCESS as cl_int {
                 Ok(())
