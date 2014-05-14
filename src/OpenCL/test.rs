@@ -305,7 +305,7 @@ mod hl {
             let prog = ctx.create_program_from_source(src);
 
             match prog.build(&device) {
-                Ok(()) => (),
+                Ok(_) => (),
                 Err(build_log) => {
                     println!("Error building program:\n");
                     println!("{:s}", build_log);
@@ -465,7 +465,7 @@ mod array {
                         }";
             let prog = ctx.create_program_from_source(src);
             match prog.build(&device) {
-                Ok(()) => (),
+                Ok(_) => (),
                 Err(build_log) => {
                     println!("Error building program:\n");
                     println!("{:s}", build_log);
@@ -548,7 +548,7 @@ mod array {
                         }";
             let prog = ctx.create_program_from_source(src);
             match prog.build(&device) {
-                Ok(()) => (),
+                Ok(_) => (),
                 Err(build_log) => {
                     println!("Error building program:\n");
                     println!("{:s}", build_log);
