@@ -461,7 +461,10 @@ impl Drop for Program
 
 impl Program
 {
-    pub fn build(&self, device: &Device) -> Result<(), ~str>
+    /// Build the program for a given device.
+    ///
+    /// Both Ok and Err returns include the build log.
+    pub fn build(&self, device: &Device) -> Result<~str, ~str>
     {
         unsafe
         {
@@ -469,31 +472,34 @@ impl Program
                                      ptr::null(),
                                      mem::transmute(ptr::null::<||>()),
                                      ptr::null());
+            // Get the build log.
+            let mut size = 0 as libc::size_t;
+            let status = clGetProgramBuildInfo(
+                self.prg,
+                device.id,
+                CL_PROGRAM_BUILD_LOG,
+                0,
+                ptr::mut_null(),
+                (&mut size));
+            check(status, "Could not get build log");
+            
+            let mut buf = Vec::from_elem(size as uint, 0u8);
+            let status = clGetProgramBuildInfo(
+                self.prg,
+                device.id,
+                CL_PROGRAM_BUILD_LOG,
+                buf.len() as libc::size_t,
+                buf.as_mut_ptr() as *mut libc::c_void,
+                ptr::mut_null());
+            check(status, "Could not get build log");
+            
+            let log = str::raw::from_c_str(buf.as_ptr() as *libc::c_char);
+
             if ret == CL_SUCCESS as cl_int {
-                Ok(())
+                Ok(log)
             }
             else {
-                let mut size = 0 as libc::size_t;
-                let status = clGetProgramBuildInfo(
-                    self.prg,
-                    device.id,
-                    CL_PROGRAM_BUILD_LOG,
-                    0,
-                    ptr::mut_null(),
-                    (&mut size));
-                check(status, "Could not get build log");
-                
-                let mut buf = Vec::from_elem(size as uint, 0u8);
-                let status = clGetProgramBuildInfo(
-                    self.prg,
-                    device.id,
-                    CL_PROGRAM_BUILD_LOG,
-                    buf.len() as libc::size_t,
-                    buf.as_mut_ptr() as *mut libc::c_void,
-                    ptr::mut_null());
-                check(status, "Could not get build log");
-                
-                Err(str::raw::from_c_str(buf.as_ptr() as *libc::c_char))
+                Err(log)
             }
         }
     }
