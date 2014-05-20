@@ -1,13 +1,6 @@
 //! Error handling utilities.
 
 use CL::*;
-use std::fmt::{Show, Formatter, Result};
-
-impl Show for CLStatus {
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f.buf, "{:?}", *self)
-    }
-}
 
 macro_rules! convert(
     ($e: expr, $x: ident) => (if $e == $x as cl_int {
