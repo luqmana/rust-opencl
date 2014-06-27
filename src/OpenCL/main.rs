@@ -1,4 +1,6 @@
-#[feature(link_args)];
+#![allow(uppercase_variables)]
+
+extern crate debug;
 extern crate OpenCL;
 
 use std::io::fs::File;
@@ -6,23 +8,13 @@ use std::io::Reader;
 use std::str;
 use OpenCL::mem::CLBuffer;
 
-#[nolink]
-#[link_args = "-framework OpenCL"]
-#[cfg(target_os = "macos")]
-extern { }
-
-#[nolink]
-#[link_args = "-lOpenCL"]
-#[cfg(target_os = "linux")]
-extern { }
-
 fn main()
 {
-    let ker = File::open(&std::path::Path::new("./test.ocl")).read_to_end();
-    let ker = str::from_utf8(ker);
+    let ker = File::open(&std::path::Path::new("./test.ocl")).read_to_end().unwrap();
+    let ker = str::from_utf8(ker.as_slice()).unwrap();
 
-    let vec_a = &[0, 1, 2, -3, 4, 5, 6, 7];
-    let vec_b = &[-7, -6, 5, -4, 0, -1, 2, 3];
+    let vec_a = &[0i, 1, 2, -3, 4, 5, 6, 7];
+    let vec_b = &[-7i, -6, 5, -4, 0, -1, 2, 3];
 
     let (device, ctx, queue) = OpenCL::util::create_compute_context().unwrap();
 
@@ -36,8 +28,7 @@ fn main()
     queue.write(&B, &vec_b, ());
 
     let program = ctx.create_program_from_source(ker);
-
-    program.build(&device);
+    program.build(&device).ok().expect("Couldn't build program.");
 
 
     let kernel = program.create_kernel("vector_add");
@@ -48,9 +39,9 @@ fn main()
 
     let event = queue.enqueue_async_kernel(&kernel, vec_a.len(), None, ());
 
-    let vec_c: ~[int] = queue.get(&C, &event);
+    let vec_c: Vec<int> = queue.get(&C, &event);
 
-    println!("  {:?}", vec_a);
-    println!("+ {:?}", vec_b);
-    println!("= {:?}", vec_c);
+    println!("  {}", vec_a);
+    println!("+ {}", vec_b);
+    println!("= {}", vec_c);
 }

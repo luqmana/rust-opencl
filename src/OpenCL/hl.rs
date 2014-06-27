@@ -61,7 +61,7 @@ impl Platform {
         self.get_devices_internal(dtype)
     }
 
-    fn profile_info(&self, name: cl_platform_info) -> ~str
+    fn profile_info(&self, name: cl_platform_info) -> String
     {
         unsafe {
             let mut size = 0;
@@ -77,33 +77,33 @@ impl Platform {
             clGetPlatformInfo(self.id,
                               name,
                               value.len() as libc::size_t,
-                              value.as_ptr() as *libc::c_void,
+                              value.as_slice().as_ptr() as *libc::c_void,
                               &mut size);
             value
         }
     }
     
-    pub fn name(&self) -> ~str
+    pub fn name(&self) -> String
     {
         self.profile_info(CL_PLATFORM_NAME)
     }
     
-    pub fn version(&self) -> ~str
+    pub fn version(&self) -> String
     {
         self.profile_info(CL_PLATFORM_VERSION)
     }
     
-    pub fn profile(&self) -> ~str
+    pub fn profile(&self) -> String
     {
         self.profile_info(CL_PLATFORM_PROFILE)
     }
     
-    pub fn vendor(&self) -> ~str
+    pub fn vendor(&self) -> String
     {
         self.profile_info(CL_PLATFORM_VENDOR)
     }
     
-    pub fn extensions(&self) -> ~str
+    pub fn extensions(&self) -> String
     {
         self.profile_info(CL_PLATFORM_EXTENSIONS)
     }
@@ -145,7 +145,7 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn name(&self) -> ~str {
+    pub fn name(&self) -> String {
         unsafe {
             let mut size = 0;
             let status = clGetDeviceInfo(
@@ -156,7 +156,7 @@ impl Device {
                 (&mut size));
             check(status, "Could not determine name length");
             
-            let mut buf = Vec::from_elem(size as uint, 0);
+            let mut buf = Vec::from_elem(size as uint, 0i);
             
             let status = clGetDeviceInfo(
                 self.id,
@@ -170,7 +170,7 @@ impl Device {
         }
     }
 
-	pub fn computeUnits(&self) -> uint {
+	pub fn compute_units(&self) -> uint {
 		unsafe {
 			let mut ct: uint = 0;
             let status = clGetDeviceInfo(
@@ -464,7 +464,7 @@ impl Program
     /// Build the program for a given device.
     ///
     /// Both Ok and Err returns include the build log.
-    pub fn build(&self, device: &Device) -> Result<~str, ~str>
+    pub fn build(&self, device: &Device) -> Result<String, String>
     {
         unsafe
         {

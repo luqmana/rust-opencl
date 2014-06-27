@@ -1,16 +1,8 @@
-#![allow(non_camel_case_types)]
+#![allow(non_camel_case_types, dead_code)]
 
 extern crate std;
 
 use libc;
-
-#[link_args = "-framework OpenCL"]
-#[cfg(target_os = "macos")]
-mod dummy { extern { } }
-
-#[link_args = "-lOpenCL"]
-#[cfg(target_os = "linux")]
-mod dummy { extern { } }
 
 /* Opaque types */
 pub type cl_platform_id     = *libc::c_void;
@@ -83,7 +75,7 @@ pub struct cl_buffer_region {
 
 
 /// OpenCL error codes.
-#[deriving(Eq)]
+#[deriving(PartialEq)]
 #[deriving(Show)]
 pub enum CLStatus {
     CL_SUCCESS = 0,

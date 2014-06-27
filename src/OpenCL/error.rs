@@ -73,7 +73,7 @@ pub fn convert(status: cl_int) -> CLStatus {
     }
 }
 
-fn error_str(status: cl_int) -> ~str {
+fn error_str(status: cl_int) -> String {
     match try_convert(status) {
         Some(s) => s.to_str(),
         None => format!("Unknown Error: {:?}", status)
