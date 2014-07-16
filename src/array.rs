@@ -63,13 +63,13 @@ impl<T> Drop for Array3DCL<T> {
     }
 }
 
-impl<'r, T> Put<Array3D<T>, Array3DCL<T>> for &'r Array3D<T>
+impl<T> Put<Array3D<T>, Array3DCL<T>> for Array3D<T>
 {
-    fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> Array3DCL<T>
+    fn put(&self, f: |ptr: *const c_void, size: size_t| -> cl_mem) -> Array3DCL<T>
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
-        let out = f(p as *c_void, (len * mem::size_of::<T>()) as size_t);
+        let out = f(p as *const c_void, (len * mem::size_of::<T>()) as size_t);
 
         Array3DCL{
             width: self.width,
@@ -104,11 +104,11 @@ impl<T> Get<Array3DCL<T>, Array3D<T>> for Array3D<T>
 }
 
 impl<T> Write for Array3D<T> {
-    fn write(&self, f: |offset: size_t, ptr: *c_void, size: size_t|)
+    fn write(&self, f: |offset: size_t, ptr: *const c_void, size: size_t|)
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
-        f(0, p as *c_void, (len * mem::size_of::<T>()) as size_t)
+        f(0, p as *const c_void, (len * mem::size_of::<T>()) as size_t)
     }
 }
 
@@ -122,8 +122,8 @@ impl<T> Read for Array3D<T> {
 }
 
 impl<T> Buffer<T> for Array3DCL<T> {
-    fn id_ptr(&self) -> *cl_mem {
-        &self.buf as *cl_mem
+    fn id_ptr(&self) -> *const cl_mem {
+        &self.buf as *const cl_mem
     }
 
     fn len(&self) -> uint {
@@ -132,10 +132,10 @@ impl<T> Buffer<T> for Array3DCL<T> {
 }
 
 impl<T> KernelArg for Array3DCL<T> {
-    fn get_value(&self) -> (size_t, *c_void)
+    fn get_value(&self) -> (size_t, *const c_void)
     {
         (mem::size_of::<cl_mem>() as size_t,
-         self.id_ptr() as *c_void)
+         self.id_ptr() as *const c_void)
     }
 }
 
@@ -184,13 +184,13 @@ impl<T> Drop for Array2DCL<T> {
     }
 }
 
-impl<'r, T> Put<Array2D<T>, Array2DCL<T>> for &'r Array2D<T>
+impl<T> Put<Array2D<T>, Array2DCL<T>> for Array2D<T>
 {
-    fn put(&self, f: |ptr: *c_void, size: size_t| -> cl_mem) -> Array2DCL<T>
+    fn put(&self, f: |ptr: *const c_void, size: size_t| -> cl_mem) -> Array2DCL<T>
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
-        let out = f(p as *c_void, (len * mem::size_of::<T>()) as size_t);
+        let out = f(p as *const c_void, (len * mem::size_of::<T>()) as size_t);
 
         Array2DCL{
             width: self.width,
@@ -213,7 +213,7 @@ impl<T> Get<Array2DCL<T>, Array2D<T>> for Array2D<T>
         let p = v.as_mut_ptr();
         let len = v.len();
         f(0, p as *mut c_void, (len * mem::size_of::<T>()) as size_t);
-    
+
         Array2D {
             width: arr.width,
             height: arr.height,
@@ -223,11 +223,11 @@ impl<T> Get<Array2DCL<T>, Array2D<T>> for Array2D<T>
 }
 
 impl<T> Write for Array2D<T> {
-    fn write(&self, f: |offset: size_t, ptr: *c_void, size: size_t|)
+    fn write(&self, f: |offset: size_t, ptr: *const c_void, size: size_t|)
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
-        f(0, p as *c_void, (len * mem::size_of::<T>()) as size_t)
+        f(0, p as *const c_void, (len * mem::size_of::<T>()) as size_t)
     }
 }
 
@@ -241,8 +241,8 @@ impl<T> Read for Array2D<T> {
 }
 
 impl<T> Buffer<T> for Array2DCL<T> {
-    fn id_ptr(&self) -> *cl_mem {
-        &self.buf as *cl_mem
+    fn id_ptr(&self) -> *const cl_mem {
+        &self.buf as *const cl_mem
     }
 
     fn len(&self) -> uint {
@@ -251,9 +251,9 @@ impl<T> Buffer<T> for Array2DCL<T> {
 }
 
 impl<T> KernelArg for Array2DCL<T> {
-    fn get_value(&self) -> (size_t, *c_void)
+    fn get_value(&self) -> (size_t, *const c_void)
     {
         (mem::size_of::<cl_mem>() as size_t,
-         self.id_ptr() as *c_void)
+         self.id_ptr() as *const c_void)
     }
 }

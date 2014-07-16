@@ -47,12 +47,12 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
             let context = devices.get(0).create_context();
             let queue = context.create_command_queue(devices.get(0));
             return Ok((*devices.get(0), context, queue));
-        } 
+        }
     }
 
 
     match cltype {
         Any | CPUPrefered | GPUPrefered => create_compute_context(),
-        _ => Err("Could not find valid implementation")   
+        _ => Err("Could not find valid implementation")
     }
 }

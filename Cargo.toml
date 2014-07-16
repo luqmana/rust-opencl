@@ -1,0 +1,4 @@
+[package]
+name = "opencl"
+version = "0.2.0"
+authors = [ "luqman.aden@uwaterloo.ca" ]

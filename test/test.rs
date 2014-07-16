@@ -6,9 +6,9 @@
 
 extern crate debug;
 extern crate std;
-extern crate OpenCL = "OpenCL#0.2";
+extern crate opencl;
 
-use OpenCL::hl::*;
+use opencl::hl::*;
 
 macro_rules! expect (
     ($test: expr, $expected: expr) => ({
@@ -38,9 +38,9 @@ pub fn test_all_platforms_devices(test: |Device, Context, CommandQueue|)
 
 mod mem {
     use std::slice;
-    use OpenCL::mem::{Read, Write};
+    use opencl::mem::{Read, Write};
 
-    fn read_write<R: Read, W: Write>(src: &W, dst: &mut R)
+    fn read_write<W: Write, R: Read>(src: W, dst: &mut R)
     {
         // find the max size of the input buffer
         let mut max = 0;
@@ -64,7 +64,7 @@ mod mem {
             assert!(buffer.len() >= (off + len) as uint);
             let target = buffer.mut_slice(off, off + len);
             unsafe {
-                slice::raw::buf_as_slice(ptr as *u8, len, |src| {
+                slice::raw::buf_as_slice(ptr as *const u8, len, |src| {
                     slice::bytes::copy_memory(target, src);
                 })
             }
@@ -87,18 +87,18 @@ mod mem {
     #[test]
     fn read_write_slice()
     {
-        let input :&[int] = &[0, 1, 2, 3, 4, 5, 6, 7];
-        let mut output :&mut [int] = &mut [0, 0, 0, 0, 0, 0, 0, 0];
-        read_write(&input, &mut output);
+        let input: &[int] = &[0, 1, 2, 3, 4, 5, 6, 7];
+        let mut output: &mut [int] = &mut [0, 0, 0, 0, 0, 0, 0, 0];
+        read_write(input, &mut output);
         expect!(input, output);
     }
 
     #[test]
     fn read_write_int()
     {
-        let input : int = 3141;
-        let mut output : int = 0;
-        read_write(&input, &mut output);
+        let input: int      = 3141;
+        let mut output: int = 0;
+        read_write(input, &mut output);
         expect!(input, output);
     }
 
@@ -107,7 +107,7 @@ mod mem {
     {
         let input : uint = 3141;
         let mut output : uint = 0;
-        read_write(&input, &mut output);
+        read_write(input, &mut output);
         expect!(input, output);
     }
 
@@ -116,7 +116,7 @@ mod mem {
     {
         let input : f32 = 3141.;
         let mut output : f32 = 0.;
-        read_write(&input, &mut output);
+        read_write(input, &mut output);
         expect!(input, output);
     }
 
@@ -125,17 +125,17 @@ mod mem {
     {
         let input : f64 = 3141.;
         let mut output : f64 = 0.;
-        read_write(&input, &mut output);
+        read_write(input, &mut output);
         expect!(input, output);
     }
 }
 
 #[cfg(test)]
 mod hl {
-    use OpenCL::CL::*;
-    use OpenCL::hl::*;
-    use OpenCL::mem::*;
-    use OpenCL::util;
+    use opencl::CL::*;
+    use opencl::hl::*;
+    use opencl::mem::*;
+    use opencl::util;
 
     #[test]
     fn program_build() {
@@ -158,7 +158,7 @@ mod hl {
             prog.build(&device).unwrap();
 
             let k = prog.create_kernel("test");
-            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -182,7 +182,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
             k.set_arg(1, &42i);
@@ -207,7 +207,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -230,7 +230,7 @@ mod hl {
             prog.build(&device).unwrap();
 
             let k = prog.create_kernel("test");
-            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -263,9 +263,9 @@ mod hl {
             let k_incB = prog.create_kernel("inc");
             let k_add = prog.create_kernel("add");
 
-            let a = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
-            let b = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
-            let c = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let a = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
+            let b = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
+            let c = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
 
             k_incA.set_arg(0, &a);
             k_incB.set_arg(0, &b);
@@ -310,7 +310,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(&[1i, 2, 3, 4, 5, 6, 7, 8, 9], CL_MEM_READ_ONLY);
+            let v = ctx.create_buffer_from(&&[1i, 2, 3, 4, 5, 6, 7, 8, 9], CL_MEM_READ_ONLY);
 
             k.set_arg(0, &v);
 
@@ -343,7 +343,7 @@ mod hl {
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
             let input = &[0i, 1, 2, 3, 4, 5, 6, 7];
-            let buffer = ctx.create_buffer_from(input, CL_MEM_READ_WRITE);
+            let buffer = ctx.create_buffer_from(&input, CL_MEM_READ_WRITE);
             let output: Vec<int> = queue.get(&buffer, ());
             expect!(input, output.as_slice());
         })
@@ -366,7 +366,7 @@ mod hl {
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
             let input = vec!(0i, 1, 2, 3, 4, 5, 6, 7);
-            let buffer = ctx.create_buffer_from(input.clone(), CL_MEM_READ_WRITE);
+            let buffer = ctx.create_buffer_from(&input.clone(), CL_MEM_READ_WRITE);
             let output: Vec<int> = queue.get(&buffer, ());
             expect!(input, output);
         })
@@ -383,7 +383,7 @@ mod hl {
         prog.build(&device).unwrap();
 
         let k = prog.create_kernel("test");
-        let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+        let v = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
 
         k.set_arg(0, &v);
 
@@ -399,10 +399,11 @@ mod hl {
     }
 }
 
+
 #[cfg(test)]
 mod array {
-    use OpenCL::array::*;
-    use OpenCL::CL::CL_MEM_READ_WRITE;
+    use opencl::array::*;
+    use opencl::CL::CL_MEM_READ_WRITE;
 
     #[test]
     fn put_get_2D()
@@ -564,23 +565,5 @@ mod array {
                 }
             }
         })
-    }
-}
-
-#[cfg(test)]
-mod error {
-    use OpenCL::CL::*;
-    use OpenCL::error::*;
-
-    #[test]
-    fn test_convert() {
-        expect!(convert(CL_INVALID_GLOBAL_OFFSET as cl_int),
-                CL_INVALID_GLOBAL_OFFSET)
-    }
-
-    #[test]
-    fn convert_to_str() {
-        expect!(convert(CL_INVALID_BUFFER_SIZE as cl_int).to_str(),
-                "CL_INVALID_BUFFER_SIZE".to_string());
     }
 }
