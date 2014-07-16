@@ -51,7 +51,7 @@ $(TARGET_DIR)demo: $(TARGET_DIR)libopencl.rlib test/demo.rs
 .PHONY: check
 check: lib
 	rustc $(RUSTC_OPTS) --test test/test.rs
-	$(TARGET_DIR)/test
+	$(TARGET_DIR)test
 
 
 .PHONY: clean
