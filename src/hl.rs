@@ -7,9 +7,6 @@ use std::mem;
 use std::ptr;
 use sync::mutex;
 
-use std::c_vec::CVec;
-use std::rt::heap;
-
 use CL;
 use CL::*;
 use CL::ll::*;
@@ -82,7 +79,7 @@ impl Platform {
             clGetPlatformInfo(self.id,
                               name,
                               size,
-                              unsafe{ value.as_mut_bytes().as_mut_ptr() as *mut libc::c_void },
+                              value.as_mut_bytes().as_mut_ptr() as *mut libc::c_void,
                               ptr::mut_null());
 
             value
@@ -127,7 +124,7 @@ pub fn get_platforms() -> Vec<Platform>
     unsafe
     {
         let guard = platforms_mutex.lock();
-        let mut status = clGetPlatformIDs(0,
+        let status = clGetPlatformIDs(0,
                                           ptr::mut_null(),
                                           (&mut num_platforms));
         // unlock this before the check in case the check fails
@@ -135,7 +132,7 @@ pub fn get_platforms() -> Vec<Platform>
 
         let mut ids = Vec::from_elem(num_platforms as uint, 0 as cl_platform_id);
 
-        let mut status = clGetPlatformIDs(num_platforms,
+        let status = clGetPlatformIDs(num_platforms,
                                           ids.as_mut_ptr(),
                                           (&mut num_platforms));
         check(status, "could not get platforms.");
@@ -154,7 +151,7 @@ impl Device {
     pub fn name(&self) -> String {
         unsafe {
             let mut size = 0;
-            let mut status = clGetDeviceInfo(
+            let status = clGetDeviceInfo(
                 self.id,
                 CL_DEVICE_NAME,
                 0,
@@ -164,7 +161,7 @@ impl Device {
 
             let mut buf = Vec::from_elem(size as uint, 0i);
 
-            let mut status = clGetDeviceInfo(
+            let status = clGetDeviceInfo(
                 self.id,
                 CL_DEVICE_NAME,
                 buf.len() as libc::size_t,
@@ -179,7 +176,7 @@ impl Device {
 	pub fn compute_units(&self) -> uint {
 		unsafe {
 			let mut ct: uint = 0;
-            let mut status = clGetDeviceInfo(
+            let status = clGetDeviceInfo(
                 self.id,
                 CL_DEVICE_MAX_COMPUTE_UNITS,
                 8,
@@ -351,7 +348,7 @@ impl CommandQueue
         {
             wait_on.as_event_list(|event_list, event_list_length| {
                 let mut e: cl_event = ptr::mut_null();
-                let mut status = clEnqueueNDRangeKernel(
+                let status = clEnqueueNDRangeKernel(
                     self.cqueue,
                     k.kernel,
                     KernelIndex::num_dimensions(None::<I>),
@@ -479,7 +476,7 @@ impl Program
                                      ptr::mut_null());
             // Get the build log.
             let mut size = 0 as libc::size_t;
-            let mut status = clGetProgramBuildInfo(
+            let status = clGetProgramBuildInfo(
                 self.prg,
                 device.id,
                 CL_PROGRAM_BUILD_LOG,
@@ -489,7 +486,7 @@ impl Program
             check(status, "Could not get build log");
 
             let mut buf = Vec::from_elem(size as uint, 0u8);
-            let mut status = clGetProgramBuildInfo(
+            let status = clGetProgramBuildInfo(
                 self.prg,
                 device.id,
                 CL_PROGRAM_BUILD_LOG,
@@ -649,7 +646,7 @@ pub trait EventList {
     fn wait(&self) {
         self.as_event_list(|p, len| {
             unsafe {
-                let mut status = clWaitForEvents(len, p);
+                let status = clWaitForEvents(len, p);
                 check(status, "Error waiting for event(s)");
             }
         })
