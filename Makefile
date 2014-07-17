@@ -18,6 +18,8 @@ OPENCL_SRC = \
 	mem.rs \
 	array.rs
 
+OPENCL_ROOT = $(shell pwd)
+
 .PHONY: all
 all: lib
 
@@ -45,7 +47,7 @@ $(TARGET_DIR):
 demo: target_dir $(TARGET_DIR)demo
 
 $(TARGET_DIR)demo: $(TARGET_DIR)libopencl.rlib test/demo.rs
-	rustc $(RUSTC_OPTS) test/demo.rs
+	env OPENCL_ROOT=$(OPENCL_ROOT) rustc $(RUSTC_OPTS) test/demo.rs
 
 
 .PHONY: check

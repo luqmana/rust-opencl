@@ -11,7 +11,8 @@ use opencl::mem::CLBuffer;
 
 fn main()
 {
-    let ker = File::open(&std::path::Path::new("/pgrm/rust-opencl/test.ocl")).read_to_end().unwrap();
+    let path = Path::new(format!("{}/{}", env!("OPENCL_ROOT"), "/test/demo.ocl"));
+    let ker = File::open(&path).read_to_end().unwrap();
     let ker = str::from_utf8(ker.as_slice()).unwrap();
 
     let vec_a = &[0i, 1, 2, -3, 4, 5, 6, 7];
