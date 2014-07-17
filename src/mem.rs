@@ -195,8 +195,7 @@ put_arg!(f32)
 put_arg!(f64)
 
 macro_rules! read_arg (
-    ($t:ty) => (
-        impl<'a> Read for $t
+    ($t:ty) => (impl Read for $t
         {
             fn read(&mut self, f: |offset: size_t, ptr: *mut c_void, size: size_t|) {
                 f(0, (self as *mut $t) as *mut c_void, mem::size_of::<$t>() as size_t)
