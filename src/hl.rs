@@ -230,7 +230,7 @@ impl Context {
     }
 
 
-    pub fn create_buffer_from<T, U, IN: Put<T, U>>(&self, create: &IN, flags: cl_mem_flags) -> U
+    pub fn create_buffer_from<T, U, IN: Put<T, U>>(&self, create: IN, flags: cl_mem_flags) -> U
     {
         create.put(|p, len| {
             let mut status = 0;

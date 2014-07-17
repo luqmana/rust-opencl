@@ -158,7 +158,7 @@ mod hl {
             prog.build(&device).unwrap();
 
             let k = prog.create_kernel("test");
-            let v = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -182,7 +182,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
             k.set_arg(1, &42i);
@@ -207,7 +207,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -230,7 +230,7 @@ mod hl {
             prog.build(&device).unwrap();
 
             let k = prog.create_kernel("test");
-            let v = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -263,9 +263,9 @@ mod hl {
             let k_incB = prog.create_kernel("inc");
             let k_add = prog.create_kernel("add");
 
-            let a = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
-            let b = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
-            let c = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
+            let a = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let b = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let c = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
 
             k_incA.set_arg(0, &a);
             k_incB.set_arg(0, &b);
@@ -310,7 +310,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(&&[1i, 2, 3, 4, 5, 6, 7, 8, 9], CL_MEM_READ_ONLY);
+            let v = ctx.create_buffer_from(&[1i, 2, 3, 4, 5, 6, 7, 8, 9], CL_MEM_READ_ONLY);
 
             k.set_arg(0, &v);
 
@@ -343,7 +343,7 @@ mod hl {
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
             let input = &[0i, 1, 2, 3, 4, 5, 6, 7];
-            let buffer = ctx.create_buffer_from(&input, CL_MEM_READ_WRITE);
+            let buffer = ctx.create_buffer_from(input, CL_MEM_READ_WRITE);
             let output: Vec<int> = queue.get(&buffer, ());
             expect!(input, output.as_slice());
         })
@@ -366,7 +366,7 @@ mod hl {
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
             let input = vec!(0i, 1, 2, 3, 4, 5, 6, 7);
-            let buffer = ctx.create_buffer_from(&input.clone(), CL_MEM_READ_WRITE);
+            let buffer = ctx.create_buffer_from(input.clone(), CL_MEM_READ_WRITE);
             let output: Vec<int> = queue.get(&buffer, ());
             expect!(input, output);
         })
@@ -383,7 +383,7 @@ mod hl {
         prog.build(&device).unwrap();
 
         let k = prog.create_kernel("test");
-        let v = ctx.create_buffer_from(&&[1i], CL_MEM_READ_WRITE);
+        let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
 
         k.set_arg(0, &v);
 

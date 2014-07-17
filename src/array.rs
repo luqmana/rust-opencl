@@ -63,7 +63,7 @@ impl<T> Drop for Array3DCL<T> {
     }
 }
 
-impl<T> Put<Array3D<T>, Array3DCL<T>> for Array3D<T>
+impl<'r, T> Put<Array3D<T>, Array3DCL<T>> for &'r Array3D<T>
 {
     fn put(&self, f: |ptr: *const c_void, size: size_t| -> cl_mem) -> Array3DCL<T>
     {
@@ -184,7 +184,7 @@ impl<T> Drop for Array2DCL<T> {
     }
 }
 
-impl<T> Put<Array2D<T>, Array2DCL<T>> for Array2D<T>
+impl<'r, T> Put<Array2D<T>, Array2DCL<T>> for &'r Array2D<T>
 {
     fn put(&self, f: |ptr: *const c_void, size: size_t| -> cl_mem) -> Array2DCL<T>
     {
