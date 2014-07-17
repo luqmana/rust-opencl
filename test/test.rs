@@ -40,7 +40,7 @@ mod mem {
     use std::slice;
     use opencl::mem::{Read, Write};
 
-    fn read_write<W: Write, R: Read>(src: W, dst: &mut R)
+    fn read_write<W: Write, R: Read>(src: &W, dst: &mut R)
     {
         // find the max size of the input buffer
         let mut max = 0;
@@ -89,7 +89,7 @@ mod mem {
     {
         let input: &[int] = &[0, 1, 2, 3, 4, 5, 6, 7];
         let mut output: &mut [int] = &mut [0, 0, 0, 0, 0, 0, 0, 0];
-        read_write(input, &mut output);
+        read_write(&input, &mut output);
         expect!(input, output);
     }
 
@@ -98,7 +98,7 @@ mod mem {
     {
         let input: int      = 3141;
         let mut output: int = 0;
-        read_write(input, &mut output);
+        read_write(&input, &mut output);
         expect!(input, output);
     }
 
@@ -107,7 +107,7 @@ mod mem {
     {
         let input : uint = 3141;
         let mut output : uint = 0;
-        read_write(input, &mut output);
+        read_write(&input, &mut output);
         expect!(input, output);
     }
 
@@ -116,7 +116,7 @@ mod mem {
     {
         let input : f32 = 3141.;
         let mut output : f32 = 0.;
-        read_write(input, &mut output);
+        read_write(&input, &mut output);
         expect!(input, output);
     }
 
@@ -125,7 +125,7 @@ mod mem {
     {
         let input : f64 = 3141.;
         let mut output : f64 = 0.;
-        read_write(input, &mut output);
+        read_write(&input, &mut output);
         expect!(input, output);
     }
 }
