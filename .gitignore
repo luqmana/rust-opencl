@@ -2,9 +2,8 @@
 *.so
 *.dylib
 *.dSYM
-test
 opencl-test
-build
+target/
 .rust
-bin
-doc
+bin/
+doc/

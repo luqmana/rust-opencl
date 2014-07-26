@@ -1,4 +1,4 @@
-#![crate_id = "OpenCL#0.2"]
+#![crate_name = "opencl"]
 #![crate_type = "lib"]
 #![feature(macro_rules)]
 #![feature(globs)]
