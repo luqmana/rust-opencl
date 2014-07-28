@@ -143,6 +143,29 @@ pub fn get_platforms() -> Vec<Platform>
     }
 }
 
+pub fn create_context_with_properties(dev: &[Device], prop: &[cl_context_properties]) -> Context
+{
+    unsafe
+    {
+        // TODO: Support for multiple devices
+        let mut errcode = 0;
+        let dev: Vec<cl_device_id> = dev.iter().map(|dev| dev.id).collect();
+
+        // TODO: Proper error messages
+        let ctx = clCreateContext(&prop[0],
+                                  dev.len() as u32,
+                                  dev.get(0),
+                                  mem::transmute(ptr::null::<||>()),
+                                  ptr::mut_null(),
+                                  &mut errcode);
+
+        check(errcode, "Failed to create opencl context!");
+
+        Context { ctx: ctx }
+    }
+}
+
+
 pub struct Device {
     id: cl_device_id
 }
@@ -196,7 +219,7 @@ impl Device {
             let mut errcode = 0;
 
             // TODO: Proper error messages
-            let ctx = clCreateContext(ptr::mut_null(),
+            let ctx = clCreateContext(ptr::null(),
                                       1,
                                       &self.id,
                                       mem::transmute(ptr::null::<||>()),
@@ -211,7 +234,7 @@ impl Device {
 }
 
 pub struct Context {
-    ctx: cl_context,
+    pub ctx: cl_context,
 }
 
 impl Context {
@@ -336,7 +359,7 @@ impl<T> KernelArg for Box<Buffer<T>> {
 
 
 pub struct CommandQueue {
-    cqueue: cl_command_queue
+    pub cqueue: cl_command_queue
 }
 
 impl CommandQueue
@@ -407,6 +430,30 @@ impl CommandQueue
                 })
             })
         }
+    }
+
+    pub fn write_async<U: Write, T, E: EventList, B: Buffer<T>>(&self, mem: &B, write: &U, event: E) -> Event
+    {
+        let mut out_event = None;
+        unsafe {
+            event.as_event_list(|evt, evt_len| {
+                write.write(|offset, p, len| {
+                    let mut e: cl_event = ptr::mut_null();
+                    let err = clEnqueueWriteBuffer(self.cqueue,
+                                                   mem.id(),
+                                                   CL_FALSE,
+                                                   offset as libc::size_t,
+                                                   len as libc::size_t,
+                                                   p as *const libc::c_void,
+                                                   evt_len,
+                                                   evt,
+                                                   &mut e);
+                    out_event = Some(e);
+                    check(err, "Failed to write buffer");
+                })
+            })
+        }
+        Event { event: out_event.unwrap() }
     }
 
     pub fn read<T, U: Read, E: EventList, B: Buffer<T>>(&self, mem: &B, read: &mut U, event: E)
@@ -591,7 +638,7 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
 
 pub struct Event
 {
-    event: cl_event,
+    pub event: cl_event,
 }
 
 impl Event {

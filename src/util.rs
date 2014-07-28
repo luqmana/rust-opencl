@@ -2,7 +2,7 @@
 
 use hl::*;
 
-pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &str>
+pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &'static str>
 {
     let platforms = get_platforms();
     if platforms.len() == 0 {
@@ -32,7 +32,7 @@ pub enum PreferedType {
 
 }
 
-pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Context, CommandQueue), &str>
+pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Context, CommandQueue), &'static str>
 {
     let platforms = get_platforms();
     for platform in platforms.iter() {
