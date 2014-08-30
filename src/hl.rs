@@ -337,7 +337,7 @@ impl Drop for Context
     }
 }
 
-impl<'r, T> KernelArg for &'r Buffer<T> {
+impl<'r, T> KernelArg for &'r Buffer<T> + 'r {
     fn get_value(&self) -> (libc::size_t, *const libc::c_void)
     {
         unsafe {
@@ -347,7 +347,7 @@ impl<'r, T> KernelArg for &'r Buffer<T> {
     }
 }
 
-impl<T> KernelArg for Box<Buffer<T>> {
+impl<'r, T> KernelArg for Box<Buffer<T> + 'r> {
     fn get_value(&self) -> (libc::size_t, *const libc::c_void)
     {
         unsafe {
