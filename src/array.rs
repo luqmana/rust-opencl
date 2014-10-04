@@ -1,7 +1,7 @@
 //! Two- and three-dimensional array support.
 
-use CL::*;
-use CL::ll::*;
+use cl::*;
+use cl::ll::*;
 use mem::*;
 use std::mem;
 use std::vec::Vec;

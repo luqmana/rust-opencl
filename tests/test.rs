@@ -2,10 +2,7 @@
 #![feature(macro_rules)]
 #![feature(globs)]
 
-#![allow(non_snake_case_functions)]
-
 extern crate debug;
-extern crate std;
 extern crate opencl;
 
 use opencl::hl::*;
@@ -62,7 +59,7 @@ mod mem {
             let off = off as uint;
             let len = len as uint;
             assert!(buffer.len() >= (off + len) as uint);
-            let target = buffer.mut_slice(off, off + len);
+            let target = buffer.slice_mut(off, off + len);
             unsafe {
                 slice::raw::buf_as_slice(ptr as *const u8, len, |src| {
                     slice::bytes::copy_memory(target, src);
@@ -132,7 +129,7 @@ mod mem {
 
 #[cfg(test)]
 mod hl {
-    use opencl::CL::*;
+    use opencl::cl::*;
     use opencl::hl::*;
     use opencl::mem::*;
     use opencl::util;
@@ -158,7 +155,7 @@ mod hl {
             prog.build(&device).unwrap();
 
             let k = prog.create_kernel("test");
-            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(vec![1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -166,7 +163,7 @@ mod hl {
 
             let v: Vec<int> = queue.get(&v, ());
 
-            expect!(*v.get(0), 2);
+            expect!(v[0], 2);
         })
     }
 
@@ -182,7 +179,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(vec![1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
             k.set_arg(1, &42i);
@@ -191,7 +188,7 @@ mod hl {
 
             let v: Vec<int> = queue.get(&v, ());
 
-            expect!(*v.get(0), 43);
+            expect!(v[0], 43);
         })
     }
 
@@ -207,7 +204,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(vec![1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -215,7 +212,7 @@ mod hl {
 
             let v: Vec<int> = queue.get(&v, ());
 
-            expect!(*v.get(0), 2);
+            expect!(v[0], 2);
         })
     }
 
@@ -230,7 +227,7 @@ mod hl {
             prog.build(&device).unwrap();
 
             let k = prog.create_kernel("test");
-            let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(vec![1i], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -242,7 +239,7 @@ mod hl {
 
             let v: Vec<int> = queue.get(&v, ());
 
-            expect!(*v.get(0), 9);
+            expect!(v[0], 9);
         })
     }
 
@@ -259,31 +256,31 @@ mod hl {
             let prog = ctx.create_program_from_source(src);
             prog.build(&device).unwrap();
 
-            let k_incA = prog.create_kernel("inc");
-            let k_incB = prog.create_kernel("inc");
+            let k_inc_a = prog.create_kernel("inc");
+            let k_inc_b = prog.create_kernel("inc");
             let k_add = prog.create_kernel("add");
 
-            let a = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
-            let b = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
-            let c = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+            let a = ctx.create_buffer_from(vec![1i], CL_MEM_READ_WRITE);
+            let b = ctx.create_buffer_from(vec![1i], CL_MEM_READ_WRITE);
+            let c = ctx.create_buffer_from(vec![1i], CL_MEM_READ_WRITE);
 
-            k_incA.set_arg(0, &a);
-            k_incB.set_arg(0, &b);
+            k_inc_a.set_arg(0, &a);
+            k_inc_b.set_arg(0, &b);
 
-            let event_list = &[
-                queue.enqueue_async_kernel(&k_incA, 1i, None, ()),
-                queue.enqueue_async_kernel(&k_incB, 1i, None, ()),
+            let event_list = [
+                queue.enqueue_async_kernel(&k_inc_a, 1i, None, ()),
+                queue.enqueue_async_kernel(&k_inc_b, 1i, None, ()),
             ];
 
             k_add.set_arg(0, &a);
             k_add.set_arg(1, &b);
             k_add.set_arg(2, &c);
 
-            let event = queue.enqueue_async_kernel(&k_add, 1i, None, event_list);
+            let event = queue.enqueue_async_kernel(&k_add, 1i, None, event_list.as_slice());
 
             let v: Vec<int> = queue.get(&c, event);
 
-            expect!(*v.get(0), 4);
+            expect!(v[0], 4);
         })
     }
 
@@ -310,7 +307,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(&[1i, 2, 3, 4, 5, 6, 7, 8, 9], CL_MEM_READ_ONLY);
+            let v = ctx.create_buffer_from([1i, 2, 3, 4, 5, 6, 7, 8, 9].as_slice(), CL_MEM_READ_ONLY);
 
             k.set_arg(0, &v);
 
@@ -329,12 +326,12 @@ mod hl {
             let buffer: CLBuffer<int> = ctx.create_buffer(8, CL_MEM_READ_ONLY);
 
             let input = &[0i, 1, 2, 3, 4, 5, 6, 7];
-            let mut output = &mut [0i, 0, 0, 0, 0, 0, 0, 0];
+            let output = &mut [0i, 0, 0, 0, 0, 0, 0, 0];
 
-            queue.write(&buffer, &input, ());
-            queue.read(&buffer, &mut output, ());
+            queue.write(&buffer, &input.as_slice(), ());
+            queue.read(&buffer, &mut output.as_mut_slice(), ());
 
-            expect!(input, output);
+            expect!(input.as_slice(), output.as_slice());
         })
     }
 
@@ -343,9 +340,9 @@ mod hl {
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
             let input = &[0i, 1, 2, 3, 4, 5, 6, 7];
-            let buffer = ctx.create_buffer_from(input, CL_MEM_READ_WRITE);
+            let buffer = ctx.create_buffer_from(input.as_slice(), CL_MEM_READ_WRITE);
             let output: Vec<int> = queue.get(&buffer, ());
-            expect!(input, output.as_slice());
+            expect!(input.as_slice(), output.as_slice());
         })
     }
 
@@ -383,7 +380,7 @@ mod hl {
         prog.build(&device).unwrap();
 
         let k = prog.create_kernel("test");
-        let v = ctx.create_buffer_from(&[1i], CL_MEM_READ_WRITE);
+        let v = ctx.create_buffer_from(vec![1i], CL_MEM_READ_WRITE);
 
         k.set_arg(0, &v);
 
@@ -403,10 +400,10 @@ mod hl {
 #[cfg(test)]
 mod array {
     use opencl::array::*;
-    use opencl::CL::CL_MEM_READ_WRITE;
+    use opencl::cl::CL_MEM_READ_WRITE;
 
     #[test]
-    fn put_get_2D()
+    fn put_get_2d()
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
             let arr_in = Array2D::new(8, 8, |x, y| {(x+y) as int});
@@ -423,7 +420,7 @@ mod array {
 
 
     #[test]
-    fn read_write_2D()
+    fn read_write_2d()
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
             let added = Array2D::new(8, 8, |x, y| {(x+y) as int});
@@ -446,7 +443,7 @@ mod array {
 
 
     #[test]
-    fn kernel_2D()
+    fn kernel_2d()
     {
         ::test_all_platforms_devices(|device, ctx, queue| {
             let mut a = Array2D::new(8, 8, |_, _| {(0) as i32});
@@ -483,7 +480,7 @@ mod array {
     }
 
     #[test]
-    fn put_get_3D()
+    fn put_get_3d()
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
             let arr_in = Array3D::new(8, 8, 8, |x, y, z| {(x+y+z) as int});
@@ -502,7 +499,7 @@ mod array {
 
 
     #[test]
-    fn read_write_3D()
+    fn read_write_3d()
     {
         ::test_all_platforms_devices(|_, ctx, queue| {
             let added = Array3D::new(8, 8, 8, |x, y, z| {(x+y+z) as int});
@@ -527,7 +524,7 @@ mod array {
 
 
     #[test]
-    fn kernel_3D()
+    fn kernel_3d()
     {
         ::test_all_platforms_devices(|device, ctx, queue| {
             let mut a = Array3D::new(8, 8, 8, |_, _, _| {(0) as i32});

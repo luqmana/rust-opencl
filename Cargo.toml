@@ -9,3 +9,10 @@ authors = [ "Colin Sherratt <colin.sherratt@gmail.com>",
             "Sébastien Crozet <developer@crozet.re>",
             "Mathijs Henquet <mathijs.henquet@gmail.com>"
           ]
+
+[lib]
+name = "opencl"
+
+[[example]]
+name = "demo"
+path = "example/demo.rs"
