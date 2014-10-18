@@ -8,7 +8,6 @@
 
 //! OpenCL bindings for Rust.
 
-extern crate debug;
 extern crate libc;
 extern crate sync;
 #[phase(plugin, link)] extern crate log;

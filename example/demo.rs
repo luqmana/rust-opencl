@@ -1,4 +1,3 @@
-extern crate debug;
 extern crate opencl;
 
 use opencl::mem::CLBuffer;
@@ -13,7 +12,7 @@ fn main()
 
     let (device, ctx, queue) = opencl::util::create_compute_context().unwrap();
 
-    println!("{:?}", device.name());
+    println!("{}", device.name());
 
     let a: CLBuffer<int> = ctx.create_buffer(vec_a.len(), opencl::cl::CL_MEM_READ_ONLY);
     let b: CLBuffer<int> = ctx.create_buffer(vec_a.len(), opencl::cl::CL_MEM_READ_ONLY);
