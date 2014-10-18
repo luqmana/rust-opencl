@@ -35,7 +35,7 @@ impl Platform {
         {
             let mut num_devices = 0;
 
-            info!("Looking for devices matching {:?}", dtype);
+            info!("Looking for devices matching {}", dtype);
 
             clGetDeviceIDs(self.id, dtype, 0, ptr::null_mut(),
                            (&mut num_devices));

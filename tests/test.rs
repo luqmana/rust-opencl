@@ -2,7 +2,6 @@
 #![feature(macro_rules)]
 #![feature(globs)]
 
-extern crate debug;
 extern crate opencl;
 
 use opencl::hl::*;
@@ -12,7 +11,7 @@ macro_rules! expect (
             let test     = $test;
             let expected = $expected;
             if test != expected {
-                fail!(format!("Test failure in {:s}: expected {:?}, got {:?}",
+                fail!(format!("Test failure in {:s}: expected {}, got {}",
                               stringify!($test),
                               expected, test))
             }
