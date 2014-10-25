@@ -426,7 +426,7 @@ pub static CL_PROFILING_COMMAND_END:                     cl_uint = 0x1283;
 
 
 pub mod ll {
-  use CL::*;
+  use cl::*;
   use libc;
 
 
@@ -455,7 +455,7 @@ pub mod ll {
                        param_value_size_ret: *mut libc::size_t) -> cl_int;
 
     /* Context APIs */
-    pub fn clCreateContext(properties: *mut cl_context_properties,
+    pub fn clCreateContext(properties: *const cl_context_properties,
                        num_devices: cl_uint,
                        devices: *const cl_device_id,
                        pfn_notify: extern fn (*const libc::c_char, *const libc::c_void, libc::size_t, *mut libc::c_void),

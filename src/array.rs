@@ -1,7 +1,7 @@
 //! Two- and three-dimensional array support.
 
-use CL::*;
-use CL::ll::*;
+use cl::*;
+use cl::ll::*;
 use mem::*;
 use std::mem;
 use std::vec::Vec;
@@ -135,7 +135,7 @@ impl<T> KernelArg for Array3DCL<T> {
     fn get_value(&self) -> (size_t, *const c_void)
     {
         (mem::size_of::<cl_mem>() as size_t,
-         self.id_ptr() as *const c_void)
+         unsafe { self.id_ptr() } as *const c_void)
     }
 }
 
@@ -254,6 +254,6 @@ impl<T> KernelArg for Array2DCL<T> {
     fn get_value(&self) -> (size_t, *const c_void)
     {
         (mem::size_of::<cl_mem>() as size_t,
-         self.id_ptr() as *const c_void)
+         unsafe { self.id_ptr() } as *const c_void)
     }
 }

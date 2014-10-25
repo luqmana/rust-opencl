@@ -2,13 +2,12 @@
 #![crate_type = "lib"]
 #![feature(macro_rules)]
 #![feature(globs)]
-#![feature(managed_boxes)]
 #![feature(phase)]
 #![feature(unsafe_destructor)]
+#![allow(ctypes)]
 
 //! OpenCL bindings for Rust.
 
-extern crate debug;
 extern crate libc;
 extern crate sync;
 #[phase(plugin, link)] extern crate log;
@@ -23,7 +22,7 @@ extern { }
 
 /// Low-level OpenCL bindings. These should primarily be used by the
 /// higher level features in this library.
-pub mod CL;
+pub mod cl;
 pub mod error;
 pub mod hl;
 pub mod util;

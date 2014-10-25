@@ -6,8 +6,8 @@ use std::ptr;
 use std::vec::Vec;
 use std::num::zero;
 
-use CL::*;
-use CL::ll::*;
+use cl::*;
+use cl::ll::*;
 
 use hl::KernelArg;
 use error::check;
@@ -29,7 +29,7 @@ pub trait Buffer<T> {
                                          CL_MEM_SIZE,
                                          mem::size_of::<size_t>() as size_t,
                                          (&mut size as *mut u64) as *mut c_void,
-                                         ptr::mut_null());
+                                         ptr::null_mut());
 
             check(err, "Failed to read memory size");
             size

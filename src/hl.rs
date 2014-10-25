@@ -2,14 +2,14 @@
 
 use libc;
 use std::vec::Vec;
-use std::str;
 use std::mem;
 use std::ptr;
+use std::string;
 use sync::mutex;
 
-use CL;
-use CL::*;
-use CL::ll::*;
+use cl;
+use cl::*;
+use cl::ll::*;
 use error::check;
 use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 
@@ -35,9 +35,9 @@ impl Platform {
         {
             let mut num_devices = 0;
 
-            info!("Looking for devices matching {:?}", dtype);
+            info!("Looking for devices matching {}", dtype);
 
-            clGetDeviceIDs(self.id, dtype, 0, ptr::mut_null(),
+            clGetDeviceIDs(self.id, dtype, 0, ptr::null_mut(),
                            (&mut num_devices));
 
             let mut ids = Vec::from_elem(num_devices as uint, 0 as cl_device_id);
@@ -70,7 +70,7 @@ impl Platform {
             clGetPlatformInfo(self.id,
                               name,
                               0,
-                              ptr::mut_null(),
+                              ptr::null_mut(),
                               &mut size);
 
 
@@ -79,8 +79,8 @@ impl Platform {
             clGetPlatformInfo(self.id,
                               name,
                               size,
-                              value.as_mut_bytes().as_mut_ptr() as *mut libc::c_void,
-                              ptr::mut_null());
+                              value.as_mut_vec().as_mut_slice().as_mut_ptr() as *mut libc::c_void,
+                              ptr::null_mut());
 
             value
         }
@@ -125,7 +125,7 @@ pub fn get_platforms() -> Vec<Platform>
     {
         let guard = platforms_mutex.lock();
         let status = clGetPlatformIDs(0,
-                                          ptr::mut_null(),
+                                          ptr::null_mut(),
                                           (&mut num_platforms));
         // unlock this before the check in case the check fails
         check(status, "could not get platform count.");
@@ -143,6 +143,29 @@ pub fn get_platforms() -> Vec<Platform>
     }
 }
 
+pub fn create_context_with_properties(dev: &[Device], prop: &[cl_context_properties]) -> Context
+{
+    unsafe
+    {
+        // TODO: Support for multiple devices
+        let mut errcode = 0;
+        let dev: Vec<cl_device_id> = dev.iter().map(|dev| dev.id).collect();
+
+        // TODO: Proper error messages
+        let ctx = clCreateContext(&prop[0],
+                                  dev.len() as u32,
+                                  &dev[0],
+                                  mem::transmute(ptr::null::<||>()),
+                                  ptr::null_mut(),
+                                  &mut errcode);
+
+        check(errcode, "Failed to create opencl context!");
+
+        Context { ctx: ctx }
+    }
+}
+
+
 pub struct Device {
     id: cl_device_id
 }
@@ -155,7 +178,7 @@ impl Device {
                 self.id,
                 CL_DEVICE_NAME,
                 0,
-                ptr::mut_null(),
+                ptr::null_mut(),
                 (&mut size));
             check(status, "Could not determine name length");
 
@@ -166,10 +189,10 @@ impl Device {
                 CL_DEVICE_NAME,
                 buf.len() as libc::size_t,
                 buf.as_mut_ptr() as *mut libc::c_void,
-                ptr::mut_null());
+                ptr::null_mut());
             check(status, "Could not get device name");
 
-            str::raw::from_c_str(buf.as_ptr() as *const i8)
+            string::raw::from_buf(buf.as_ptr() as *const u8)
         }
     }
 
@@ -181,7 +204,7 @@ impl Device {
                 CL_DEVICE_MAX_COMPUTE_UNITS,
                 8,
                 (&mut ct as *mut uint) as *mut libc::c_void,
-                ptr::mut_null());
+                ptr::null_mut());
             check(status, "Could not get number of device compute units.");
 			return ct;
 		}
@@ -196,11 +219,11 @@ impl Device {
             let mut errcode = 0;
 
             // TODO: Proper error messages
-            let ctx = clCreateContext(ptr::mut_null(),
+            let ctx = clCreateContext(ptr::null(),
                                       1,
                                       &self.id,
                                       mem::transmute(ptr::null::<||>()),
-                                      ptr::mut_null(),
+                                      ptr::null_mut(),
                                       (&mut errcode));
 
             check(errcode, "Failed to create opencl context!");
@@ -211,7 +234,7 @@ impl Device {
 }
 
 pub struct Context {
-    ctx: cl_context,
+    pub ctx: cl_context,
 }
 
 impl Context {
@@ -222,7 +245,7 @@ impl Context {
             let buf = clCreateBuffer(self.ctx,
                                      flags,
                                      (size*mem::size_of::<T>()) as libc::size_t ,
-                                     ptr::mut_null(),
+                                     ptr::null_mut(),
                                      (&mut status));
             check(status, "Could not allocate buffer");
             CLBuffer{cl_buffer: buf}
@@ -269,39 +292,38 @@ impl Context {
     {
         unsafe
         {
-            src.to_c_str().with_ref(|src| {
-                let mut status = CL_SUCCESS as cl_int;
-                let program = clCreateProgramWithSource(
-                    self.ctx,
-                    1,
-                    (&src),
-                    ptr::null(),
-                    (&mut status));
-                check(status, "Could not create program");
+            let src = src.to_c_str();
 
-                Program { prg: program }
-            })
+            let mut status = CL_SUCCESS as cl_int;
+            let program = clCreateProgramWithSource(
+                self.ctx,
+                1,
+                &src.as_ptr(),
+                ptr::null(),
+                (&mut status));
+            check(status, "Could not create program");
+
+            Program { prg: program }
         }
     }
 
     pub fn create_program_from_binary(&self, bin: &str, device: &Device) -> Program {
-        bin.to_c_str().with_ref(|src| {
-            let mut status = CL_SUCCESS as cl_int;
-            let len = bin.len() as libc::size_t;
-            let program = unsafe {
-                clCreateProgramWithBinary(
-                    self.ctx,
-                    1,
-                    &device.id,
-                    (&len),
-                    (&src as *const *const i8) as *const *const libc::c_uchar,
-                    ptr::mut_null(),
-                    (&mut status))
-            };
-            check(status, "Could not create program");
+        let src = bin.to_c_str();
+        let mut status = CL_SUCCESS as cl_int;
+        let len = bin.len() as libc::size_t;
+        let program = unsafe {
+            clCreateProgramWithBinary(
+                self.ctx,
+                1,
+                &device.id,
+                (&len),
+                (src.as_ptr() as *const *const i8) as *const *const libc::c_uchar,
+                ptr::null_mut(),
+                (&mut status))
+        };
+        check(status, "Could not create program");
 
-            Program {prg: program}
-        })
+        Program {prg: program}
     }
 }
 
@@ -314,7 +336,7 @@ impl Drop for Context
     }
 }
 
-impl<'r, T> KernelArg for &'r Buffer<T> {
+impl<'r, T> KernelArg for &'r Buffer<T> + 'r {
     fn get_value(&self) -> (libc::size_t, *const libc::c_void)
     {
         unsafe {
@@ -324,7 +346,7 @@ impl<'r, T> KernelArg for &'r Buffer<T> {
     }
 }
 
-impl<T> KernelArg for Box<Buffer<T>> {
+impl<'r, T> KernelArg for Box<Buffer<T> + 'r> {
     fn get_value(&self) -> (libc::size_t, *const libc::c_void)
     {
         unsafe {
@@ -336,7 +358,7 @@ impl<T> KernelArg for Box<Buffer<T>> {
 
 
 pub struct CommandQueue {
-    cqueue: cl_command_queue
+    pub cqueue: cl_command_queue
 }
 
 impl CommandQueue
@@ -347,7 +369,7 @@ impl CommandQueue
         unsafe
         {
             wait_on.as_event_list(|event_list, event_list_length| {
-                let mut e: cl_event = ptr::mut_null();
+                let mut e: cl_event = ptr::null_mut();
                 let status = clEnqueueNDRangeKernel(
                     self.cqueue,
                     k.kernel,
@@ -380,7 +402,7 @@ impl CommandQueue
                                                   ptr,
                                                   event_list_length,
                                                   event_list,
-                                                  ptr::mut_null());
+                                                  ptr::null_mut());
 
                     check(err, "Failed to read buffer");
                 }
@@ -401,12 +423,36 @@ impl CommandQueue
                                                    p as *const libc::c_void,
                                                    event_list_length,
                                                    event_list,
-                                                   ptr::mut_null());
+                                                   ptr::null_mut());
 
                     check(err, "Failed to write buffer");
                 })
             })
         }
+    }
+
+    pub fn write_async<U: Write, T, E: EventList, B: Buffer<T>>(&self, mem: &B, write: &U, event: E) -> Event
+    {
+        let mut out_event = None;
+        unsafe {
+            event.as_event_list(|evt, evt_len| {
+                write.write(|offset, p, len| {
+                    let mut e: cl_event = ptr::null_mut();
+                    let err = clEnqueueWriteBuffer(self.cqueue,
+                                                   mem.id(),
+                                                   CL_FALSE,
+                                                   offset as libc::size_t,
+                                                   len as libc::size_t,
+                                                   p as *const libc::c_void,
+                                                   evt_len,
+                                                   evt,
+                                                   &mut e);
+                    out_event = Some(e);
+                    check(err, "Failed to write buffer");
+                })
+            })
+        }
+        Event { event: out_event.unwrap() }
     }
 
     pub fn read<T, U: Read, E: EventList, B: Buffer<T>>(&self, mem: &B, read: &mut U, event: E)
@@ -422,7 +468,7 @@ impl CommandQueue
                                                   p as *mut libc::c_void,
                                                   event_list_length,
                                                   event_list,
-                                                  ptr::mut_null());
+                                                  ptr::null_mut());
 
                     check(err, "Failed to read buffer");
                 })
@@ -473,7 +519,7 @@ impl Program
             let ret = clBuildProgram(self.prg, 1, &device.id,
                                      ptr::null(),
                                      mem::transmute(ptr::null::<||>()),
-                                     ptr::mut_null());
+                                     ptr::null_mut());
             // Get the build log.
             let mut size = 0 as libc::size_t;
             let status = clGetProgramBuildInfo(
@@ -481,7 +527,7 @@ impl Program
                 device.id,
                 CL_PROGRAM_BUILD_LOG,
                 0,
-                ptr::mut_null(),
+                ptr::null_mut(),
                 (&mut size));
             check(status, "Could not get build log");
 
@@ -492,15 +538,14 @@ impl Program
                 CL_PROGRAM_BUILD_LOG,
                 buf.len() as libc::size_t,
                 buf.as_mut_ptr() as *mut libc::c_void,
-                ptr::mut_null());
+                ptr::null_mut());
             check(status, "Could not get build log");
 
-            let log = str::raw::from_c_str(buf.as_ptr() as *const libc::c_char);
+            let log = string::raw::from_buf(buf.as_ptr() as *const u8);
 
             if ret == CL_SUCCESS as cl_int {
                 Ok(log)
-            }
-            else {
+            } else {
                 Err(log)
             }
         }
@@ -527,27 +572,22 @@ impl Drop for Kernel
 impl Kernel {
     pub fn set_arg<T: KernelArg>(&self, i: uint, x: &T)
     {
-        set_kernel_arg(self, i as CL::cl_uint, x)
+        set_kernel_arg(self, i as cl::cl_uint, x)
     }
 }
 
-pub fn create_kernel(program: & Program, kernel: & str) -> Kernel
+pub fn create_kernel(program: &Program, kernel: & str) -> Kernel
 {
     unsafe {
         let mut errcode = 0;
-        // let bytes = str::to_bytes(kernel);
-        kernel.to_c_str().with_ref(|str_ptr|
-        {
-            let kernel = clCreateKernel(program.prg,
-                                        str_ptr,
-                                        (&mut errcode));
+        let str = kernel.to_c_str();
+        let kernel = clCreateKernel(program.prg,
+                                    str.as_ptr(),
+                                    (&mut errcode));
 
-            check(errcode, "Failed to create kernel!");
+        check(errcode, "Failed to create kernel!");
 
-            Kernel {
-                kernel: kernel,
-            }
-        })
+        Kernel { kernel: kernel }
     }
 }
 
@@ -591,7 +631,7 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
 
 pub struct Event
 {
-    event: cl_event,
+    pub event: cl_event,
 }
 
 impl Event {
@@ -603,7 +643,7 @@ impl Event {
                                     param,
                                     mem::size_of::<cl_ulong>() as libc::size_t,
                                     (&mut time as *mut u64) as *mut libc::c_void,
-                                    ptr::mut_null());
+                                    ptr::null_mut());
 
             check(ret, "Failed to get profiling info");
             time as u64
