@@ -11,7 +11,7 @@ macro_rules! expect (
             let test     = $test;
             let expected = $expected;
             if test != expected {
-                fail!(format!("Test failure in {:s}: expected {}, got {}",
+                panic!(format!("Test failure in {:s}: expected {}, got {}",
                               stringify!($test),
                               expected, test))
             }
@@ -300,7 +300,7 @@ mod hl {
                 Err(build_log) => {
                     println!("Error building program:\n");
                     println!("{:s}", build_log);
-                    fail!("");
+                    panic!("");
                 }
             }
 
@@ -461,7 +461,7 @@ mod array {
                 Err(build_log) => {
                     println!("Error building program:\n");
                     println!("{:s}", build_log);
-                    fail!("");
+                    panic!("");
                 }
             }
             let k = prog.create_kernel("test");
@@ -544,7 +544,7 @@ mod array {
                 Err(build_log) => {
                     println!("Error building program:\n");
                     println!("{:s}", build_log);
-                    fail!("");
+                    panic!("");
                 }
             }
             let k = prog.create_kernel("test");
