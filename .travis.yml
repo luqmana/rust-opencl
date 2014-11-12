@@ -2,7 +2,12 @@ language: rust
 
 env:
   global:
+    - secure: TUA5IHO5hwaQvgA1gAvslQ4QWhHEym5bFmmm7nAKHVIxRDchpCmjaLPmu3DirxRJBXi0b5zOZypIH75TMlivfnciQSWr9rj3PaaK+P6LpGScHvYsi/JEawtPJ8V5+xAvOKJ/HsNk5wGS+BBDv4YCPAG5itixMaFxQAVmKw1VMeo=
     - RUST_THREADS=4
 
 install:
+  - sudo apt-get update
   - sudo apt-get install fglrx opencl-headers
+
+after_script:
+- curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
