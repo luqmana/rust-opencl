@@ -10,6 +10,7 @@ use sync::mutex;
 use cl;
 use cl::*;
 use cl::ll::*;
+use cl::CLStatus::CL_SUCCESS;
 use error::check;
 use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 
@@ -19,8 +20,8 @@ pub enum DeviceType {
 
 fn convert_device_type(device: DeviceType) -> cl_device_type {
     match device {
-        CPU => CL_DEVICE_TYPE_CPU,
-        GPU => CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR
+        DeviceType::CPU => CL_DEVICE_TYPE_CPU,
+        DeviceType::GPU => CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR
     }
 }
 
