@@ -14,6 +14,6 @@ fn error_str(status_code: cl_int) -> String {
 
 pub fn check(status: cl_int, message: &str) {
     if status != CL_SUCCESS as cl_int {
-        panic!(format!("{:s} ({})", message, error_str(status)))
+        panic!("{} ({})", message, error_str(status))
     }
 }

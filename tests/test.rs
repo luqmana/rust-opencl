@@ -11,7 +11,7 @@ macro_rules! expect (
             let test     = $test;
             let expected = $expected;
             if test != expected {
-                panic!(format!("Test failure in {:s}: expected {}, got {}",
+                panic!(format!("Test failure in {}: expected {}, got {}",
                               stringify!($test),
                               expected, test))
             }
@@ -299,7 +299,7 @@ mod hl {
                 Ok(_) => (),
                 Err(build_log) => {
                     println!("Error building program:\n");
-                    println!("{:s}", build_log);
+                    println!("{}", build_log);
                     panic!("");
                 }
             }
@@ -460,7 +460,7 @@ mod array {
                 Ok(_) => (),
                 Err(build_log) => {
                     println!("Error building program:\n");
-                    println!("{:s}", build_log);
+                    println!("{}", build_log);
                     panic!("");
                 }
             }
@@ -543,7 +543,7 @@ mod array {
                 Ok(_) => (),
                 Err(build_log) => {
                     println!("Error building program:\n");
-                    println!("{:s}", build_log);
+                    println!("{}", build_log);
                     panic!("");
                 }
             }
