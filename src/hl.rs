@@ -1,11 +1,11 @@
 //! A higher level API.
 
 use libc;
+use rustrt;
 use std::vec::Vec;
 use std::mem;
 use std::ptr;
 use std::string;
-use sync::mutex;
 
 use cl;
 use cl::*;
@@ -116,7 +116,7 @@ impl Platform {
 // This mutex is used to work around weak OpenCL implementations.
 // On some implementations concurrent calls to clGetPlatformIDs
 // will cause the implantation to return invalid status.
-static mut platforms_mutex: mutex::StaticMutex = mutex::MUTEX_INIT;
+static mut platforms_mutex: rustrt::mutex::StaticNativeMutex = rustrt::mutex::NATIVE_MUTEX_INIT;
 
 pub fn get_platforms() -> Vec<Platform>
 {

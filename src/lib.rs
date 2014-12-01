@@ -9,7 +9,7 @@
 //! OpenCL bindings for Rust.
 
 extern crate libc;
-extern crate sync;
+extern crate rustrt;
 #[phase(plugin, link)] extern crate log;
 
 #[link(name = "OpenCL", kind = "framework")]
