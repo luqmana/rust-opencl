@@ -5,7 +5,7 @@ use rustrt;
 use std::vec::Vec;
 use std::mem;
 use std::ptr;
-use std::string;
+use collections::string::String;
 
 use cl;
 use cl::*;
@@ -194,7 +194,7 @@ impl Device {
                 ptr::null_mut());
             check(status, "Could not get device name");
 
-            string::raw::from_buf(buf.as_ptr() as *const u8)
+            String::from_raw_buf(buf.as_ptr() as *const u8)
         }
     }
 
@@ -543,8 +543,7 @@ impl Program
                 ptr::null_mut());
             check(status, "Could not get build log");
 
-            let log = string::raw::from_buf(buf.as_ptr() as *const u8);
-
+            let log = String::from_raw_buf(buf.as_ptr() as *const u8);
             if ret == CL_SUCCESS as cl_int {
                 Ok(log)
             } else {

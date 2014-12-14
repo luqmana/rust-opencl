@@ -4,13 +4,16 @@
 #![feature(globs)]
 #![feature(phase)]
 #![feature(unsafe_destructor)]
-#![allow(ctypes)]
+#![allow(improper_ctypes)]
+#![allow(missing_copy_implementations)]
+#![allow(non_upper_case_globals)]
 
 //! OpenCL bindings for Rust.
 
 extern crate libc;
 extern crate rustrt;
 #[phase(plugin, link)] extern crate log;
+extern crate collections;
 
 #[link(name = "OpenCL", kind = "framework")]
 #[cfg(target_os = "macos")]
