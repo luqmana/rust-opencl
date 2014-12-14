@@ -14,6 +14,7 @@ use cl::CLStatus::CL_SUCCESS;
 use error::check;
 use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 
+#[deriving(Copy)]
 pub enum DeviceType {
       CPU, GPU
 }

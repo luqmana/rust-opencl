@@ -19,7 +19,7 @@ macro_rules! expect (
         )
 
 
-pub fn test_all_platforms_devices(test: |Device, Context, CommandQueue|)
+pub fn test_all_platforms_devices(test: |&Device, &Context, &CommandQueue|)
 {
     let platforms = get_platforms();
     for p in platforms.iter() {
@@ -27,7 +27,7 @@ pub fn test_all_platforms_devices(test: |Device, Context, CommandQueue|)
         for d in devices.iter() {
             let context = d.create_context();
             let queue = context.create_command_queue(d);
-            test(*d, context, queue);
+            test(d, &context, &queue);
         }
     }
 }
@@ -140,7 +140,7 @@ mod hl {
                    }";
         ::test_all_platforms_devices(|device, ctx, _| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device).unwrap();
+            prog.build(device).unwrap();
         })
     }
 
@@ -151,7 +151,7 @@ mod hl {
                    }";
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device).unwrap();
+            prog.build(device).unwrap();
 
             let k = prog.create_kernel("test");
             let v = ctx.create_buffer_from(vec![1i], CL_MEM_READ_WRITE);
@@ -174,7 +174,7 @@ mod hl {
 
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device).unwrap();
+            prog.build(device).unwrap();
 
             let k = prog.create_kernel("test");
 
@@ -199,7 +199,7 @@ mod hl {
 
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device).unwrap();
+            prog.build(device).unwrap();
 
             let k = prog.create_kernel("test");
 
@@ -223,7 +223,7 @@ mod hl {
 
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device).unwrap();
+            prog.build(device).unwrap();
 
             let k = prog.create_kernel("test");
             let v = ctx.create_buffer_from(vec![1i], CL_MEM_READ_WRITE);
@@ -253,7 +253,7 @@ mod hl {
 
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
-            prog.build(&device).unwrap();
+            prog.build(device).unwrap();
 
             let k_inc_a = prog.create_kernel("inc");
             let k_inc_b = prog.create_kernel("inc");
@@ -295,7 +295,7 @@ mod hl {
         ::test_all_platforms_devices(|device, ctx, queue| {
             let prog = ctx.create_program_from_source(src);
 
-            match prog.build(&device) {
+            match prog.build(device) {
                 Ok(_) => (),
                 Err(build_log) => {
                     println!("Error building program:\n");
@@ -456,7 +456,7 @@ mod array {
                             a[size_x*y + x] = x*y; \
                         }";
             let prog = ctx.create_program_from_source(src);
-            match prog.build(&device) {
+            match prog.build(device) {
                 Ok(_) => (),
                 Err(build_log) => {
                     println!("Error building program:\n");
@@ -539,7 +539,7 @@ mod array {
                             a[size_x*size_y*z + size_x*y + x] = x*y*z; \
                         }";
             let prog = ctx.create_program_from_source(src);
-            match prog.build(&device) {
+            match prog.build(device) {
                 Ok(_) => (),
                 Err(build_log) => {
                     println!("Error building program:\n");

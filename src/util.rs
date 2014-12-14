@@ -9,15 +9,15 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &'sta
         return Err("No platform found");
     }
 
-    let devices = platforms[0].get_devices();
-    if devices.len() == 0 {
+    let mut devices = platforms[0].get_devices();
+    if let Some(device) = devices.remove(0) {
+        let context = device.create_context();
+        let queue = context.create_command_queue(&device);
+
+        Ok((device, context, queue))
+    } else {
         return Err("No devices found");
     }
-
-    let context = devices[0].create_context();
-    let queue = context.create_command_queue(&devices[0]);
-
-    Ok((devices[0], context, queue))
 }
 
 
@@ -41,11 +41,11 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
             PreferedType::GPUPrefered | PreferedType::GPUOnly => vec![DeviceType::GPU]
         };
 
-        let devices = platform.get_devices_by_types(types.as_slice());
-        if devices.len() != 0 {
-            let context = devices[0].create_context();
-            let queue = context.create_command_queue(&devices[0]);
-            return Ok((devices[0], context, queue));
+        let mut devices = platform.get_devices_by_types(types.as_slice());
+        if let Some(device) = devices.remove(0) {
+            let context = device.create_context();
+            let queue = context.create_command_queue(&device);
+            return Ok((device, context, queue));
         }
     }
 
