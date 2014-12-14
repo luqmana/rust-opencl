@@ -167,7 +167,7 @@ pub fn create_context_with_properties(dev: &[Device], prop: &[cl_context_propert
     }
 }
 
-
+#[deriving(Copy)]
 pub struct Device {
     id: cl_device_id
 }
