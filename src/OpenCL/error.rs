@@ -76,7 +76,7 @@ pub fn try_convert(status: cl_int) -> Option<CLStatus> {
 pub fn convert(status: cl_int) -> CLStatus {
     match try_convert(status) {
         Some(s) => s,
-        None => fail!(format!("Uknown OpenCL Status Code: {:?}", status))
+        None => fail!(format!("Unknown OpenCL Status Code: {:?}", status))
     }
 }
 
