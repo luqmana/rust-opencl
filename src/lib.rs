@@ -11,7 +11,6 @@
 //! OpenCL bindings for Rust.
 
 extern crate libc;
-extern crate rustrt;
 #[phase(plugin, link)] extern crate log;
 extern crate collections;
 
