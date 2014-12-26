@@ -163,16 +163,16 @@ macro_rules! get_arg (
                 v as $t
             }
         })
-)
+);
 
-get_arg!(int)
-get_arg!(uint)
-get_arg!(u32)
-get_arg!(u64)
-get_arg!(i32)
-get_arg!(i64)
-get_arg!(f32)
-get_arg!(f64)
+get_arg!(int);
+get_arg!(uint);
+get_arg!(u32);
+get_arg!(u64);
+get_arg!(i32);
+get_arg!(i64);
+get_arg!(f32);
+get_arg!(f64);
 
 macro_rules! put_arg (
     ($t:ty) => (impl Put<$t, CLBuffer<$t>> for $t
@@ -182,17 +182,18 @@ macro_rules! put_arg (
                     cl_buffer: f((self as *const $t) as *const c_void, mem::size_of::<$t>() as size_t)
                 }
             }
-        })
-)
+        }
+    )
+);
 
-put_arg!(int)
-put_arg!(uint)
-put_arg!(u32)
-put_arg!(u64)
-put_arg!(i32)
-put_arg!(i64)
-put_arg!(f32)
-put_arg!(f64)
+put_arg!(int);
+put_arg!(uint);
+put_arg!(u32);
+put_arg!(u64);
+put_arg!(i32);
+put_arg!(i64);
+put_arg!(f32);
+put_arg!(f64);
 
 macro_rules! read_arg (
     ($t:ty) => (impl Read for $t
@@ -202,16 +203,16 @@ macro_rules! read_arg (
             }
         }
     )
-)
+);
 
-read_arg!(int)
-read_arg!(uint)
-read_arg!(u32)
-read_arg!(u64)
-read_arg!(i32)
-read_arg!(i64)
-read_arg!(f32)
-read_arg!(f64)
+read_arg!(int);
+read_arg!(uint);
+read_arg!(u32);
+read_arg!(u64);
+read_arg!(i32);
+read_arg!(i64);
+read_arg!(f32);
+read_arg!(f64);
 
 macro_rules! write_arg (
     ($t:ty) => (impl Write for $t
@@ -219,14 +220,15 @@ macro_rules! write_arg (
             fn write(&self, f: |offset: size_t, ptr: *const c_void, size: size_t|) {
                 f(0, (self as *const $t) as *const c_void, mem::size_of::<$t>() as size_t)
             }
-        })
-)
+        }
+    )
+);
 
-write_arg!(int)
-write_arg!(uint)
-write_arg!(u32)
-write_arg!(u64)
-write_arg!(i32)
-write_arg!(i64)
-write_arg!(f32)
-write_arg!(f64)
+write_arg!(int);
+write_arg!(uint);
+write_arg!(u32);
+write_arg!(u64);
+write_arg!(i32);
+write_arg!(i64);
+write_arg!(f32);
+write_arg!(f64);

@@ -1,7 +1,7 @@
 //! A higher level API.
 
 use libc;
-use rustrt;
+use std;
 use std::vec::Vec;
 use std::mem;
 use std::ptr;
@@ -117,7 +117,7 @@ impl Platform {
 // This mutex is used to work around weak OpenCL implementations.
 // On some implementations concurrent calls to clGetPlatformIDs
 // will cause the implantation to return invalid status.
-static mut platforms_mutex: rustrt::mutex::StaticNativeMutex = rustrt::mutex::NATIVE_MUTEX_INIT;
+static mut platforms_mutex: std::sync::StaticMutex = std::sync::MUTEX_INIT;
 
 pub fn get_platforms() -> Vec<Platform>
 {
@@ -603,16 +603,16 @@ macro_rules! scalar_kernel_arg (
              (self as *const $t) as *const libc::c_void)
         }
     })
-)
+);
 
-scalar_kernel_arg!(int)
-scalar_kernel_arg!(uint)
-scalar_kernel_arg!(u32)
-scalar_kernel_arg!(u64)
-scalar_kernel_arg!(i32)
-scalar_kernel_arg!(i64)
-scalar_kernel_arg!(f32)
-scalar_kernel_arg!(f64)
+scalar_kernel_arg!(int);
+scalar_kernel_arg!(uint);
+scalar_kernel_arg!(u32);
+scalar_kernel_arg!(u64);
+scalar_kernel_arg!(i32);
+scalar_kernel_arg!(i64);
+scalar_kernel_arg!(f32);
+scalar_kernel_arg!(f64);
 
 pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
                                     position: cl_uint,

@@ -15,9 +15,9 @@ macro_rules! expect (
                               stringify!($test),
                               expected, test))
             }
-        })
-        )
-
+        }
+    )
+);
 
 pub fn test_all_platforms_devices(test: |&Device, &Context, &CommandQueue|)
 {
