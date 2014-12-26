@@ -15,7 +15,11 @@ name = "opencl"
 
 [[example]]
 name = "demo"
-path = "example/demo.rs"
+path = "examples/demo/main.rs"
+
+[[example]]
+name = "platform"
+path = "examples/platform/main.rs"
 
 [dependencies]
 log = "*"

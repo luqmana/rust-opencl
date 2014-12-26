@@ -69,22 +69,23 @@ impl Platform {
         unsafe {
             let mut size = 0 as libc::size_t;
 
-            clGetPlatformInfo(self.id,
+            let status = clGetPlatformInfo(self.id,
                               name,
                               0,
                               ptr::null_mut(),
                               &mut size);
+            check(status, "Could not determine platform info string length");
 
+            let mut buf = Vec::from_elem(size as uint, 0u8);
 
-            let mut value = String::with_capacity(size as uint);
-
-            clGetPlatformInfo(self.id,
+            let status = clGetPlatformInfo(self.id,
                               name,
                               size,
-                              value.as_mut_vec().as_mut_slice().as_mut_ptr() as *mut libc::c_void,
+                              buf.as_mut_ptr() as *mut libc::c_void,
                               ptr::null_mut());
+            check(status, "Could not get platform info string");
 
-            value
+            String::from_utf8_unchecked(buf)
         }
     }
 
@@ -175,7 +176,7 @@ pub struct Device {
 impl Device {
     pub fn name(&self) -> String {
         unsafe {
-            let mut size = 0;
+            let mut size = 0 as libc::size_t;
             let status = clGetDeviceInfo(
                 self.id,
                 CL_DEVICE_NAME,
@@ -184,7 +185,7 @@ impl Device {
                 (&mut size));
             check(status, "Could not determine name length");
 
-            let mut buf = Vec::from_elem(size as uint, 0i);
+            let mut buf = Vec::from_elem(size as uint, 0u8);
 
             let status = clGetDeviceInfo(
                 self.id,
@@ -194,7 +195,7 @@ impl Device {
                 ptr::null_mut());
             check(status, "Could not get device name");
 
-            String::from_raw_buf(buf.as_ptr() as *const u8)
+            String::from_utf8_unchecked(buf)
         }
     }
 
