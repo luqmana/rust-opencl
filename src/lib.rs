@@ -23,6 +23,8 @@ extern { }
 /// Low-level OpenCL bindings. These should primarily be used by the
 /// higher level features in this library.
 pub mod cl;
+/// OpenCL extensions
+pub mod ext;
 pub mod error;
 pub mod hl;
 pub mod util;

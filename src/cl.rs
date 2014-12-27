@@ -827,6 +827,6 @@ pub mod ll {
      * check to make sure the address is not NULL, before using or
      * or calling the returned function address.
      */
-    pub fn clGetExtensionFunctionAddress(func_name: *mut libc::c_char);
+    pub fn clGetExtensionFunctionAddress(func_name: *mut libc::c_char) -> *mut libc::c_void;
   }
 }
