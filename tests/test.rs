@@ -1,4 +1,3 @@
-#![feature(link_args)]
 #![feature(macro_rules)]
 #![feature(globs)]
 

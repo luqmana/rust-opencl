@@ -1,5 +1,3 @@
-#![crate_name = "opencl"]
-#![crate_type = "lib"]
 #![feature(macro_rules)]
 #![feature(globs)]
 #![feature(phase)]
