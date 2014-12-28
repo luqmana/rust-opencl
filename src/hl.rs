@@ -113,6 +113,10 @@ impl Platform {
     {
         self.profile_info(CL_PLATFORM_EXTENSIONS)
     }
+
+    pub unsafe fn from_platform_id(id: cl_platform_id) -> Platform {
+        Platform { id: id }
+    }
 }
 
 // This mutex is used to work around weak OpenCL implementations.
