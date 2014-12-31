@@ -5,6 +5,7 @@ use std;
 use std::vec::Vec;
 use std::mem;
 use std::ptr;
+use std::kinds::{Send, Sync};
 use collections::string::String;
 
 use cl;
@@ -172,6 +173,9 @@ pub struct Device {
     id: cl_device_id
 }
 
+unsafe impl Sync for Device {}
+unsafe impl Send for Device {}
+
 impl Device {
     pub fn name(&self) -> String {
         unsafe {
@@ -238,6 +242,9 @@ impl Device {
 pub struct Context {
     pub ctx: cl_context,
 }
+
+unsafe impl Sync for Context {}
+unsafe impl Send for Context {}
 
 impl Context {
     pub fn create_buffer<T>(&self, size: uint, flags: cl_mem_flags) -> CLBuffer<T>
@@ -362,6 +369,9 @@ impl<'r, T> KernelArg for Box<Buffer<T> + 'r> {
 pub struct CommandQueue {
     pub cqueue: cl_command_queue
 }
+
+unsafe impl Sync for CommandQueue {}
+unsafe impl Send for CommandQueue {}
 
 impl CommandQueue
 {
