@@ -1,5 +1,6 @@
 //! Error handling utilities.
 
+use std::num::FromPrimitive;
 use cl::{CLStatus, cl_int};
 use cl::CLStatus::CL_SUCCESS;
 
