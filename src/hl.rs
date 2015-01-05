@@ -1,11 +1,13 @@
 //! A higher level API.
 
+use collections::string::String;
 use libc;
 use std;
-use std::vec::Vec;
+use std::c_str::ToCStr;
+use std::iter::repeat;
 use std::mem;
 use std::ptr;
-use collections::string::String;
+use std::vec::Vec;
 
 use cl;
 use cl::*;
@@ -42,7 +44,9 @@ impl Platform {
             clGetDeviceIDs(self.id, dtype, 0, ptr::null_mut(),
                            (&mut num_devices));
 
-            let mut ids = Vec::from_elem(num_devices as uint, 0 as cl_device_id);
+            let mut ids : Vec<cl_device_id>
+                = repeat(0 as cl_device_id)
+                .take(num_devices as uint).collect();
             clGetDeviceIDs(self.id, dtype, ids.len() as cl_uint,
                            ids.as_mut_ptr(), (&mut num_devices));
             ids.iter().map(|id| { Device {id: *id }}).collect()
@@ -76,7 +80,8 @@ impl Platform {
                               &mut size);
             check(status, "Could not determine platform info string length");
 
-            let mut buf = Vec::from_elem(size as uint, 0u8);
+            let mut buf : Vec<u8>
+                = repeat(0u8).take(size as uint).collect();
 
             let status = clGetPlatformInfo(self.id,
                               name,
@@ -133,7 +138,9 @@ pub fn get_platforms() -> Vec<Platform>
         // unlock this before the check in case the check fails
         check(status, "could not get platform count.");
 
-        let mut ids = Vec::from_elem(num_platforms as uint, 0 as cl_platform_id);
+        let mut ids : Vec<cl_platform_id>
+            = repeat(0 as cl_platform_id)
+            .take(num_platforms as uint).collect();
 
         let status = clGetPlatformIDs(num_platforms,
                                           ids.as_mut_ptr(),
@@ -185,7 +192,7 @@ impl Device {
                 (&mut size));
             check(status, "Could not determine name length");
 
-            let mut buf = Vec::from_elem(size as uint, 0u8);
+            let mut buf : Vec<u8> = repeat(0u8).take(size as uint).collect();
 
             let status = clGetDeviceInfo(
                 self.id,
@@ -533,8 +540,8 @@ impl Program
                 ptr::null_mut(),
                 (&mut size));
             check(status, "Could not get build log");
-
-            let mut buf = Vec::from_elem(size as uint, 0u8);
+            
+            let mut buf : Vec<u8> = repeat(0u8).take(size as uint).collect();
             let status = clGetProgramBuildInfo(
                 self.prg,
                 device.id,

@@ -10,7 +10,8 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &'sta
     }
 
     let mut devices = platforms[0].get_devices();
-    if let Some(device) = devices.remove(0) {
+    if devices.len() > 0 {
+        let device = devices.remove(0);
         let context = device.create_context();
         let queue = context.create_command_queue(&device);
 
@@ -42,7 +43,8 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
         };
 
         let mut devices = platform.get_devices_by_types(types.as_slice());
-        if let Some(device) = devices.remove(0) {
+        if devices.len() > 0 {
+            let device = devices.remove(0);
             let context = device.create_context();
             let queue = context.create_command_queue(&device);
             return Ok((device, context, queue));

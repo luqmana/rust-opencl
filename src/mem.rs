@@ -4,7 +4,7 @@ use libc::{size_t, c_void};
 use std::mem;
 use std::ptr;
 use std::vec::Vec;
-use std::num::zero;
+use std::num::Int;
 
 use cl::*;
 use cl::ll::*;
@@ -158,7 +158,7 @@ macro_rules! get_arg (
     ($t:ty) => (impl Get<CLBuffer<$t>, $t> for $t
         {
             fn get(_: &CLBuffer<$t>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> $t {
-                let mut v: $t = zero();
+                let mut v: $t = 0 as $t;
                 f(0, (&mut v as *mut $t) as *mut c_void, mem::size_of::<$t>() as size_t);
                 v as $t
             }
