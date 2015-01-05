@@ -8,6 +8,7 @@ use std::iter::repeat;
 use std::mem;
 use std::ptr;
 use std::vec::Vec;
+use std::kinds::{Send, Sync};
 
 use cl;
 use cl::*;
@@ -16,7 +17,7 @@ use cl::CLStatus::CL_SUCCESS;
 use error::check;
 use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum DeviceType {
       CPU, GPU
 }
@@ -44,8 +45,7 @@ impl Platform {
             clGetDeviceIDs(self.id, dtype, 0, ptr::null_mut(),
                            (&mut num_devices));
 
-            let mut ids : Vec<cl_device_id>
-                = repeat(0 as cl_device_id)
+            let mut ids: Vec<cl_device_id> = repeat(0 as cl_device_id)
                 .take(num_devices as uint).collect();
             clGetDeviceIDs(self.id, dtype, ids.len() as cl_uint,
                            ids.as_mut_ptr(), (&mut num_devices));
@@ -138,13 +138,12 @@ pub fn get_platforms() -> Vec<Platform>
         // unlock this before the check in case the check fails
         check(status, "could not get platform count.");
 
-        let mut ids : Vec<cl_platform_id>
-            = repeat(0 as cl_platform_id)
+        let mut ids: Vec<cl_device_id> = repeat(0 as cl_device_id)
             .take(num_platforms as uint).collect();
 
         let status = clGetPlatformIDs(num_platforms,
-                                          ids.as_mut_ptr(),
-                                          (&mut num_platforms));
+                                      ids.as_mut_ptr(),
+                                      (&mut num_platforms));
         check(status, "could not get platforms.");
 
         let _ = guard;
@@ -175,10 +174,13 @@ pub fn create_context_with_properties(dev: &[Device], prop: &[cl_context_propert
     }
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct Device {
     id: cl_device_id
 }
+
+unsafe impl Sync for Device {}
+unsafe impl Send for Device {}
 
 impl Device {
     pub fn name(&self) -> String {
@@ -246,6 +248,9 @@ impl Device {
 pub struct Context {
     pub ctx: cl_context,
 }
+
+unsafe impl Sync for Context {}
+unsafe impl Send for Context {}
 
 impl Context {
     pub fn create_buffer<T>(&self, size: uint, flags: cl_mem_flags) -> CLBuffer<T>
@@ -370,6 +375,9 @@ impl<'r, T> KernelArg for Box<Buffer<T> + 'r> {
 pub struct CommandQueue {
     pub cqueue: cl_command_queue
 }
+
+unsafe impl Sync for CommandQueue {}
+unsafe impl Send for CommandQueue {}
 
 impl CommandQueue
 {
@@ -540,7 +548,7 @@ impl Program
                 ptr::null_mut(),
                 (&mut size));
             check(status, "Could not get build log");
-            
+
             let mut buf : Vec<u8> = repeat(0u8).take(size as uint).collect();
             let status = clGetProgramBuildInfo(
                 self.prg,

@@ -10,18 +10,17 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &'sta
     }
 
     let mut devices = platforms[0].get_devices();
-    if devices.len() > 0 {
+    if devices.len() == 0 {
+        Err("No device found")
+    } else {
         let device = devices.remove(0);
         let context = device.create_context();
         let queue = context.create_command_queue(&device);
-
         Ok((device, context, queue))
-    } else {
-        return Err("No devices found");
     }
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum PreferedType {
     Any,
 
@@ -47,7 +46,7 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
             let device = devices.remove(0);
             let context = device.create_context();
             let queue = context.create_command_queue(&device);
-            return Ok((device, context, queue));
+            return Ok((device, context, queue))
         }
     }
 
