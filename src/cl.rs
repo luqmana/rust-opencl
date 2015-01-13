@@ -3,6 +3,7 @@
 extern crate std;
 
 use libc;
+use std::fmt;
 
 /* Opaque types */
 pub type cl_platform_id     = *mut libc::c_void;
@@ -129,6 +130,12 @@ pub enum CLStatus {
     CL_INVALID_GLOBAL_WORK_SIZE = -63,
     CL_INVALID_PROPERTY = -64,
     CL_PLATFORM_NOT_FOUND_KHR = -1001,
+}
+
+impl fmt::String for CLStatus {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self)
+    }
 }
 
 /* OpenCL Version */

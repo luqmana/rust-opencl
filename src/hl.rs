@@ -1,14 +1,13 @@
 //! A higher level API.
 
-use collections::string::String;
 use libc;
 use std;
-use std::c_str::ToCStr;
+use std::ffi::CString;
 use std::iter::repeat;
 use std::mem;
 use std::ptr;
+use std::string::String;
 use std::vec::Vec;
-use std::kinds::{Send, Sync};
 
 use cl;
 use cl::*;
@@ -46,7 +45,7 @@ impl Platform {
                            (&mut num_devices));
 
             let mut ids: Vec<cl_device_id> = repeat(0 as cl_device_id)
-                .take(num_devices as uint).collect();
+                .take(num_devices as usize).collect();
             clGetDeviceIDs(self.id, dtype, ids.len() as cl_uint,
                            ids.as_mut_ptr(), (&mut num_devices));
             ids.iter().map(|id| { Device {id: *id }}).collect()
@@ -81,7 +80,7 @@ impl Platform {
             check(status, "Could not determine platform info string length");
 
             let mut buf : Vec<u8>
-                = repeat(0u8).take(size as uint).collect();
+                = repeat(0u8).take(size as usize).collect();
 
             let status = clGetPlatformInfo(self.id,
                               name,
@@ -139,7 +138,7 @@ pub fn get_platforms() -> Vec<Platform>
         check(status, "could not get platform count.");
 
         let mut ids: Vec<cl_device_id> = repeat(0 as cl_device_id)
-            .take(num_platforms as uint).collect();
+            .take(num_platforms as usize).collect();
 
         let status = clGetPlatformIDs(num_platforms,
                                       ids.as_mut_ptr(),
@@ -164,7 +163,7 @@ pub fn create_context_with_properties(dev: &[Device], prop: &[cl_context_propert
         let ctx = clCreateContext(&prop[0],
                                   dev.len() as u32,
                                   &dev[0],
-                                  mem::transmute(ptr::null::<||>()),
+                                  mem::transmute(ptr::null::<fn()>()),
                                   ptr::null_mut(),
                                   &mut errcode);
 
@@ -194,7 +193,7 @@ impl Device {
                 (&mut size));
             check(status, "Could not determine name length");
 
-            let mut buf : Vec<u8> = repeat(0u8).take(size as uint).collect();
+            let mut buf : Vec<u8> = repeat(0u8).take(size as usize).collect();
 
             let status = clGetDeviceInfo(
                 self.id,
@@ -208,14 +207,14 @@ impl Device {
         }
     }
 
-	pub fn compute_units(&self) -> uint {
+	pub fn compute_units(&self) -> usize {
 		unsafe {
-			let mut ct: uint = 0;
+			let mut ct: usize = 0;
             let status = clGetDeviceInfo(
                 self.id,
                 CL_DEVICE_MAX_COMPUTE_UNITS,
                 8,
-                (&mut ct as *mut uint) as *mut libc::c_void,
+                (&mut ct as *mut usize) as *mut libc::c_void,
                 ptr::null_mut());
             check(status, "Could not get number of device compute units.");
 			return ct;
@@ -234,7 +233,7 @@ impl Device {
             let ctx = clCreateContext(ptr::null(),
                                       1,
                                       &self.id,
-                                      mem::transmute(ptr::null::<||>()),
+                                      mem::transmute(ptr::null::<fn()>()),
                                       ptr::null_mut(),
                                       (&mut errcode));
 
@@ -253,7 +252,7 @@ unsafe impl Sync for Context {}
 unsafe impl Send for Context {}
 
 impl Context {
-    pub fn create_buffer<T>(&self, size: uint, flags: cl_mem_flags) -> CLBuffer<T>
+    pub fn create_buffer<T>(&self, size: usize, flags: cl_mem_flags) -> CLBuffer<T>
     {
         unsafe {
             let mut status = 0;
@@ -307,7 +306,7 @@ impl Context {
     {
         unsafe
         {
-            let src = src.to_c_str();
+            let src = CString::from_slice(src.as_bytes());
 
             let mut status = CL_SUCCESS as cl_int;
             let program = clCreateProgramWithSource(
@@ -323,7 +322,7 @@ impl Context {
     }
 
     pub fn create_program_from_binary(&self, bin: &str, device: &Device) -> Program {
-        let src = bin.to_c_str();
+        let src = CString::from_slice(bin.as_bytes());
         let mut status = CL_SUCCESS as cl_int;
         let len = bin.len() as libc::size_t;
         let program = unsafe {
@@ -454,7 +453,7 @@ impl CommandQueue
         let mut out_event = None;
         unsafe {
             event.as_event_list(|evt, evt_len| {
-                write.write(|offset, p, len| {
+                write.write(move |&mut : offset, p, len| {
                     let mut e: cl_event = ptr::null_mut();
                     let err = clEnqueueWriteBuffer(self.cqueue,
                                                    mem.id(),
@@ -475,23 +474,23 @@ impl CommandQueue
 
     pub fn read<T, U: Read, E: EventList, B: Buffer<T>>(&self, mem: &B, read: &mut U, event: E)
     {
-        unsafe {
-            event.as_event_list(|event_list, event_list_length| {
-                read.read(|offset, p, len| {
-                    let err = clEnqueueReadBuffer(self.cqueue,
-                                                  mem.id(),
-                                                  CL_TRUE,
-                                                  offset as libc::size_t,
-                                                  len as libc::size_t,
-                                                  p as *mut libc::c_void,
-                                                  event_list_length,
-                                                  event_list,
-                                                  ptr::null_mut());
-
-                    check(err, "Failed to read buffer");
-                })
+        event.as_event_list(|&mut: event_list, event_list_length| {
+                read.read(|&mut: offset, p, len| {
+                        unsafe {
+                            let err = clEnqueueReadBuffer(self.cqueue,
+                                                          mem.id(),
+                                                          CL_TRUE,
+                                                          offset as libc::size_t,
+                                                          len as libc::size_t,
+                                                          p as *mut libc::c_void,
+                                                          event_list_length,
+                                                          event_list,
+                                                          ptr::null_mut());
+                            
+                            check(err, "Failed to read buffer");
+                        }
+                    })
             })
-        }
     }
 }
 
@@ -536,7 +535,7 @@ impl Program
         {
             let ret = clBuildProgram(self.prg, 1, &device.id,
                                      ptr::null(),
-                                     mem::transmute(ptr::null::<||>()),
+                                     mem::transmute(ptr::null::<fn()>()),
                                      ptr::null_mut());
             // Get the build log.
             let mut size = 0 as libc::size_t;
@@ -549,7 +548,7 @@ impl Program
                 (&mut size));
             check(status, "Could not get build log");
 
-            let mut buf : Vec<u8> = repeat(0u8).take(size as uint).collect();
+            let mut buf : Vec<u8> = repeat(0u8).take(size as usize).collect();
             let status = clGetProgramBuildInfo(
                 self.prg,
                 device.id,
@@ -559,11 +558,11 @@ impl Program
                 ptr::null_mut());
             check(status, "Could not get build log");
 
-            let log = String::from_raw_buf(buf.as_ptr() as *const u8);
+            let log = String::from_utf8_lossy(&buf[]);
             if ret == CL_SUCCESS as cl_int {
-                Ok(log)
+                Ok(log.into_owned())
             } else {
-                Err(log)
+                Err(log.into_owned())
             }
         }
     }
@@ -587,7 +586,7 @@ impl Drop for Kernel
 }
 
 impl Kernel {
-    pub fn set_arg<T: KernelArg>(&self, i: uint, x: &T)
+    pub fn set_arg<T: KernelArg>(&self, i: usize, x: &T)
     {
         set_kernel_arg(self, i as cl::cl_uint, x)
     }
@@ -597,7 +596,7 @@ pub fn create_kernel(program: &Program, kernel: & str) -> Kernel
 {
     unsafe {
         let mut errcode = 0;
-        let str = kernel.to_c_str();
+        let str = CString::from_slice(kernel.as_bytes());
         let kernel = clCreateKernel(program.prg,
                                     str.as_ptr(),
                                     (&mut errcode));
@@ -621,8 +620,8 @@ macro_rules! scalar_kernel_arg (
     })
 );
 
-scalar_kernel_arg!(int);
-scalar_kernel_arg!(uint);
+scalar_kernel_arg!(isize);
+scalar_kernel_arg!(usize);
 scalar_kernel_arg!(u32);
 scalar_kernel_arg!(u64);
 scalar_kernel_arg!(i32);
@@ -698,7 +697,7 @@ impl Drop for Event
 }
 
 pub trait EventList {
-    fn as_event_list<T>(&self, |*const cl_event, cl_uint| -> T) -> T;
+    fn as_event_list<T, F: FnOnce(*const cl_event, cl_uint) -> T>(&self, F) -> T;
 
     fn wait(&self) {
         self.as_event_list(|p, len| {
@@ -711,21 +710,24 @@ pub trait EventList {
 }
 
 impl<'r> EventList for &'r Event {
-    fn as_event_list<T>(&self, f: |*const cl_event, cl_uint| -> T) -> T
+    fn as_event_list<T, F>(&self, f: F) -> T
+        where F: FnOnce(*const cl_event, cl_uint) -> T
     {
         f(&self.event, 1 as cl_uint)
     }
 }
 
 impl EventList for Event {
-    fn as_event_list<T>(&self, f: |*const cl_event, cl_uint| -> T) -> T
+    fn as_event_list<T, F>(&self, f: F) -> T
+        where F: FnOnce(*const cl_event, cl_uint) -> T
     {
         f(&self.event, 1 as cl_uint)
     }
 }
 
 impl<T: EventList> EventList for Option<T> {
-    fn as_event_list<T>(&self, f: |*const cl_event, cl_uint| -> T) -> T
+    fn as_event_list<T2, F>(&self, f: F) -> T2
+        where F: FnOnce(*const cl_event, cl_uint) -> T2
     {
         match *self {
             None => f(ptr::null(), 0),
@@ -735,7 +737,8 @@ impl<T: EventList> EventList for Option<T> {
 }
 
 impl<'r> EventList for &'r [Event] {
-    fn as_event_list<T>(&self, f: |*const cl_event, cl_uint| -> T) -> T
+    fn as_event_list<T, F>(&self, f: F) -> T
+        where F: FnOnce(*const cl_event, cl_uint) -> T
     {
         let mut vec: Vec<cl_event> = Vec::with_capacity(self.len());
         for item in self.iter(){
@@ -748,7 +751,8 @@ impl<'r> EventList for &'r [Event] {
 
 /* this seems VERY hackey */
 impl EventList for () {
-    fn as_event_list<T>(&self, f: |*const cl_event, cl_uint| -> T) -> T
+    fn as_event_list<T, F>(&self, f: F) -> T
+        where F: FnOnce(*const cl_event, cl_uint) -> T
     {
         f(ptr::null(), 0)
     }
@@ -761,56 +765,56 @@ pub trait KernelIndex
     fn get_ptr(&self) -> *const libc::size_t;
 }
 
-impl KernelIndex for int
+impl KernelIndex for isize
 {
-    fn num_dimensions(_: Option<int>) -> cl_uint { 1 }
+    fn num_dimensions(_: Option<isize>) -> cl_uint { 1 }
 
     fn get_ptr(&self) -> *const libc::size_t
     {
-        (self as *const int) as *const libc::size_t
+        (self as *const isize) as *const libc::size_t
     }
 }
 
-impl KernelIndex for (int, int) {
-    fn num_dimensions(_: Option<(int, int)>) -> cl_uint { 2 }
+impl KernelIndex for (isize, isize) {
+    fn num_dimensions(_: Option<(isize, isize)>) -> cl_uint { 2 }
 
     fn get_ptr(&self) -> *const libc::size_t {
-        (self as *const (int, int)) as *const libc::size_t
+        (self as *const (isize, isize)) as *const libc::size_t
     }
 }
 
-impl KernelIndex for (int, int, int)
+impl KernelIndex for (isize, isize, isize)
 {
-    fn num_dimensions(_: Option<(int, int, int)>) -> cl_uint { 3 }
+    fn num_dimensions(_: Option<(isize, isize, isize)>) -> cl_uint { 3 }
 
     fn get_ptr(&self) -> *const libc::size_t {
-        (self as *const (int, int, int)) as *const libc::size_t
+        (self as *const (isize, isize, isize)) as *const libc::size_t
     }
 }
 
-impl KernelIndex for uint
+impl KernelIndex for usize
 {
-    fn num_dimensions(_: Option<uint>) -> cl_uint { 1 }
+    fn num_dimensions(_: Option<usize>) -> cl_uint { 1 }
 
     fn get_ptr(&self) -> *const libc::size_t {
-        (self as *const uint) as *const libc::size_t
+        (self as *const usize) as *const libc::size_t
     }
 }
 
-impl KernelIndex for (uint, uint)
+impl KernelIndex for (usize, usize)
 {
-    fn num_dimensions(_: Option<(uint, uint)>) -> cl_uint { 2 }
+    fn num_dimensions(_: Option<(usize, usize)>) -> cl_uint { 2 }
 
     fn get_ptr(&self) -> *const libc::size_t {
-        (self as *const (uint, uint)) as *const libc::size_t
+        (self as *const (usize, usize)) as *const libc::size_t
     }
 }
 
-impl KernelIndex for (uint, uint, uint)
+impl KernelIndex for (usize, usize, usize)
 {
-    fn num_dimensions(_: Option<(uint, uint, uint)>) -> cl_uint { 3 }
+    fn num_dimensions(_: Option<(usize, usize, usize)>) -> cl_uint { 3 }
 
     fn get_ptr(&self) -> *const libc::size_t {
-        (self as *const (uint, uint, uint)) as *const libc::size_t
+        (self as *const (usize, usize, usize)) as *const libc::size_t
     }
 }
