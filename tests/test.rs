@@ -560,3 +560,51 @@ mod array {
         })
     }
 }
+
+#[cfg(test)]
+mod ext {
+    use opencl::cl::*;
+    use opencl::cl::ll::*;
+    use opencl::error::check;
+    use opencl::ext;
+    use opencl::hl::*;
+    use std::iter::repeat;
+    use std::ptr;
+
+    #[test]
+    fn try_load_all_extensions() {
+        // This code is duplicated from hl::get_platforms() because there's currently no way
+        // to get a cl_platform_id from an hl::Platform.
+        let platform_ids = unsafe {
+            let mut num_platforms = 0 as cl_uint;
+
+            let status = clGetPlatformIDs(0,
+                                              ptr::null_mut(),
+                                              (&mut num_platforms));
+            check(status, "could not get platform count.");
+
+            let mut ids: Vec<cl_device_id> = repeat(0 as cl_device_id)
+                .take(num_platforms as usize).collect();
+
+            let status = clGetPlatformIDs(num_platforms,
+                                          ids.as_mut_ptr(),
+                                          (&mut num_platforms));
+            check(status, "could not get platforms.");
+
+            ids
+        };
+        for platform_id in platform_ids.into_iter() {
+            ext::cl_khr_fp64::load(platform_id);
+            ext::cl_khr_fp16::load(platform_id);
+            ext::cl_APPLE_SetMemObjectDestructor::load(platform_id);
+            ext::cl_APPLE_ContextLoggingFunctions::load(platform_id);
+            ext::cl_khr_icd::load(platform_id);
+            ext::cl_nv_device_attribute_query::load(platform_id);
+            ext::cl_amd_device_attribute_query::load(platform_id);
+            ext::cl_arm_printf::load(platform_id);
+            ext::cl_ext_device_fission::load(platform_id);
+            ext::cl_qcom_ext_host_ptr::load(platform_id);
+            ext::cl_qcom_ion_host_ptr::load(platform_id);
+        }
+    }
+}
