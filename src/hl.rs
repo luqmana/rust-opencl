@@ -472,7 +472,7 @@ impl CommandQueue
         let mut out_event = None;
         unsafe {
             event.as_event_list(|evt, evt_len| {
-                write.write(move |&mut : offset, p, len| {
+                write.write(|&mut : offset, p, len| {
                     let mut e: cl_event = ptr::null_mut();
                     let err = clEnqueueWriteBuffer(self.cqueue,
                                                    mem.id(),
