@@ -1,6 +1,3 @@
-#![feature(macro_rules)]
-#![feature(globs)]
-#![feature(phase)]
 #![feature(unsafe_destructor)]
 #![allow(improper_ctypes)]
 #![allow(missing_copy_implementations)]
@@ -9,7 +6,8 @@
 //! OpenCL bindings for Rust.
 
 extern crate libc;
-#[phase(plugin, link)] extern crate log;
+#[macro_use]
+extern crate log;
 extern crate collections;
 
 #[link(name = "OpenCL", kind = "framework")]

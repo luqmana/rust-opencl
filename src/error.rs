@@ -2,9 +2,11 @@
 
 use cl::{CLStatus, cl_int};
 use cl::CLStatus::CL_SUCCESS;
+use std::num::FromPrimitive;
 
 fn error_str(status_code: cl_int) -> String {
-    let status_opt: Option<CLStatus> = FromPrimitive::from_int(status_code as int);
+    let status_opt: Option<CLStatus>
+        = FromPrimitive::from_int(status_code as isize);
 
     match status_opt {
         Some(status) => status.to_string(),

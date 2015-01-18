@@ -10,21 +10,24 @@ use libc::{size_t, c_void};
 use hl::KernelArg;
 
 pub struct Array3D<T> {
-    width: uint,
-    height: uint,
-    depth: uint,
+    width: usize,
+    height: usize,
+    depth: usize,
     dat: Vec<T>
 }
 
 pub struct Array3DCL<T> {
-    width: uint,
-    height: uint,
-    depth: uint,
+    width: usize,
+    height: usize,
+    depth: usize,
     buf: cl_mem,
 }
 
 impl<T: Clone> Array3D<T> {
-    pub fn new(width: uint, height: uint, depth: uint, val: |uint, uint, uint| -> T) -> Array3D<T>
+    pub fn new<F>(width: usize, height: usize, depth: usize,
+                  val: F)
+               -> Array3D<T>
+        where F: Fn(usize, usize, usize) -> T
     {
         let mut dat: Vec<T> = Vec::new();
         for x in range(0, width) {
@@ -43,12 +46,12 @@ impl<T: Clone> Array3D<T> {
         }
     }
 
-    pub fn set(&mut self, x: uint, y: uint, z: uint, val: T)
+    pub fn set(&mut self, x: usize, y: usize, z: usize, val: T)
     {
         self.dat.as_mut_slice()[self.width*self.height*z + self.width*y + x] = val;
     }
 
-    pub fn get(&self, x: uint, y: uint, z: uint) -> T
+    pub fn get(&self, x: usize, y: usize, z: usize) -> T
     {
         self.dat.as_slice()[self.width*self.height*z + self.width*y + x].clone()
     }
@@ -65,7 +68,9 @@ impl<T> Drop for Array3DCL<T> {
 
 impl<'r, T> Put<Array3D<T>, Array3DCL<T>> for &'r Array3D<T>
 {
-    fn put(&self, f: |ptr: *const c_void, size: size_t| -> cl_mem) -> Array3DCL<T>
+    fn put<F>(&self, f: F)
+           -> Array3DCL<T>
+        where F: FnOnce(*const c_void, size_t) -> cl_mem
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
@@ -83,7 +88,9 @@ impl<'r, T> Put<Array3D<T>, Array3DCL<T>> for &'r Array3D<T>
 
 impl<T> Get<Array3DCL<T>, Array3D<T>> for Array3D<T>
 {
-    fn get(arr: &Array3DCL<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Array3D<T>
+    fn get<F>(arr: &Array3DCL<T>, f: F)
+           -> Array3D<T>
+        where F: FnOnce(size_t, *mut c_void, size_t)
     {
         let mut v: Vec<T> = Vec::with_capacity(arr.len());
         unsafe {
@@ -104,7 +111,8 @@ impl<T> Get<Array3DCL<T>, Array3D<T>> for Array3D<T>
 }
 
 impl<T> Write for Array3D<T> {
-    fn write(&self, f: |offset: size_t, ptr: *const c_void, size: size_t|)
+    fn write<F>(&self, f: F)
+        where F: FnOnce(size_t, *const c_void, size_t)
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
@@ -113,7 +121,8 @@ impl<T> Write for Array3D<T> {
 }
 
 impl<T> Read for Array3D<T> {
-    fn read(&mut self, f: |offset: size_t, ptr: *mut c_void, size: size_t|)
+    fn read<F>(&mut self, f: F)
+        where F: FnOnce(size_t, *mut c_void, size_t)
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
@@ -126,7 +135,7 @@ impl<T> Buffer<T> for Array3DCL<T> {
         &self.buf as *const cl_mem
     }
 
-    fn len(&self) -> uint {
+    fn len(&self) -> usize {
         self.width * self.height * self.depth
     }
 }
@@ -140,19 +149,21 @@ impl<T> KernelArg for Array3DCL<T> {
 }
 
 pub struct Array2D<T> {
-    width: uint,
-    height: uint,
+    width: usize,
+    height: usize,
     dat: Vec<T>,
 }
 
 pub struct Array2DCL<T> {
-    width: uint,
-    height: uint,
+    width: usize,
+    height: usize,
     buf: cl_mem,
 }
 
 impl<T: Clone> Array2D<T> {
-    pub fn new(width: uint, height: uint, val: |uint, uint| -> T) -> Array2D<T> {
+    pub fn new<F>(width: usize, height: usize, val: F) -> Array2D<T>
+        where F: Fn(usize, usize) -> T
+    {
         let mut dat: Vec<T> = Vec::new();
         for x in range(0, width) {
             for y in range(0, height) {
@@ -166,11 +177,11 @@ impl<T: Clone> Array2D<T> {
         }
     }
 
-    pub fn set(&mut self, x: uint, y: uint, val: T) {
+    pub fn set(&mut self, x: usize, y: usize, val: T) {
         self.dat.as_mut_slice()[self.width*y + x] = val;
     }
 
-    pub fn get(&self, x: uint, y: uint) -> T {
+    pub fn get(&self, x: usize, y: usize) -> T {
         self.dat.as_slice()[self.width*y + x].clone()
     }
 }
@@ -186,7 +197,8 @@ impl<T> Drop for Array2DCL<T> {
 
 impl<'r, T> Put<Array2D<T>, Array2DCL<T>> for &'r Array2D<T>
 {
-    fn put(&self, f: |ptr: *const c_void, size: size_t| -> cl_mem) -> Array2DCL<T>
+    fn put<F>(&self, f: F) -> Array2DCL<T>
+        where F: FnOnce(*const c_void, size_t) -> cl_mem
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
@@ -203,7 +215,9 @@ impl<'r, T> Put<Array2D<T>, Array2DCL<T>> for &'r Array2D<T>
 
 impl<T> Get<Array2DCL<T>, Array2D<T>> for Array2D<T>
 {
-    fn get(arr: &Array2DCL<T>, f: |offset: size_t, ptr: *mut c_void, size: size_t|) -> Array2D<T>
+    fn get<F>(arr: &Array2DCL<T>, f: F)
+           -> Array2D<T>
+        where F: FnOnce(size_t, *mut c_void, size_t)
     {
         let mut v: Vec<T> = Vec::with_capacity(arr.len());
         unsafe {
@@ -223,7 +237,8 @@ impl<T> Get<Array2DCL<T>, Array2D<T>> for Array2D<T>
 }
 
 impl<T> Write for Array2D<T> {
-    fn write(&self, f: |offset: size_t, ptr: *const c_void, size: size_t|)
+    fn write<F>(&self, f: F)
+        where F: FnOnce(size_t, *const c_void, size_t)
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
@@ -232,7 +247,8 @@ impl<T> Write for Array2D<T> {
 }
 
 impl<T> Read for Array2D<T> {
-    fn read(&mut self, f: |offset: size_t, ptr: *mut c_void, size: size_t|)
+    fn read<F>(&mut self, f: F)
+        where F: FnOnce(size_t, *mut c_void, size_t)
     {
         let p = self.dat.as_ptr();
         let len = self.dat.len();
@@ -245,7 +261,7 @@ impl<T> Buffer<T> for Array2DCL<T> {
         &self.buf as *const cl_mem
     }
 
-    fn len(&self) -> uint {
+    fn len(&self) -> usize {
         self.width * self.height
     }
 }
