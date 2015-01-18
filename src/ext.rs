@@ -1,4 +1,4 @@
-#![allow(unused, raw_pointer_deriving, non_camel_case_types, non_snake_case)]
+#![allow(unused, unused_attribute, raw_pointer_deriving, non_camel_case_types, non_snake_case)]
 
 /// All of the extensions defined for OpenCL 1.1, from
 /// [`cl_ext.h`](https://www.khronos.org/registry/cl/api/1.1/cl_ext.h).
@@ -10,10 +10,10 @@
 macro_rules! cl_extension_loader {
     (
         $ext_name:expr;
-        $(extern fn $function:ident ($($arg:ident : $arg_type:ty),*) -> $ret:ty;)*
+        $(extern fn $function:ident ($($arg:ident : $arg_type:ty),*) -> $ret:ty),*
     ) => (
         // Define struct Functions
-        ext_struct_def!{ $($function ($($arg $arg_type)*) $ret)* }
+        ext_struct_def!{ $($function, ($($arg, $arg_type),*) $ret)* }
         impl Functions {
             // Make function pointers available as methods so they don't have to be called as (struct.member)(arg)
             $( #[inline(always)] unsafe fn $function (&self, $($arg:$arg_type),*) -> $ret { (self.$function)($($arg),*) } )*
@@ -23,6 +23,7 @@ macro_rules! cl_extension_loader {
             use hl;
             use std::mem;
             use std::ptr;
+            use std::ffi::CString;
             use cl::ll::clGetExtensionFunctionAddress;
 
             // Read in the available extensions
@@ -36,18 +37,26 @@ macro_rules! cl_extension_loader {
                 available
             };
             if !available {
-                return Err(format!("extension {} unavailable for platform with id {}", $ext_name, platform));
+                let platform_name;
+                unsafe {
+                    let hl_platform = hl::Platform::from_platform_id(platform);
+                    platform_name = hl_platform.name();
+                    mem::forget(hl_platform);
+                }
+                return Err(format!("extension {} unavailable for platform {}", $ext_name, platform_name));
             }
             // Return a struct with all functions loaded
-            Ok(ext_struct_literal!($ext_name platform $($function)*))
+            Ok(ext_struct_literal!($ext_name, platform, $($function),*))
         }
     )
 }
 // We only need these helper macros so we can special-case for unit structs
 // (Since writing `struct name {}` is a failing error for some reason)
+// Whatever functions we're calling aren't necessarily thread-safe, but since this is a low-level
+// interface we'll let the callers worry about that
 macro_rules! ext_struct_def {
     () => (#[deriving(Copy, Sync)] pub struct Functions;);
-    ($($function:ident ($($arg:ident $arg_type:ty)+) $ret:ty)+) =>
+    ($($function:ident, ($($arg:ident, $arg_type:ty),+) $ret:ty)+) =>
     (
         #[deriving(Copy, Sync)]
         pub struct Functions {
@@ -57,19 +66,27 @@ macro_rules! ext_struct_def {
 }
 // (So is writing `name {}` as a literal)
 macro_rules! ext_struct_literal {
-    ($ext_name:expr $plat:ident) => (Functions);
-    ($ext_name:expr $plat:ident $($function:ident)+) =>
+    ($ext_name:expr, $plat:ident,) => (Functions);
+    ($ext_name:expr, $plat:ident, $($function:ident),+) =>
     (
         Functions {
             $($function: {
-                let mut fn_name = stringify!($function).to_c_str();
+                let mut fn_name = CString::from_slice(stringify!($function).as_bytes());
                 // TODO use clGetExtensionFunctionAddressForPlatform() when it's available; more
                 // reliable.
-                let fn_ptr = unsafe { clGetExtensionFunctionAddress(fn_name.as_mut_ptr()) };
+                let fn_ptr = unsafe { clGetExtensionFunctionAddress(fn_name.as_ptr()) };
                 if fn_ptr == ptr::null_mut() {
+                    let platform_name;
+
+                    unsafe {
+                        let hl_platform = hl::Platform::from_platform_id($plat);
+                        platform_name = hl_platform.name();
+                        mem::forget(hl_platform);
+                    }
+
                     return Err(format!("extension {} apparently available for platform with id {}, but couldn't load function {}",
                                        $ext_name,
-                                       $plat,
+                                       platform_name,
                                        stringify!($function)));
                 }
                 unsafe {
@@ -84,11 +101,17 @@ macro_rules! ext_struct_literal {
 pub mod cl_khr_fp64 {
     use cl::*;
     static CL_DEVICE_DOUBLE_FP_CONFIG: cl_uint = 0x1032;
+    cl_extension_loader! {
+        "cl_khr_fp64";
+    }
 }
 
 pub mod cl_khr_fp16 {
     use cl::*;
     pub static CL_DEVICE_HALF_FP_CONFIG: cl_uint = 0x1033;
+    cl_extension_loader! {
+        "cl_khr_pf16";
+    }
 }
 
 pub mod cl_APPLE_SetMemObjectDestructor {
@@ -99,7 +122,7 @@ pub mod cl_APPLE_SetMemObjectDestructor {
         extern fn clSetMemObjectDestructorAPPLE(memobj: cl_mem,
                                                 pfn_notify: (extern fn(memobj: cl_mem,
                                                                        user_data: *mut libc::c_void)),
-                                                user_data: *mut libc::c_void) -> (); // Note: returning () is necessary to satisfy macros
+                                                user_data: *mut libc::c_void) -> () // Note: returning () is necessary to satisfy macros
     }
 }
 
@@ -111,15 +134,15 @@ pub mod cl_APPLE_ContextLoggingFunctions {
         extern fn clLogMessagesToSystemLogAPPLE(errstr: *const libc::c_char,
                                                 private_info: *const libc::c_void,
                                                 cb: libc::size_t,
-                                                user_data: *mut libc::c_void) -> ();
+                                                user_data: *mut libc::c_void) -> (),
         extern fn clLogMessagesToStdoutAPPLE(errstr: *const libc::c_char,
                                              private_info: *const libc::c_void,
                                              cb: libc::size_t,
-                                             user_data: *mut libc::c_void) -> ();
+                                             user_data: *mut libc::c_void) -> (),
         extern fn clLogMessagesToStderrAPPLE(errstr: *const libc::c_char,
                                              private_info: *const libc::c_void,
                                              cb: libc::size_t,
-                                             user_data: *mut libc::c_void) -> ();
+                                             user_data: *mut libc::c_void) -> ()
     }
 }
 
@@ -133,7 +156,7 @@ pub mod cl_khr_icd {
         "cl_khr_icd";
         extern fn clIcdGetPlatformIDsKHR(num_entries: cl_uint,
                                          platform: *mut cl_platform_id,
-                                         num_platforms: *mut cl_uint) -> cl_int;
+                                         num_platforms: *mut cl_uint) -> cl_int
     }
 }
 
@@ -195,13 +218,13 @@ pub mod cl_ext_device_fission {
     pub static CL_PARTITION_BY_NAMES_LIST_END_EXT: cl_device_partition_property_ext         = std::u64::MAX;
     cl_extension_loader! {
         "cl_ext_device_fission";
-        extern fn clReleaseDeviceEXT(device: cl_device_id) -> cl_int;
-        extern fn clRetainDeviceEXT(device: cl_device_id) -> cl_int;
+        extern fn clReleaseDeviceEXT(device: cl_device_id) -> cl_int,
+        extern fn clRetainDeviceEXT(device: cl_device_id) -> cl_int,
         extern fn clCreateSubDevicesExt(in_device: cl_device_id,
                                         properties: *const cl_device_partition_property_ext,
                                         num_entries: cl_uint,
                                         out_devices: *mut cl_device_id,
-                                        num_devices: *mut cl_uint) -> cl_int;
+                                        num_devices: *mut cl_uint) -> cl_int
     }
 }
 
@@ -231,7 +254,7 @@ pub mod cl_qcom_ext_host_ptr {
                                            param_name: cl_image_pitch_info_qcom,
                                            param_value_size: libc::size_t,
                                            param_value: *mut libc::c_void,
-                                           param_value_size_ret: *mut libc::size_t) -> ();
+                                           param_value_size_ret: *mut libc::size_t) -> ()
     }
 }
 
