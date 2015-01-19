@@ -573,27 +573,11 @@ mod ext {
 
     #[test]
     fn try_load_all_extensions() {
-        // This code is duplicated from hl::get_platforms() because there's currently no way
-        // to get a cl_platform_id from an hl::Platform.
-        let platform_ids = unsafe {
-            let mut num_platforms = 0 as cl_uint;
+        let platforms = get_platforms();
 
-            let status = clGetPlatformIDs(0,
-                                              ptr::null_mut(),
-                                              (&mut num_platforms));
-            check(status, "could not get platform count.");
+        for platform in platforms.into_iter() {
+            let platform_id = platform.get_id();
 
-            let mut ids: Vec<cl_device_id> = repeat(0 as cl_device_id)
-                .take(num_platforms as usize).collect();
-
-            let status = clGetPlatformIDs(num_platforms,
-                                          ids.as_mut_ptr(),
-                                          (&mut num_platforms));
-            check(status, "could not get platforms.");
-
-            ids
-        };
-        for platform_id in platform_ids.into_iter() {
             ext::cl_khr_fp64::load(platform_id);
             ext::cl_khr_fp16::load(platform_id);
             ext::cl_APPLE_SetMemObjectDestructor::load(platform_id);

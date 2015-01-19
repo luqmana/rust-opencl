@@ -93,6 +93,10 @@ impl Platform {
         }
     }
 
+    pub fn get_id(&self) -> cl_platform_id {
+        self.id
+    }
+
     pub fn name(&self) -> String
     {
         self.profile_info(CL_PLATFORM_NAME)
