@@ -1,4 +1,8 @@
-#![allow(unused, unused_attribute, raw_pointer_deriving, non_camel_case_types, non_snake_case)]
+#![allow(unused,
+         unused_attributes,
+         raw_pointer_derive,
+         non_camel_case_types,
+         non_snake_case)]
 
 /// All of the extensions defined for OpenCL 1.1, from
 /// [`cl_ext.h`](https://www.khronos.org/registry/cl/api/1.1/cl_ext.h).

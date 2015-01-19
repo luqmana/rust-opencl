@@ -53,7 +53,7 @@ impl<T: Clone> Array3D<T> {
 
     pub fn get(&self, x: usize, y: usize, z: usize) -> T
     {
-        self.dat.as_slice()[self.width*self.height*z + self.width*y + x].clone()
+        (&self.dat[])[self.width*self.height*z + self.width*y + x].clone()
     }
 }
 
@@ -182,7 +182,7 @@ impl<T: Clone> Array2D<T> {
     }
 
     pub fn get(&self, x: usize, y: usize) -> T {
-        self.dat.as_slice()[self.width*y + x].clone()
+        (&self.dat[])[self.width*y + x].clone()
     }
 }
 
