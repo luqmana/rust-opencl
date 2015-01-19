@@ -190,32 +190,51 @@ unsafe impl Sync for Device {}
 unsafe impl Send for Device {}
 
 impl Device {
-    pub fn name(&self) -> String {
+    fn profile_info(&self, name: cl_device_info) -> String
+    {
         unsafe {
             let mut size = 0 as libc::size_t;
+
             let status = clGetDeviceInfo(
                 self.id,
-                CL_DEVICE_NAME,
+                name,
                 0,
                 ptr::null_mut(),
-                (&mut size));
-            check(status, "Could not determine name length");
+                &mut size);
+            check(status, "Could not determine device info string length");
 
-            let mut buf : Vec<u8> = repeat(0u8).take(size as usize).collect();
+            let mut buf : Vec<u8>
+                = repeat(0u8).take(size as usize).collect();
 
-            let status = clGetDeviceInfo(
-                self.id,
-                CL_DEVICE_NAME,
-                buf.len() as libc::size_t,
-                buf.as_mut_ptr() as *mut libc::c_void,
-                ptr::null_mut());
-            check(status, "Could not get device name");
+            let status = clGetDeviceInfo(self.id,
+                                         name,
+                                         size,
+                                         buf.as_mut_ptr() as *mut libc::c_void,
+                                         ptr::null_mut());
+            check(status, "Could not get device info string");
 
             String::from_utf8_unchecked(buf)
         }
     }
-
-	pub fn compute_units(&self) -> usize {
+    
+    pub fn name(&self) -> String
+    {
+        self.profile_info(CL_DEVICE_NAME)
+    }
+    pub fn vendor(&self) -> String
+    {
+        self.profile_info(CL_DEVICE_VENDOR)
+    }
+    pub fn profile(&self) -> String
+    {
+        self.profile_info(CL_DEVICE_PROFILE)
+    }
+    pub fn device_type(&self) -> String
+    {
+        self.profile_info(CL_DEVICE_TYPE)
+    }
+	
+    pub fn compute_units(&self) -> usize {
 		unsafe {
 			let mut ct: usize = 0;
             let status = clGetDeviceInfo(
