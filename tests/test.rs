@@ -608,3 +608,17 @@ mod ext {
         }
     }
 }
+
+#[cfg(test)]
+mod cl {
+    use opencl::cl::CLStatus::*;
+
+    #[test]
+    fn CLStatus_str() {
+        let x = CL_SUCCESS;
+        expect!(format!("{}", x), "CL_SUCCESS");
+
+        let y = CL_DEVICE_NOT_FOUND;
+        expect!(y.to_string(), "CL_DEVICE_NOT_FOUND");
+    }
+}
