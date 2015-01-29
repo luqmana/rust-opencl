@@ -655,6 +655,22 @@ scalar_kernel_arg!(i32);
 scalar_kernel_arg!(i64);
 scalar_kernel_arg!(f32);
 scalar_kernel_arg!(f64);
+scalar_kernel_arg!([f32; 2]);
+scalar_kernel_arg!([f64; 2]);
+
+impl KernelArg for [f32; 3] {
+    fn get_value(&self) -> (libc::size_t, *const libc::c_void) {
+        (4 * mem::size_of::<f32>() as libc::size_t,
+          (self as *const f32) as *const libc::c_void)
+    }
+}
+
+impl KernelArg for [f64; 3] {
+    fn get_value(&self) -> (libc::size_t, *const libc::c_void) {
+        (4 * mem::size_of::<f64>() as libc::size_t,
+          (self as *const f64) as *const libc::c_void)
+    }
+}
 
 pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
                                     position: cl_uint,
