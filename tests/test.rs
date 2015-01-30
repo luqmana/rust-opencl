@@ -560,3 +560,49 @@ mod array {
         })
     }
 }
+
+#[cfg(test)]
+mod ext {
+    use opencl::cl::*;
+    use opencl::cl::ll::*;
+    use opencl::error::check;
+    use opencl::ext;
+    use opencl::hl::*;
+    use std::iter::repeat;
+    use std::ptr;
+
+    #[test]
+    fn try_load_all_extensions() {
+        let platforms = get_platforms();
+
+        for platform in platforms.into_iter() {
+            let platform_id = platform.get_id();
+
+            ext::cl_khr_fp64::load(platform_id);
+            ext::cl_khr_fp16::load(platform_id);
+            ext::cl_APPLE_SetMemObjectDestructor::load(platform_id);
+            ext::cl_APPLE_ContextLoggingFunctions::load(platform_id);
+            ext::cl_khr_icd::load(platform_id);
+            ext::cl_nv_device_attribute_query::load(platform_id);
+            ext::cl_amd_device_attribute_query::load(platform_id);
+            ext::cl_arm_printf::load(platform_id);
+            ext::cl_ext_device_fission::load(platform_id);
+            ext::cl_qcom_ext_host_ptr::load(platform_id);
+            ext::cl_qcom_ion_host_ptr::load(platform_id);
+        }
+    }
+}
+
+#[cfg(test)]
+mod cl {
+    use opencl::cl::CLStatus::*;
+
+    #[test]
+    fn CLStatus_str() {
+        let x = CL_SUCCESS;
+        expect!(format!("{}", x), "CL_SUCCESS");
+
+        let y = CL_DEVICE_NOT_FOUND;
+        expect!(y.to_string(), "CL_DEVICE_NOT_FOUND");
+    }
+}

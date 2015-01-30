@@ -134,7 +134,7 @@ pub enum CLStatus {
 
 impl fmt::String for CLStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{:?}", self)
     }
 }
 
@@ -834,6 +834,6 @@ pub mod ll {
      * check to make sure the address is not NULL, before using or
      * or calling the returned function address.
      */
-    pub fn clGetExtensionFunctionAddress(func_name: *mut libc::c_char);
+    pub fn clGetExtensionFunctionAddress(func_name: *const libc::c_char) -> *mut libc::c_void;
   }
 }

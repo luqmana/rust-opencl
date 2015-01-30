@@ -41,7 +41,7 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
             PreferedType::GPUPrefered | PreferedType::GPUOnly => vec![DeviceType::GPU]
         };
 
-        let mut devices = platform.get_devices_by_types(types.as_slice());
+        let mut devices = platform.get_devices_by_types(&types[]);
         if devices.len() > 0 {
             let device = devices.remove(0);
             let context = device.create_context();
