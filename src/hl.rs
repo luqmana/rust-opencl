@@ -399,6 +399,36 @@ unsafe impl Send for CommandQueue {}
 
 impl CommandQueue
 {
+    //synchronous
+    pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
+        -> Event
+    {
+        unsafe
+        {
+            wait_on.as_event_list(|event_list, event_list_length| {
+                let mut e: cl_event = ptr::null_mut();
+                let status = clEnqueueNDRangeKernel(
+                    self.cqueue,
+                    k.kernel,
+                    KernelIndex::num_dimensions(None::<I>),
+                    ptr::null(),
+                    global.get_ptr(),
+                    match local {
+                        Some(ref l) => l.get_ptr() as *const u64,
+                        None => ptr::null()
+                    },
+                    event_list_length,
+                    event_list,
+                    (&mut e));
+                check(status, "Error enqueuing kernel.");
+                status = clFinish(self.cqueue);
+                check(status, "Error finishing kernel.");
+                Event { event: e }
+            })
+        }
+    }
+
+    //asynchronous
     pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
         -> Event
     {
