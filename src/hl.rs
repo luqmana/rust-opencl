@@ -480,7 +480,7 @@ impl CommandQueue
         let mut out_event = None;
         unsafe {
             event.as_event_list(|evt, evt_len| {
-                write.write(|&mut : offset, p, len| {
+                write.write(|offset, p, len| {
                     let mut e: cl_event = ptr::null_mut();
                     let err = clEnqueueWriteBuffer(self.cqueue,
                                                    mem.id(),
@@ -501,8 +501,8 @@ impl CommandQueue
 
     pub fn read<T, U: Read, E: EventList, B: Buffer<T>>(&self, mem: &B, read: &mut U, event: E)
     {
-        event.as_event_list(|&mut: event_list, event_list_length| {
-                read.read(|&mut: offset, p, len| {
+        event.as_event_list(|event_list, event_list_length| {
+                read.read(|offset, p, len| {
                         unsafe {
                             let err = clEnqueueReadBuffer(self.cqueue,
                                                           mem.id(),
