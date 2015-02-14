@@ -41,7 +41,7 @@ fn main()
     println!("= {}", string_from_slice(&vec_c[]));
 }
 
-fn string_from_slice<T: fmt::String>(slice: &[T]) -> String {
+fn string_from_slice<T: fmt::Display>(slice: &[T]) -> String {
     let mut st = String::from_str("[");
     let mut first = true;
 

@@ -76,7 +76,7 @@ pub struct cl_buffer_region {
 
 
 /// OpenCL error codes.
-#[derive(PartialEq, Show, FromPrimitive)]
+#[derive(PartialEq, Debug, FromPrimitive)]
 #[repr()]
 pub enum CLStatus {
     CL_SUCCESS = 0,
@@ -132,7 +132,7 @@ pub enum CLStatus {
     CL_PLATFORM_NOT_FOUND_KHR = -1001,
 }
 
-impl fmt::String for CLStatus {
+impl fmt::Display for CLStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }

@@ -3,6 +3,10 @@
 #![allow(missing_copy_implementations)]
 #![allow(non_upper_case_globals)]
 
+#![feature(collections)]
+#![feature(core)]
+#![feature(libc)]
+
 //! OpenCL bindings for Rust.
 
 extern crate libc;
