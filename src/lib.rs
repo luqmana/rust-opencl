@@ -1,3 +1,7 @@
+#![feature(collections)]
+#![feature(core)]
+#![feature(libc)]
+#![feature(std_misc)]
 #![feature(unsafe_destructor)]
 #![allow(improper_ctypes)]
 #![allow(missing_copy_implementations)]

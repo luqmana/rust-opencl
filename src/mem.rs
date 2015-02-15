@@ -4,7 +4,6 @@ use libc::{size_t, c_void};
 use std::mem;
 use std::ptr;
 use std::vec::Vec;
-use std::num::Int;
 
 use cl::*;
 use cl::ll::*;
