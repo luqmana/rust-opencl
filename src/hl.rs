@@ -4,6 +4,7 @@ use libc;
 use std;
 use std::ffi::CString;
 use std::iter::repeat;
+use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
 use std::string::String;
@@ -289,7 +290,10 @@ impl Context {
                                      ptr::null_mut(),
                                      (&mut status));
             check(status, "Could not allocate buffer");
-            CLBuffer{cl_buffer: buf}
+            CLBuffer {
+                cl_buffer: buf,
+                phantom: PhantomData,
+            }
         }
     }
 

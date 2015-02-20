@@ -3,6 +3,7 @@
 use cl::*;
 use cl::ll::*;
 use mem::*;
+use std::marker::{PhantomData, PhantomFn};
 use std::mem;
 use std::vec::Vec;
 use libc::{size_t, c_void};
@@ -21,6 +22,7 @@ pub struct Array3DCL<T> {
     height: usize,
     depth: usize,
     buf: cl_mem,
+    phantom: PhantomData<T>,
 }
 
 impl<T: Clone> Array3D<T> {
@@ -80,7 +82,8 @@ impl<'r, T> Put<Array3D<T>, Array3DCL<T>> for &'r Array3D<T>
             width: self.width,
             height: self.height,
             depth: self.depth,
-            buf: out
+            buf: out,
+            phantom: PhantomData,
         }
     }
 }
@@ -105,7 +108,7 @@ impl<T> Get<Array3DCL<T>, Array3D<T>> for Array3D<T>
             width: arr.width,
             height: arr.height,
             depth: arr.depth,
-            dat: v
+            dat: v,
         }
     }
 }
@@ -158,6 +161,7 @@ pub struct Array2DCL<T> {
     width: usize,
     height: usize,
     buf: cl_mem,
+    phantom: PhantomData<T>,
 }
 
 impl<T: Clone> Array2D<T> {
@@ -207,7 +211,8 @@ impl<'r, T> Put<Array2D<T>, Array2DCL<T>> for &'r Array2D<T>
         Array2DCL{
             width: self.width,
             height: self.height,
-            buf: out
+            buf: out,
+            phantom: PhantomData,
         }
     }
 }

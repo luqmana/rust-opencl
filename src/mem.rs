@@ -1,6 +1,7 @@
 //! High level buffer management.
 
 use libc::{size_t, c_void};
+use std::marker::{PhantomData, PhantomFn};
 use std::mem;
 use std::ptr;
 use std::vec::Vec;
@@ -11,7 +12,7 @@ use cl::ll::*;
 use hl::KernelArg;
 use error::check;
 
-pub trait Buffer<T> {
+pub trait Buffer<T>: PhantomFn<T> {
     unsafe fn id_ptr(&self) -> *const cl_mem;
 
     fn id(&self) -> cl_mem {
@@ -39,7 +40,8 @@ pub trait Buffer<T> {
 }
 
 pub struct CLBuffer<T> {
-    pub cl_buffer: cl_mem
+    pub cl_buffer: cl_mem,
+    pub phantom: PhantomData<T>,
 }
 
 #[unsafe_destructor]
@@ -76,12 +78,12 @@ impl<T> KernelArg for CLBuffer<T> {
  * | Read   | X              | X                | opencl -> rust |
  *mut */
 
-pub trait Put<T, B> {
+pub trait Put<T, B>: PhantomFn<T> {
     fn put<F>(&self, F) -> B
         where F: FnOnce(*const c_void, size_t) -> cl_mem;
 }
 
-pub trait Get<B, T> {
+pub trait Get<B, T>: PhantomFn<T> {
     fn get<F: FnOnce(size_t, *mut c_void, size_t)>(mem: &B, F) -> Self;
 }
 
@@ -100,7 +102,8 @@ impl<'r, T> Put<T, CLBuffer<T>> for &'r [T]
     {
         CLBuffer {
             cl_buffer: f(self.as_ptr() as *const c_void,
-                         (self.len() * mem::size_of::<T>()) as size_t)
+                         (self.len() * mem::size_of::<T>()) as size_t),
+            phantom: PhantomData,
         }
     }
 }
@@ -111,7 +114,8 @@ impl<'r, T> Put<T, CLBuffer<T>> for &'r Vec<T>
         where F: FnOnce(*const c_void, size_t) -> cl_mem
     {
         CLBuffer {
-            cl_buffer: f(self.as_ptr() as *const c_void, (self.len() * mem::size_of::<T>()) as size_t)
+            cl_buffer: f(self.as_ptr() as *const c_void, (self.len() * mem::size_of::<T>()) as size_t),
+            phantom: PhantomData,
         }
     }
 }
@@ -122,7 +126,8 @@ impl<T> Put<T, CLBuffer<T>> for Vec<T>
         where F: FnOnce(*const c_void, size_t) -> cl_mem
     {
         CLBuffer {
-            cl_buffer: f(self.as_ptr() as *const c_void, (self.len() * mem::size_of::<T>()) as size_t)
+            cl_buffer: f(self.as_ptr() as *const c_void, (self.len() * mem::size_of::<T>()) as size_t),
+            phantom: PhantomData,
         }
     }
 }
@@ -190,7 +195,8 @@ macro_rules! put_arg (
                 where F: FnOnce(*const c_void, size_t) -> cl_mem
             {
                 CLBuffer {
-                    cl_buffer: f((self as *const $t) as *const c_void, mem::size_of::<$t>() as size_t)
+                    cl_buffer: f((self as *const $t) as *const c_void, mem::size_of::<$t>() as size_t),
+                    phantom: PhantomData,
                 }
             }
         }
