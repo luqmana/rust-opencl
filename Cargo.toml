@@ -26,4 +26,4 @@ name = "platform"
 path = "examples/platform/main.rs"
 
 [dependencies]
-log = "^0.2.3"
+log = "^0.2.4"

@@ -75,7 +75,8 @@ macro_rules! ext_struct_literal {
     (
         Functions {
             $($function: {
-                let mut fn_name = CString::from_slice(stringify!($function).as_bytes());
+                let mut fn_name
+                        = CString::new(stringify!($function)).unwrap();
                 // TODO use clGetExtensionFunctionAddressForPlatform() when it's available; more
                 // reliable.
                 let fn_ptr = unsafe { clGetExtensionFunctionAddress(fn_name.as_ptr()) };

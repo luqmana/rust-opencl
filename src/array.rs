@@ -3,7 +3,7 @@
 use cl::*;
 use cl::ll::*;
 use mem::*;
-use std::marker::{PhantomData, PhantomFn};
+use std::marker::PhantomData;
 use std::mem;
 use std::vec::Vec;
 use libc::{size_t, c_void};
@@ -55,7 +55,7 @@ impl<T: Clone> Array3D<T> {
 
     pub fn get(&self, x: usize, y: usize, z: usize) -> T
     {
-        (&self.dat[])[self.width*self.height*z + self.width*y + x].clone()
+        (&self.dat[..])[self.width*self.height*z + self.width*y + x].clone()
     }
 }
 
@@ -186,7 +186,7 @@ impl<T: Clone> Array2D<T> {
     }
 
     pub fn get(&self, x: usize, y: usize) -> T {
-        (&self.dat[])[self.width*y + x].clone()
+        (&self.dat[..])[self.width*y + x].clone()
     }
 }
 

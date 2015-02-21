@@ -337,7 +337,7 @@ impl Context {
     {
         unsafe
         {
-            let src = CString::from_slice(src.as_bytes());
+            let src = CString::new(src).unwrap();
 
             let mut status = CL_SUCCESS as cl_int;
             let program = clCreateProgramWithSource(
@@ -353,7 +353,7 @@ impl Context {
     }
 
     pub fn create_program_from_binary(&self, bin: &str, device: &Device) -> Program {
-        let src = CString::from_slice(bin.as_bytes());
+        let src = CString::new(bin).unwrap();
         let mut status = CL_SUCCESS as cl_int;
         let len = bin.len() as libc::size_t;
         let program = unsafe {
@@ -619,7 +619,7 @@ impl Program
                 ptr::null_mut());
             check(status, "Could not get build log");
 
-            let log = String::from_utf8_lossy(&buf[]);
+            let log = String::from_utf8_lossy(&buf[..]);
             if ret == CL_SUCCESS as cl_int {
                 Ok(log.into_owned())
             } else {
@@ -657,7 +657,7 @@ pub fn create_kernel(program: &Program, kernel: & str) -> Kernel
 {
     unsafe {
         let mut errcode = 0;
-        let str = CString::from_slice(kernel.as_bytes());
+        let str = CString::new(kernel).unwrap();
         let kernel = clCreateKernel(program.prg,
                                     str.as_ptr(),
                                     (&mut errcode));
