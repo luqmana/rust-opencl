@@ -280,6 +280,24 @@ unsafe impl Sync for Context {}
 unsafe impl Send for Context {}
 
 impl Context {
+    pub fn create_context(devices: &[Device]) -> Context
+    {
+        unsafe
+        {
+            let mut errcode = 0;
+
+            let ctx = clCreateContext(ptr::null(),
+                                    devices.len() as u32,
+                                    mem::transmute(&devices[0]),
+                                    mem::transmute(ptr::null::<fn()>()),
+                                    ptr::null_mut(),
+                                    (&mut errcode));
+            check(errcode, "Failed to create contexts!");
+
+            Context { ctx: ctx }
+        }
+    }
+
     pub fn create_buffer<T>(&self, size: usize, flags: cl_mem_flags) -> CLBuffer<T>
     {
         unsafe {
