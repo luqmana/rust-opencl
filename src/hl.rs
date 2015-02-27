@@ -353,15 +353,21 @@ impl Context {
 
     pub fn create_program_from_source(&self, src: &str) -> Program
     {
+        self.create_program_from_sources(&[src])
+    }
+
+    pub fn create_program_from_sources(&self, srcs: &[&str]) -> Program
+    {
         unsafe
         {
-            let src = CString::new(src).unwrap();
+            let src: Vec<*const libc::c_char> = srcs.iter()
+                .map(|s| CString::new(*s).unwrap().as_ptr()).collect();
 
             let mut status = CL_SUCCESS as cl_int;
             let program = clCreateProgramWithSource(
                 self.ctx,
-                1,
-                &src.as_ptr(),
+                srcs.len() as u32,
+                src.as_ptr(),
                 ptr::null(),
                 (&mut status));
             check(status, "Could not create program");
