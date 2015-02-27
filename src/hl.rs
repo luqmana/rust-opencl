@@ -365,6 +365,10 @@ impl Context {
             let lengths: Vec<libc::size_t> = srcs.iter()
                 .map(|s| s.len() as libc::size_t).collect();
 
+            for l in lengths.iter() {
+                println!("{}", l);
+            }
+
             let mut status = CL_SUCCESS as cl_int;
             let program = clCreateProgramWithSource(
                 self.ctx,
