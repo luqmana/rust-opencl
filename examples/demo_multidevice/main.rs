@@ -20,7 +20,7 @@ fn main()
         .map(|d| ctx.create_command_queue(d)).collect();
 
     for (device, queue) in devices.iter().zip(queues.iter()) {
-        println!("{}", device.name());
+        println!("{}", queue.device().name());
 
         let a: CLBuffer<isize> = ctx.create_buffer(vec_a.len(), opencl::cl::CL_MEM_READ_ONLY);
         let b: CLBuffer<isize> = ctx.create_buffer(vec_a.len(), opencl::cl::CL_MEM_READ_ONLY);
