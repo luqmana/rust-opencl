@@ -360,14 +360,12 @@ impl Context {
     {
         unsafe
         {
-            let src: Vec<*const libc::c_char> = srcs.iter()
-                .map(|s| CString::new(*s).unwrap().as_ptr()).collect();
+            let c_strs: Vec<CString> = srcs.iter()
+                .map(|s| CString::new(*s).unwrap()).collect();
+            let src: Vec<*const libc::c_char> = c_strs.iter()
+                .map(|s| s.as_ptr()).collect();
             let lengths: Vec<libc::size_t> = srcs.iter()
                 .map(|s| s.len() as libc::size_t).collect();
-
-            for l in lengths.iter() {
-                println!("{}", l);
-            }
 
             let mut status = CL_SUCCESS as cl_int;
             let program = clCreateProgramWithSource(
