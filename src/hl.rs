@@ -362,13 +362,15 @@ impl Context {
         {
             let src: Vec<*const libc::c_char> = srcs.iter()
                 .map(|s| CString::new(*s).unwrap().as_ptr()).collect();
+            let lengths: Vec<libc::size_t> = srcs.iter()
+                .map(|s| s.len() as libc::size_t).collect();
 
             let mut status = CL_SUCCESS as cl_int;
             let program = clCreateProgramWithSource(
                 self.ctx,
                 srcs.len() as u32,
                 src.as_ptr(),
-                ptr::null(),
+                lengths.as_ptr(),
                 (&mut status));
             check(status, "Could not create program");
 
