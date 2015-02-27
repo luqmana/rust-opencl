@@ -864,12 +864,16 @@ impl<'r> EventList for &'r [Event] {
     fn as_event_list<T, F>(&self, f: F) -> T
         where F: FnOnce(*const cl_event, cl_uint) -> T
     {
-        let mut vec: Vec<cl_event> = Vec::with_capacity(self.len());
-        for item in self.iter(){
-            vec.push(item.event);
-        }
+        if self.len() == 0 {
+            f(ptr::null(), 0)
+        } else {
+            let mut vec: Vec<cl_event> = Vec::with_capacity(self.len());
+            for item in self.iter(){
+                vec.push(item.event);
+            }
 
-        f(vec.as_ptr(), vec.len() as cl_uint)
+            f(vec.as_ptr(), vec.len() as cl_uint)
+        }
     }
 }
 
