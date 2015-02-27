@@ -30,4 +30,4 @@ name = "demo_multidevice"
 path = "examples/demo_multidevice/main.rs"
 
 [dependencies]
-log = "<0.2.5"
+log = "^0.2.4"
