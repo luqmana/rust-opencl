@@ -429,6 +429,25 @@ unsafe impl Send for CommandQueue {}
 
 impl CommandQueue
 {
+    pub fn device(&self) -> Device
+    {
+        unsafe
+        {
+            let mut size = 0 as libc::size_t;
+            let mut device_id : cl_device_id = ptr::null_mut();
+
+            let status = clGetCommandQueueInfo(
+                self.cqueue,
+                CL_QUEUE_DEVICE,
+                mem::size_of::<cl_device_id>() as u64,
+                mem::transmute(&mut device_id),
+                &mut size as *mut libc::size_t);
+            check(status, "Could not get device from command queue");
+
+            Device{ id: device_id }
+        }
+    }
+
     //synchronous
     pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
         -> Event
