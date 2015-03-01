@@ -618,7 +618,7 @@ impl CommandQueue
                                                    evt,
                                                    &mut e);
                     out_event = Some(e);
-                    check(err, "Failed to write buffer");
+                    check(err, "Failed to read buffer");
                 })
             })
         }
