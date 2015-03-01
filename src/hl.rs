@@ -600,6 +600,31 @@ impl CommandQueue
                     })
             })
     }
+
+    pub fn read_async<T, U: Read, E: EventList, B: Buffer<T>>(&self, mem: &B, read: &mut U, event: E) -> Event
+    {
+        let mut out_event = None;
+        unsafe {
+            event.as_event_list(|evt, evt_len| {
+                read.read(|offset, p, len| {
+                    let mut e: cl_event = ptr::null_mut();
+                    let err = clEnqueueReadBuffer(self.cqueue,
+                                                   mem.id(),
+                                                   CL_FALSE,
+                                                   offset as libc::size_t,
+                                                   len as libc::size_t,
+                                                   p as *mut libc::c_void,
+                                                   evt_len,
+                                                   evt,
+                                                   &mut e);
+                    out_event = Some(e);
+                    check(err, "Failed to write buffer");
+                })
+            })
+        }
+        Event { event: out_event.unwrap() }
+    }
+
 }
 
 impl Drop for CommandQueue
