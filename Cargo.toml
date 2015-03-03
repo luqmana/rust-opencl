@@ -25,5 +25,9 @@ path = "examples/demo/main.rs"
 name = "platform"
 path = "examples/platform/main.rs"
 
+[[example]]
+name = "demo_multidevice"
+path = "examples/demo_multidevice/main.rs"
+
 [dependencies]
 log = "^0.2.4"

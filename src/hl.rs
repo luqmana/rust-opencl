@@ -280,6 +280,24 @@ unsafe impl Sync for Context {}
 unsafe impl Send for Context {}
 
 impl Context {
+    pub fn create_context(devices: &[Device]) -> Context
+    {
+        unsafe
+        {
+            let mut errcode = 0;
+
+            let ctx = clCreateContext(ptr::null(),
+                                    devices.len() as u32,
+                                    mem::transmute(&devices[0]),
+                                    mem::transmute(ptr::null::<fn()>()),
+                                    ptr::null_mut(),
+                                    (&mut errcode));
+            check(errcode, "Failed to create contexts!");
+
+            Context { ctx: ctx }
+        }
+    }
+
     pub fn create_buffer<T>(&self, size: usize, flags: cl_mem_flags) -> CLBuffer<T>
     {
         unsafe {
@@ -335,16 +353,26 @@ impl Context {
 
     pub fn create_program_from_source(&self, src: &str) -> Program
     {
+        self.create_program_from_sources(&[src])
+    }
+
+    pub fn create_program_from_sources(&self, srcs: &[&str]) -> Program
+    {
         unsafe
         {
-            let src = CString::new(src).unwrap();
+            let c_strs: Vec<CString> = srcs.iter()
+                .map(|s| CString::new(*s).unwrap()).collect();
+            let src: Vec<*const libc::c_char> = c_strs.iter()
+                .map(|s| s.as_ptr()).collect();
+            let lengths: Vec<libc::size_t> = srcs.iter()
+                .map(|s| s.len() as libc::size_t).collect();
 
             let mut status = CL_SUCCESS as cl_int;
             let program = clCreateProgramWithSource(
                 self.ctx,
-                1,
-                &src.as_ptr(),
-                ptr::null(),
+                srcs.len() as u32,
+                src.as_ptr(),
+                lengths.as_ptr(),
                 (&mut status));
             check(status, "Could not create program");
 
@@ -411,6 +439,25 @@ unsafe impl Send for CommandQueue {}
 
 impl CommandQueue
 {
+    pub fn device(&self) -> Device
+    {
+        unsafe
+        {
+            let mut size = 0 as libc::size_t;
+            let mut device_id : cl_device_id = ptr::null_mut();
+
+            let status = clGetCommandQueueInfo(
+                self.cqueue,
+                CL_QUEUE_DEVICE,
+                mem::size_of::<cl_device_id>() as u64,
+                mem::transmute(&mut device_id),
+                &mut size as *mut libc::size_t);
+            check(status, "Could not get device from command queue");
+
+            Device{ id: device_id }
+        }
+    }
+
     //synchronous
     pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
         -> Event
@@ -553,6 +600,31 @@ impl CommandQueue
                     })
             })
     }
+
+    pub fn read_async<T, U: Read, E: EventList, B: Buffer<T>>(&self, mem: &B, read: &mut U, event: E) -> Event
+    {
+        let mut out_event = None;
+        unsafe {
+            event.as_event_list(|evt, evt_len| {
+                read.read(|offset, p, len| {
+                    let mut e: cl_event = ptr::null_mut();
+                    let err = clEnqueueReadBuffer(self.cqueue,
+                                                   mem.id(),
+                                                   CL_FALSE,
+                                                   offset as libc::size_t,
+                                                   len as libc::size_t,
+                                                   p as *mut libc::c_void,
+                                                   evt_len,
+                                                   evt,
+                                                   &mut e);
+                    out_event = Some(e);
+                    check(err, "Failed to read buffer");
+                })
+            })
+        }
+        Event { event: out_event.unwrap() }
+    }
+
 }
 
 impl Drop for CommandQueue
@@ -817,12 +889,16 @@ impl<'r> EventList for &'r [Event] {
     fn as_event_list<T, F>(&self, f: F) -> T
         where F: FnOnce(*const cl_event, cl_uint) -> T
     {
-        let mut vec: Vec<cl_event> = Vec::with_capacity(self.len());
-        for item in self.iter(){
-            vec.push(item.event);
-        }
+        if self.len() == 0 {
+            f(ptr::null(), 0)
+        } else {
+            let mut vec: Vec<cl_event> = Vec::with_capacity(self.len());
+            for item in self.iter(){
+                vec.push(item.event);
+            }
 
-        f(vec.as_ptr(), vec.len() as cl_uint)
+            f(vec.as_ptr(), vec.len() as cl_uint)
+        }
     }
 }
 
