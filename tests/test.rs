@@ -135,7 +135,7 @@ mod hl {
         let src = "__kernel void test(__global int *i) { \
                    *i += 1; \
                    }";
-        ::test_all_platforms_devices(&mut |&: device, ctx, _| {
+        ::test_all_platforms_devices(&mut |device, ctx, _| {
             let prog = ctx.create_program_from_source(src);
             prog.build(device).unwrap();
         })
