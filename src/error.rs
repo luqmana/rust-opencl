@@ -6,7 +6,7 @@ use std::num::FromPrimitive;
 
 fn error_str(status_code: cl_int) -> String {
     let status_opt: Option<CLStatus>
-        = FromPrimitive::from_int(status_code as isize);
+        = FromPrimitive::from_isize(status_code as isize);
 
     match status_opt {
         Some(status) => status.to_string(),

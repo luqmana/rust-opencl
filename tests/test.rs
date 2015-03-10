@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 extern crate opencl;
 
 use opencl::hl::*;
@@ -578,17 +581,32 @@ mod ext {
         for platform in platforms.into_iter() {
             let platform_id = platform.get_id();
 
-            ext::cl_khr_fp64::load(platform_id);
-            ext::cl_khr_fp16::load(platform_id);
-            ext::cl_APPLE_SetMemObjectDestructor::load(platform_id);
-            ext::cl_APPLE_ContextLoggingFunctions::load(platform_id);
-            ext::cl_khr_icd::load(platform_id);
-            ext::cl_nv_device_attribute_query::load(platform_id);
-            ext::cl_amd_device_attribute_query::load(platform_id);
-            ext::cl_arm_printf::load(platform_id);
-            ext::cl_ext_device_fission::load(platform_id);
-            ext::cl_qcom_ext_host_ptr::load(platform_id);
-            ext::cl_qcom_ion_host_ptr::load(platform_id);
+            macro_rules! check_ext {
+                ($ext:ident) => {
+                    match ext::$ext::load(platform_id) {
+                        Ok(_) => {
+                            info!("Extension {} loaded successfully.",
+                                  stringify!($ext))
+                        }
+                        Err(_) => {
+                            info!("Error loading extension {}.",
+                                  stringify!($ext))
+                        }
+                    }
+                }
+            }
+
+            check_ext!(cl_khr_fp64);
+            check_ext!(cl_khr_fp16);
+            check_ext!(cl_APPLE_SetMemObjectDestructor);
+            check_ext!(cl_APPLE_ContextLoggingFunctions);
+            check_ext!(cl_khr_icd);
+            check_ext!(cl_nv_device_attribute_query);
+            check_ext!(cl_amd_device_attribute_query);
+            check_ext!(cl_arm_printf);
+            check_ext!(cl_ext_device_fission);
+            check_ext!(cl_qcom_ext_host_ptr);
+            check_ext!(cl_qcom_ion_host_ptr);
         }
     }
 }
@@ -598,7 +616,7 @@ mod cl {
     use opencl::cl::CLStatus::*;
 
     #[test]
-    fn CLStatus_str() {
+    fn clstatus_str() {
         let x = CL_SUCCESS;
         expect!(format!("{}", x), "CL_SUCCESS");
 
