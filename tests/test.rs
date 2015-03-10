@@ -158,7 +158,7 @@ mod hl {
 
             k.set_arg(0, &v);
 
-            queue.enqueue_async_kernel(&k, 1is, None, ()).wait();
+            queue.enqueue_async_kernel(&k, 1isize, None, ()).wait();
 
             let v: Vec<isize> = queue.get(&v, ());
 
@@ -178,12 +178,12 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(vec![1is], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(vec![1isize], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
-            k.set_arg(1, &42is);
+            k.set_arg(1, &42isize);
 
-            queue.enqueue_async_kernel(&k, 1is, None, ()).wait();
+            queue.enqueue_async_kernel(&k, 1isize, None, ()).wait();
 
             let v: Vec<isize> = queue.get(&v, ());
 
@@ -207,7 +207,7 @@ mod hl {
 
             k.set_arg(0, &v);
 
-            queue.enqueue_async_kernel(&k, 1is, None, ()).wait();
+            queue.enqueue_async_kernel(&k, 1isize, None, ()).wait();
 
             let v: Vec<isize> = queue.get(&v, ());
 
@@ -232,7 +232,7 @@ mod hl {
 
             let mut e : Option<Event> = None;
             for _ in 0is..8 {
-                e = Some(queue.enqueue_async_kernel(&k, 1is, None, e));
+                e = Some(queue.enqueue_async_kernel(&k, 1isize, None, e));
             }
             e.wait();
 
@@ -267,15 +267,15 @@ mod hl {
             k_inc_b.set_arg(0, &b);
 
             let event_list = [
-                queue.enqueue_async_kernel(&k_inc_a, 1is, None, ()),
-                queue.enqueue_async_kernel(&k_inc_b, 1is, None, ()),
+                queue.enqueue_async_kernel(&k_inc_a, 1isize, None, ()),
+                queue.enqueue_async_kernel(&k_inc_b, 1isize, None, ()),
             ];
 
             k_add.set_arg(0, &a);
             k_add.set_arg(1, &b);
             k_add.set_arg(2, &c);
 
-            let event = queue.enqueue_async_kernel(&k_add, 1is, None, event_list.as_slice());
+            let event = queue.enqueue_async_kernel(&k_add, 1isize, None, event_list.as_slice());
 
             let v: Vec<isize> = queue.get(&c, event);
 
@@ -306,11 +306,11 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from([1is, 2, 3, 4, 5, 6, 7, 8, 9].as_slice(), CL_MEM_READ_ONLY);
+            let v = ctx.create_buffer_from([1isize, 2, 3, 4, 5, 6, 7, 8, 9].as_slice(), CL_MEM_READ_ONLY);
 
             k.set_arg(0, &v);
 
-            queue.enqueue_async_kernel(&k, (3is, 3is), None, ()).wait();
+            queue.enqueue_async_kernel(&k, (3isize, 3isize), None, ()).wait();
 
             let v: Vec<isize> = queue.get(&v, ());
 
@@ -324,8 +324,8 @@ mod hl {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
             let buffer: CLBuffer<isize> = ctx.create_buffer(8, CL_MEM_READ_ONLY);
 
-            let input = &[0is, 1, 2, 3, 4, 5, 6, 7];
-            let output = &mut [0is, 0, 0, 0, 0, 0, 0, 0];
+            let input = &[0isize, 1, 2, 3, 4, 5, 6, 7];
+            let output = &mut [0isize, 0, 0, 0, 0, 0, 0, 0];
 
             queue.write(&buffer, &input.as_slice(), ());
             queue.read(&buffer, &mut output.as_mut_slice(), ());
@@ -338,7 +338,7 @@ mod hl {
     fn memory_read_vec()
     {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
-            let input = &[0is, 1, 2, 3, 4, 5, 6, 7];
+            let input = &[0isize, 1, 2, 3, 4, 5, 6, 7];
             let buffer = ctx.create_buffer_from(input.as_slice(), CL_MEM_READ_WRITE);
             let output: Vec<isize> = queue.get(&buffer, ());
             expect!(input.as_slice(), output.as_slice());
@@ -350,7 +350,7 @@ mod hl {
     fn memory_read_owned()
     {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
-            let input = vec!(0is, 1, 2, 3, 4, 5, 6, 7);
+            let input = vec!(0isize, 1, 2, 3, 4, 5, 6, 7);
             let buffer = ctx.create_buffer_from(&input, CL_MEM_READ_WRITE);
             let output: Vec<isize> = queue.get(&buffer, ());
             expect!(input, output);
@@ -361,7 +361,7 @@ mod hl {
     fn memory_read_owned_clone()
     {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
-            let input = vec!(0is, 1, 2, 3, 4, 5, 6, 7);
+            let input = vec!(0isize, 1, 2, 3, 4, 5, 6, 7);
             let buffer = ctx.create_buffer_from(input.clone(), CL_MEM_READ_WRITE);
             let output: Vec<isize> = queue.get(&buffer, ());
             expect!(input, output);
@@ -383,7 +383,7 @@ mod hl {
 
         k.set_arg(0, &v);
 
-        let e = queue.enqueue_async_kernel(&k, 1is, None, ());
+        let e = queue.enqueue_async_kernel(&k, 1isize, None, ());
         e.wait();
 
         // the that are returned are not useful for unit test, this test
@@ -409,8 +409,8 @@ mod array {
             let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
             let arr_out: Array2D<isize> = queue.get(&arr_cl, ());
 
-            for x in 0us .. 8us {
-                for y in 0us..8us {
+            for x in 0usize.. 8usize {
+                for y in 0usize..8usize {
                     expect!(arr_in.get(x, y), arr_out.get(x, y));
                 }
             }
@@ -432,8 +432,8 @@ mod array {
             queue.write(&a_cl, &added, ());
             queue.read(&a_cl, &mut out, ());
 
-            for x in range(0us, 8us) {
-                for y in range(0us, 8us) {
+            for x in range(0usize, 8usize) {
+                for y in range(0usize, 8usize) {
                     expect!(added.get(x, y), out.get(x, y));
                 }
             }
@@ -467,11 +467,11 @@ mod array {
             let k = prog.create_kernel("test");
 
             k.set_arg(0, &a_cl);
-            let event = queue.enqueue_async_kernel(&k, (8is, 8is), None, ());
+            let event = queue.enqueue_async_kernel(&k, (8isize, 8isize), None, ());
             queue.read(&a_cl, &mut a, &event);
 
-            for x in range(0us, 8us) {
-                for y in range(0us, 8us) {
+            for x in range(0usize, 8usize) {
+                for y in range(0usize, 8usize) {
                     expect!(a.get(x, y), b.get(x, y));
                 }
             }
@@ -486,9 +486,9 @@ mod array {
             let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
             let arr_out: Array3D<isize> = queue.get(&arr_cl, ());
 
-            for x in range(0us, 8us) {
-                for y in range(0us, 8us) {
-                    for z in range(0us, 8us) {
+            for x in range(0usize, 8usize) {
+                for y in range(0usize, 8usize) {
+                    for z in range(0usize, 8usize) {
                         expect!(arr_in.get(x, y, z), arr_out.get(x, y, z));
                     }
                 }
@@ -511,9 +511,9 @@ mod array {
             queue.write(&a_cl, &added, ());
             queue.read(&a_cl, &mut out, ());
 
-            for x in range(0us, 8us) {
-                for y in range(0us, 8us) {
-                    for z in range(0us, 8us) {
+            for x in range(0usize, 8usize) {
+                for y in range(0usize, 8usize) {
+                    for z in range(0usize, 8usize) {
                         expect!(added.get(x, y, z), out.get(x, y, z));
                     }
                 }
@@ -550,12 +550,12 @@ mod array {
             let k = prog.create_kernel("test");
 
             k.set_arg(0, &a_cl);
-            let event = queue.enqueue_async_kernel(&k, (8is, 8is, 8is), None, ());
+            let event = queue.enqueue_async_kernel(&k, (8isize, 8isize, 8isize), None, ());
             queue.read(&a_cl, &mut a, &event);
 
-            for x in range(0us, 8us) {
-                for y in range(0us, 8us) {
-                    for z in range(0us, 8us) {
+            for x in range(0usize, 8usize) {
+                for y in range(0usize, 8usize) {
+                    for z in range(0usize, 8usize) {
                         expect!(a.get(x, y, z), b.get(x, y, z));
                     }
                 }
@@ -566,13 +566,8 @@ mod array {
 
 #[cfg(test)]
 mod ext {
-    use opencl::cl::*;
-    use opencl::cl::ll::*;
-    use opencl::error::check;
     use opencl::ext;
     use opencl::hl::*;
-    use std::iter::repeat;
-    use std::ptr;
 
     #[test]
     fn try_load_all_extensions() {
