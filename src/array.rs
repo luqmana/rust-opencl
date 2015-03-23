@@ -32,9 +32,9 @@ impl<T: Clone> Array3D<T> {
         where F: Fn(usize, usize, usize) -> T
     {
         let mut dat: Vec<T> = Vec::new();
-        for x in range(0, width) {
-            for y in range(0, height) {
-                for z in range(0, depth) {
+        for x in 0 .. width {
+            for y in 0 .. height {
+                for z in 0 .. depth {
                     dat.push(val(x, y, z));
                 }
             }
@@ -169,8 +169,8 @@ impl<T: Clone> Array2D<T> {
         where F: Fn(usize, usize) -> T
     {
         let mut dat: Vec<T> = Vec::new();
-        for x in range(0, width) {
-            for y in range(0, height) {
+        for x in 0 .. width {
+            for y in 0 .. height {
                 dat.push(val(x, y));
             }
         }

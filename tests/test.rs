@@ -434,8 +434,8 @@ mod array {
             queue.write(&a_cl, &added, ());
             queue.read(&a_cl, &mut out, ());
 
-            for x in range(0usize, 8usize) {
-                for y in range(0usize, 8usize) {
+            for x in 0usize .. 8usize {
+                for y in 0usize .. 8usize {
                     expect!(added.get(x, y), out.get(x, y));
                 }
             }
@@ -472,8 +472,8 @@ mod array {
             let event = queue.enqueue_async_kernel(&k, (8isize, 8isize), None, ());
             queue.read(&a_cl, &mut a, &event);
 
-            for x in range(0usize, 8usize) {
-                for y in range(0usize, 8usize) {
+            for x in 0usize .. 8usize {
+                for y in 0usize .. 8usize {
                     expect!(a.get(x, y), b.get(x, y));
                 }
             }
@@ -488,9 +488,9 @@ mod array {
             let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
             let arr_out: Array3D<isize> = queue.get(&arr_cl, ());
 
-            for x in range(0usize, 8usize) {
-                for y in range(0usize, 8usize) {
-                    for z in range(0usize, 8usize) {
+            for x in 0usize .. 8usize {
+                for y in 0usize .. 8usize {
+                    for z in 0usize .. 8usize {
                         expect!(arr_in.get(x, y, z), arr_out.get(x, y, z));
                     }
                 }
@@ -513,9 +513,9 @@ mod array {
             queue.write(&a_cl, &added, ());
             queue.read(&a_cl, &mut out, ());
 
-            for x in range(0usize, 8usize) {
-                for y in range(0usize, 8usize) {
-                    for z in range(0usize, 8usize) {
+            for x in 0usize .. 8usize {
+                for y in 0usize .. 8usize {
+                    for z in 0usize .. 8usize {
                         expect!(added.get(x, y, z), out.get(x, y, z));
                     }
                 }
@@ -555,9 +555,9 @@ mod array {
             let event = queue.enqueue_async_kernel(&k, (8isize, 8isize, 8isize), None, ());
             queue.read(&a_cl, &mut a, &event);
 
-            for x in range(0usize, 8usize) {
-                for y in range(0usize, 8usize) {
-                    for z in range(0usize, 8usize) {
+            for x in 0usize .. 8usize {
+                for y in 0usize .. 8usize {
+                    for z in 0usize .. 8usize {
                         expect!(a.get(x, y, z), b.get(x, y, z));
                     }
                 }
