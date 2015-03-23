@@ -63,7 +63,7 @@ mod mem {
             let target = &mut buffer[off .. off + len];
             unsafe {
                 let ptr = ptr as *const u8;
-                let src = slice::from_raw_buf(&ptr, len);
+                let src = slice::from_raw_parts(ptr, len);
                 slice::bytes::copy_memory(target, src);
             }
         });
@@ -76,7 +76,7 @@ mod mem {
             let src = &buffer[off .. off + len];
             unsafe {
                 let ptr = ptr as *mut u8;
-                let dst = slice::from_raw_mut_buf(&ptr, len);
+                let dst = slice::from_raw_parts_mut(ptr, len);
                 slice::bytes::copy_memory(dst, src);
             }
         })
