@@ -134,7 +134,7 @@ impl<T> Read for Array3D<T> {
 }
 
 impl<T> Buffer<T> for Array3DCL<T> {
-    fn id_ptr(&self) -> *const cl_mem {
+    unsafe fn id_ptr(&self) -> *const cl_mem {
         &self.buf as *const cl_mem
     }
 
@@ -262,7 +262,7 @@ impl<T> Read for Array2D<T> {
 }
 
 impl<T> Buffer<T> for Array2DCL<T> {
-    fn id_ptr(&self) -> *const cl_mem {
+    unsafe fn id_ptr(&self) -> *const cl_mem {
         &self.buf as *const cl_mem
     }
 
