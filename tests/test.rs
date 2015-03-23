@@ -156,7 +156,7 @@ mod hl {
             prog.build(device).unwrap();
 
             let k = prog.create_kernel("test");
-            let v = ctx.create_buffer_from(vec![1is], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(vec![1isize], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -205,7 +205,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from(vec![1is], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(vec![1isize], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
@@ -228,12 +228,12 @@ mod hl {
             prog.build(device).unwrap();
 
             let k = prog.create_kernel("test");
-            let v = ctx.create_buffer_from(vec![1is], CL_MEM_READ_WRITE);
+            let v = ctx.create_buffer_from(vec![1isize], CL_MEM_READ_WRITE);
 
             k.set_arg(0, &v);
 
             let mut e : Option<Event> = None;
-            for _ in 0is..8 {
+            for _ in 0isize .. 8 {
                 e = Some(queue.enqueue_async_kernel(&k, 1isize, None, e));
             }
             e.wait();
@@ -261,9 +261,9 @@ mod hl {
             let k_inc_b = prog.create_kernel("inc");
             let k_add = prog.create_kernel("add");
 
-            let a = ctx.create_buffer_from(vec![1is], CL_MEM_READ_WRITE);
-            let b = ctx.create_buffer_from(vec![1is], CL_MEM_READ_WRITE);
-            let c = ctx.create_buffer_from(vec![1is], CL_MEM_READ_WRITE);
+            let a = ctx.create_buffer_from(vec![1isize], CL_MEM_READ_WRITE);
+            let b = ctx.create_buffer_from(vec![1isize], CL_MEM_READ_WRITE);
+            let c = ctx.create_buffer_from(vec![1isize], CL_MEM_READ_WRITE);
 
             k_inc_a.set_arg(0, &a);
             k_inc_b.set_arg(0, &b);
@@ -381,7 +381,7 @@ mod hl {
         prog.build(&device).unwrap();
 
         let k = prog.create_kernel("test");
-        let v = ctx.create_buffer_from(vec![1is], CL_MEM_READ_WRITE);
+        let v = ctx.create_buffer_from(vec![1isize], CL_MEM_READ_WRITE);
 
         k.set_arg(0, &v);
 
