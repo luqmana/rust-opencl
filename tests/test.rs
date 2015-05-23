@@ -62,9 +62,9 @@ mod mem {
             assert!(buffer.len() >= (off + len) as usize);
             let target = &mut buffer[off .. off + len];
             unsafe {
-                let ptr = ptr as *mut u8;
-                let mut src = slice::from_raw_parts_mut(ptr, len);
-                slice::bytes::copy_memory(target, &mut src);
+                let ptr = ptr as *const u8;
+                let src = slice::from_raw_parts(ptr, len);
+                slice::bytes::copy_memory(src, target);
             }
         });
 
@@ -73,11 +73,11 @@ mod mem {
             let off = off as usize;
             let len = len as usize;
             assert!(buffer.len() >= (off + len) as usize);
-            let src = &mut buffer[off .. off + len];
+            let src = &buffer[off .. off + len];
             unsafe {
                 let ptr = ptr as *mut u8;
-                let dst = slice::from_raw_parts_mut(ptr, len);
-                slice::bytes::copy_memory(dst, src);
+                let mut dst = slice::from_raw_parts_mut(ptr, len);
+                slice::bytes::copy_memory(src, dst);
             }
         })
     }
