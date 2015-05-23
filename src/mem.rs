@@ -1,7 +1,7 @@
 //! High level buffer management.
 
 use libc::{size_t, c_void};
-use std::marker::{PhantomData, PhantomFn};
+use std::marker::{PhantomData};
 use std::mem;
 use std::ptr;
 use std::vec::Vec;
@@ -12,7 +12,7 @@ use cl::ll::*;
 use hl::KernelArg;
 use error::check;
 
-pub trait Buffer<T>: PhantomFn<T> {
+pub trait Buffer<T> {
     unsafe fn id_ptr(&self) -> *const cl_mem;
 
     fn id(&self) -> cl_mem {
@@ -44,7 +44,6 @@ pub struct CLBuffer<T> {
     pub phantom: PhantomData<T>,
 }
 
-#[unsafe_destructor]
 impl<T> Drop for CLBuffer<T> {
     fn drop(&mut self) {
         unsafe {
@@ -78,12 +77,12 @@ impl<T> KernelArg for CLBuffer<T> {
  * | Read   | X              | X                | opencl -> rust |
  *mut */
 
-pub trait Put<T, B>: PhantomFn<T> {
+pub trait Put<T, B> {
     fn put<F>(&self, F) -> B
         where F: FnOnce(*const c_void, size_t) -> cl_mem;
 }
 
-pub trait Get<B, T>: PhantomFn<T> {
+pub trait Get<B, T> {
     fn get<F: FnOnce(size_t, *mut c_void, size_t)>(mem: &B, F) -> Self;
 }
 

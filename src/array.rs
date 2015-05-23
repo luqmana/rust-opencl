@@ -50,7 +50,7 @@ impl<T: Clone> Array3D<T> {
 
     pub fn set(&mut self, x: usize, y: usize, z: usize, val: T)
     {
-        self.dat.as_mut_slice()[self.width*self.height*z + self.width*y + x] = val;
+        self.dat[self.width*self.height*z + self.width*y + x] = val;
     }
 
     pub fn get(&self, x: usize, y: usize, z: usize) -> T
@@ -59,7 +59,6 @@ impl<T: Clone> Array3D<T> {
     }
 }
 
-#[unsafe_destructor]
 impl<T> Drop for Array3DCL<T> {
     fn drop(&mut self) {
         unsafe {
@@ -182,7 +181,7 @@ impl<T: Clone> Array2D<T> {
     }
 
     pub fn set(&mut self, x: usize, y: usize, val: T) {
-        self.dat.as_mut_slice()[self.width*y + x] = val;
+        self.dat[self.width*y + x] = val;
     }
 
     pub fn get(&self, x: usize, y: usize) -> T {
@@ -190,7 +189,6 @@ impl<T: Clone> Array2D<T> {
     }
 }
 
-#[unsafe_destructor]
 impl<T> Drop for Array2DCL<T> {
     fn drop(&mut self) {
         unsafe {

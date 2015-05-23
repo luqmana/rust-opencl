@@ -62,9 +62,9 @@ mod mem {
             assert!(buffer.len() >= (off + len) as usize);
             let target = &mut buffer[off .. off + len];
             unsafe {
-                let ptr = ptr as *const u8;
-                let src = slice::from_raw_parts(ptr, len);
-                slice::bytes::copy_memory(target, src);
+                let ptr = ptr as *mut u8;
+                let mut src = slice::from_raw_parts_mut(ptr, len);
+                slice::bytes::copy_memory(target, &mut src);
             }
         });
 
@@ -73,7 +73,7 @@ mod mem {
             let off = off as usize;
             let len = len as usize;
             assert!(buffer.len() >= (off + len) as usize);
-            let src = &buffer[off .. off + len];
+            let src = &mut buffer[off .. off + len];
             unsafe {
                 let ptr = ptr as *mut u8;
                 let dst = slice::from_raw_parts_mut(ptr, len);
@@ -277,7 +277,7 @@ mod hl {
             k_add.set_arg(1, &b);
             k_add.set_arg(2, &c);
 
-            let event = queue.enqueue_async_kernel(&k_add, 1isize, None, event_list.as_slice());
+            let event = queue.enqueue_async_kernel(&k_add, 1isize, None, &event_list[..]);
 
             let v: Vec<isize> = queue.get(&c, event);
 
@@ -308,7 +308,7 @@ mod hl {
 
             let k = prog.create_kernel("test");
 
-            let v = ctx.create_buffer_from([1isize, 2, 3, 4, 5, 6, 7, 8, 9].as_slice(), CL_MEM_READ_ONLY);
+            let v = ctx.create_buffer_from(&[1isize, 2, 3, 4, 5, 6, 7, 8, 9][..], CL_MEM_READ_ONLY);
 
             k.set_arg(0, &v);
 
@@ -326,13 +326,13 @@ mod hl {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
             let buffer: CLBuffer<isize> = ctx.create_buffer(8, CL_MEM_READ_ONLY);
 
-            let input = &[0isize, 1, 2, 3, 4, 5, 6, 7];
-            let output = &mut [0isize, 0, 0, 0, 0, 0, 0, 0];
+            let input = [0isize, 1, 2, 3, 4, 5, 6, 7];
+            let mut output = [0isize, 0, 0, 0, 0, 0, 0, 0];
 
-            queue.write(&buffer, &input.as_slice(), ());
-            queue.read(&buffer, &mut output.as_mut_slice(), ());
+            queue.write(&buffer, &&input[..], ());
+            queue.read(&buffer, &mut &mut output[..], ());
 
-            expect!(input.as_slice(), output.as_slice());
+            expect!(input, output);
         })
     }
 
@@ -340,10 +340,10 @@ mod hl {
     fn memory_read_vec()
     {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
-            let input = &[0isize, 1, 2, 3, 4, 5, 6, 7];
-            let buffer = ctx.create_buffer_from(input.as_slice(), CL_MEM_READ_WRITE);
+            let input = [0isize, 1, 2, 3, 4, 5, 6, 7];
+            let buffer = ctx.create_buffer_from(&input[..], CL_MEM_READ_WRITE);
             let output: Vec<isize> = queue.get(&buffer, ());
-            expect!(input.as_slice(), output.as_slice());
+            expect!(&input[..], &output[..]);
         })
     }
 

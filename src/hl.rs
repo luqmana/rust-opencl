@@ -17,7 +17,7 @@ use cl::CLStatus::CL_SUCCESS;
 use error::check;
 use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum DeviceType {
       CPU, GPU
 }
@@ -182,7 +182,7 @@ pub fn create_context_with_properties(dev: &[Device], prop: &[cl_context_propert
     }
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub struct Device {
     id: cl_device_id
 }

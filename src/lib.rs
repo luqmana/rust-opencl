@@ -1,22 +1,14 @@
-#![feature(collections)]
-#![feature(core)]
-#![feature(libc)]
-#![feature(std_misc)]
-#![feature(unsafe_destructor)]
 #![allow(improper_ctypes)]
 #![allow(missing_copy_implementations)]
 #![allow(non_upper_case_globals)]
 
-#![feature(collections)]
-#![feature(core)]
-#![feature(libc)]
+#![feature(std_misc)]
 
 //! OpenCL bindings for Rust.
 
 extern crate libc;
 #[macro_use]
 extern crate log;
-extern crate collections;
 
 #[link(name = "OpenCL", kind = "framework")]
 #[cfg(target_os = "macos")]

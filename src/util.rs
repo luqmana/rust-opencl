@@ -20,7 +20,7 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &'sta
     }
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum PreferedType {
     Any,
 
