@@ -1,5 +1,3 @@
-#![feature(collections)]
-
 extern crate opencl;
 
 use opencl::mem::CLBuffer;
@@ -44,7 +42,7 @@ fn main()
 }
 
 fn string_from_slice<T: fmt::Display>(slice: &[T]) -> String {
-    let mut st = String::from_str("[");
+    let mut st = String::from("[");
     let mut first = true;
 
     for i in slice.iter() {

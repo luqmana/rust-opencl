@@ -2,7 +2,7 @@
 #![allow(missing_copy_implementations)]
 #![allow(non_upper_case_globals)]
 
-#![feature(std_misc)]
+#![feature(static_mutex)]
 
 //! OpenCL bindings for Rust.
 
