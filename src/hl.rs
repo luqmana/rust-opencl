@@ -426,7 +426,7 @@ impl CommandQueue
                     ptr::null(),
                     global.get_ptr(),
                     match local {
-                        Some(ref l) => l.get_ptr() as *const u64,
+                        Some(ref l) => l.get_ptr() as *const libc::size_t,
                         None => ptr::null()
                     },
                     event_list_length,
@@ -455,7 +455,7 @@ impl CommandQueue
                     ptr::null(),
                     global.get_ptr(),
                     match local {
-                        Some(ref l) => l.get_ptr() as *const u64,
+                        Some(ref l) => l.get_ptr() as *const libc::size_t,
                         None => ptr::null()
                     },
                     event_list_length,
