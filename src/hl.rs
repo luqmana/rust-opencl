@@ -838,7 +838,7 @@ impl EventList for () {
 
 pub trait KernelIndex
 {
-    fn num_dimensions(dummy_self: Option<Self>) -> cl_uint;
+    fn num_dimensions(dummy_self: Option<Self>) -> cl_uint where Self: Sized;
     fn get_ptr(&self) -> *const libc::size_t;
 }
 
