@@ -28,7 +28,7 @@ pub trait Buffer<T> {
             let err = clGetMemObjectInfo(self.id(),
                                          CL_MEM_SIZE,
                                          mem::size_of::<size_t>() as size_t,
-                                         (&mut size as *mut u64) as *mut c_void,
+                                         (&mut size as *mut size_t) as *mut c_void,
                                          ptr::null_mut());
 
             check(err, "Failed to read memory size");
