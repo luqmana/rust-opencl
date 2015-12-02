@@ -277,6 +277,19 @@ impl Device {
         }
     }
 
+    pub fn max_mem_alloc_size(&self) -> usize {
+        unsafe {
+            let mut ct: usize = 0;
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_MAX_MEM_ALLOC_SIZE,
+                16,
+                (&mut ct as *mut usize) as *mut libc::c_void,
+                ptr::null_mut());
+            check(status, "Could not get size of local memory.");
+            return ct;
+        }
+    }
 
     pub fn create_context(&self) -> Context
     {
