@@ -249,6 +249,34 @@ impl Device {
 		}
 	}
 
+    pub fn global_mem_size(&self) -> usize {
+        unsafe {
+            let mut ct: usize = 0;
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_GLOBAL_MEM_SIZE,
+                16,
+                (&mut ct as *mut usize) as *mut libc::c_void,
+                ptr::null_mut());
+            check(status, "Could not get size of global memory.");
+            return ct;
+        }
+    }
+
+    pub fn local_mem_size(&self) -> usize {
+        unsafe {
+            let mut ct: usize = 0;
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_LOCAL_MEM_SIZE,
+                16,
+                (&mut ct as *mut usize) as *mut libc::c_void,
+                ptr::null_mut());
+            check(status, "Could not get size of local memory.");
+            return ct;
+        }
+    }
+
 
     pub fn create_context(&self) -> Context
     {
