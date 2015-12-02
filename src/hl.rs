@@ -30,7 +30,7 @@ fn convert_device_type(device: DeviceType) -> cl_device_type {
 }
 
 pub struct Platform {
-    id: cl_platform_id
+    pub id: cl_platform_id
 }
 
 impl Platform {
@@ -184,7 +184,7 @@ pub fn create_context_with_properties(dev: &[Device], prop: &[cl_context_propert
 
 #[derive(Copy, Clone)]
 pub struct Device {
-    id: cl_device_id
+    pub id: cl_device_id
 }
 
 unsafe impl Sync for Device {}
@@ -217,7 +217,7 @@ impl Device {
             String::from_utf8_unchecked(buf)
         }
     }
-    
+
     pub fn name(&self) -> String
     {
         self.profile_info(CL_DEVICE_NAME)
@@ -234,7 +234,7 @@ impl Device {
     {
         self.profile_info(CL_DEVICE_TYPE)
     }
-	
+
     pub fn compute_units(&self) -> usize {
 		unsafe {
 			let mut ct: usize = 0;
@@ -547,7 +547,7 @@ impl CommandQueue
                                                           event_list_length,
                                                           event_list,
                                                           ptr::null_mut());
-                            
+
                             check(err, "Failed to read buffer");
                         }
                     })
