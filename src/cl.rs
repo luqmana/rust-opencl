@@ -1,7 +1,5 @@
 #![allow(non_camel_case_types, dead_code)]
 
-extern crate std;
-
 use libc;
 use std::fmt;
 
