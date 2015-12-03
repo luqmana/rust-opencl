@@ -1,6 +1,5 @@
 #![allow(unused,
          unused_attributes,
-         raw_pointer_derive,
          non_camel_case_types,
          non_snake_case)]
 
@@ -31,7 +30,7 @@ macro_rules! cl_extension_loader {
             use cl::ll::clGetExtensionFunctionAddress;
 
             // Read in the available extensions
-            // We have to do this, since loading function pointers for an 
+            // We have to do this, since loading function pointers for an
             // unavailable extension can return non-NULL.
             // TODO read in extensions lazily and store them in a global HashSet?
             let available = unsafe {
@@ -197,7 +196,6 @@ pub mod cl_arm_printf {
 }
 
 pub mod cl_ext_device_fission {
-    use std;
     use cl::*;
     pub type cl_device_partition_property_ext = cl_ulong;
     pub static CL_DEVICE_PARTITION_EQUALLY_EXT: cl_device_partition_property_ext            = 0x4050;
