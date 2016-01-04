@@ -15,6 +15,11 @@ fn main() {
             println!("   Type: {}", device.device_type());
             println!("   Profile: {}", device.profile());
             println!("   Compute Units: {}", device.compute_units());
+            println!("   Global Mem Cache Size: {} Bytes", device.global_mem_cache_size());
+            println!("   Global Mem Size: {} Bytes", device.global_mem_size());
+            println!("   Local Mem Size: {} Bytes", device.local_mem_size());
+            println!("   Max Constant Buffer Size: {} Bytes", device.max_constant_buffer_size());
+            println!("   Max Mem Alloc Size: {} Bytes", device.max_mem_alloc_size());
         }
     }
 }
