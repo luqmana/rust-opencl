@@ -826,6 +826,21 @@ impl<'r> EventList for &'r [Event] {
     }
 }
 
+impl<'r, 's> EventList for &'r [Option<&'s Event>] {
+    fn as_event_list<T, F>(&self, f: F) -> T
+        where F: FnOnce(*const cl_event, cl_uint) -> T
+    {
+        let mut vec: Vec<cl_event> = Vec::with_capacity(self.len());
+        for item in self.iter(){
+            if let Some(item) = *item {
+                vec.push(item.event);
+            }
+        }
+
+        f(vec.as_ptr(), vec.len() as cl_uint)
+    }
+}
+
 /* this seems VERY hackey */
 impl EventList for () {
     fn as_event_list<T, F>(&self, f: F) -> T
