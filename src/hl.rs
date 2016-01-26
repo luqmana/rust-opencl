@@ -827,7 +827,7 @@ impl<'r> EventList for &'r [Event] {
     }
 }
 
-impl<'r, 's, D: Deref<Target=&'s Event>> EventList for &'r [Option<D>] {
+impl<'r, 's, D: Deref<Target=Event>> EventList for &'r [Option<D>] {
     fn as_event_list<T, F>(&self, f: F) -> T
         where F: FnOnce(*const cl_event, cl_uint) -> T
     {
