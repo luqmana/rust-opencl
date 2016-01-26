@@ -6,6 +6,7 @@ use std::ffi::CString;
 use std::iter::repeat;
 use std::marker::PhantomData;
 use std::mem;
+use std::ops::Deref;
 use std::ptr;
 use std::string::String;
 use std::vec::Vec;
@@ -826,13 +827,13 @@ impl<'r> EventList for &'r [Event] {
     }
 }
 
-impl<'r, 's> EventList for &'r [Option<&'s Event>] {
+impl<'r, 's, D: Deref<Target=&'s Event>> EventList for &'r [Option<D>] {
     fn as_event_list<T, F>(&self, f: F) -> T
         where F: FnOnce(*const cl_event, cl_uint) -> T
     {
         let mut vec: Vec<cl_event> = Vec::with_capacity(self.len());
-        for item in self.iter(){
-            if let Some(item) = *item {
+        for item in self.iter() {
+            if let Some(ref item) = *item {
                 vec.push(item.event);
             }
         }
