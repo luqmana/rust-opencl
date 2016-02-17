@@ -692,6 +692,14 @@ impl Kernel {
     {
         set_kernel_arg(self, i as cl::cl_uint, x)
     }
+
+    pub fn alloc_local<T>(&self, i: usize, l: usize)
+    {
+        alloc_kernel_local::<T>(self, i as cl::cl_uint, 
+            l as libc::size_t)
+            // s as libc::size_t,
+
+    }
 }
 
 pub fn create_kernel(program: &Program, kernel: & str) -> Kernel
@@ -762,6 +770,18 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
     }
 }
 
+pub fn alloc_kernel_local<T>(kernel: &Kernel,
+                       position: cl_uint,
+                       // size: libc::size_t,
+                       length: libc::size_t){
+    unsafe
+    {
+        let tsize = mem::size_of::<T>() as libc::size_t;
+        let ret = clSetKernelArg(kernel.kernel, position,
+                tsize*length, ptr::null());
+        check(ret, "Failed to set kernel arg!");
+    }
+}
 
 pub struct Event
 {
