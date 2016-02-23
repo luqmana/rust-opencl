@@ -413,8 +413,13 @@ unsafe impl Send for CommandQueue {}
 impl CommandQueue
 {
     //synchronous
-    pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
-        -> Event
+    pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self,
+                                                        k: &Kernel,
+                                                        global_offset: Option<I>,
+                                                        global: I,
+                                                        local: Option<I>,
+                                                        wait_on: E)
+                                                        -> Event
     {
         unsafe
         {
@@ -424,7 +429,7 @@ impl CommandQueue
                     self.cqueue,
                     k.kernel,
                     KernelIndex::num_dimensions(None::<I>),
-                    ptr::null(),
+                    global_offset.map(|x| x.get_ptr()).unwrap_or(ptr::null()),
                     global.get_ptr(),
                     match local {
                         Some(ref l) => l.get_ptr() as *const libc::size_t,
@@ -442,8 +447,13 @@ impl CommandQueue
     }
 
     //asynchronous
-    pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
-        -> Event
+    pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self,
+                                                              k: &Kernel,
+                                                              global_offset: Option<I>,
+                                                              global: I,
+                                                              local: Option<I>,
+                                                              wait_on: E)
+                                                              -> Event
     {
         unsafe
         {
@@ -453,7 +463,7 @@ impl CommandQueue
                     self.cqueue,
                     k.kernel,
                     KernelIndex::num_dimensions(None::<I>),
-                    ptr::null(),
+                    global_offset.map(|x| x.get_ptr()).unwrap_or(ptr::null()),
                     global.get_ptr(),
                     match local {
                         Some(ref l) => l.get_ptr() as *const libc::size_t,
