@@ -428,7 +428,7 @@ impl CommandQueue
                 let mut status = clEnqueueNDRangeKernel(
                     self.cqueue,
                     k.kernel,
-                    KernelIndex::num_dimensions(None::<I>),
+                    I::num_dimensions(),
                     global_offset.map(|x| x.get_ptr()).unwrap_or(ptr::null()),
                     global.get_ptr(),
                     match local {
@@ -462,7 +462,7 @@ impl CommandQueue
                 let status = clEnqueueNDRangeKernel(
                     self.cqueue,
                     k.kernel,
-                    KernelIndex::num_dimensions(None::<I>),
+                    I::num_dimensions(),
                     global_offset.map(|x| x.get_ptr()).unwrap_or(ptr::null()),
                     global.get_ptr(),
                     match local {
@@ -864,13 +864,13 @@ impl EventList for () {
 
 pub trait KernelIndex
 {
-    fn num_dimensions(dummy_self: Option<Self>) -> cl_uint where Self: Sized;
+    fn num_dimensions() -> cl_uint;
     fn get_ptr(&self) -> *const libc::size_t;
 }
 
 impl KernelIndex for isize
 {
-    fn num_dimensions(_: Option<isize>) -> cl_uint { 1 }
+    fn num_dimensions() -> cl_uint { 1 }
 
     fn get_ptr(&self) -> *const libc::size_t
     {
@@ -879,7 +879,7 @@ impl KernelIndex for isize
 }
 
 impl KernelIndex for (isize, isize) {
-    fn num_dimensions(_: Option<(isize, isize)>) -> cl_uint { 2 }
+    fn num_dimensions() -> cl_uint { 2 }
 
     fn get_ptr(&self) -> *const libc::size_t {
         (self as *const (isize, isize)) as *const libc::size_t
@@ -888,7 +888,7 @@ impl KernelIndex for (isize, isize) {
 
 impl KernelIndex for (isize, isize, isize)
 {
-    fn num_dimensions(_: Option<(isize, isize, isize)>) -> cl_uint { 3 }
+    fn num_dimensions() -> cl_uint { 3 }
 
     fn get_ptr(&self) -> *const libc::size_t {
         (self as *const (isize, isize, isize)) as *const libc::size_t
@@ -897,7 +897,7 @@ impl KernelIndex for (isize, isize, isize)
 
 impl KernelIndex for usize
 {
-    fn num_dimensions(_: Option<usize>) -> cl_uint { 1 }
+    fn num_dimensions() -> cl_uint { 1 }
 
     fn get_ptr(&self) -> *const libc::size_t {
         (self as *const usize) as *const libc::size_t
@@ -906,7 +906,7 @@ impl KernelIndex for usize
 
 impl KernelIndex for (usize, usize)
 {
-    fn num_dimensions(_: Option<(usize, usize)>) -> cl_uint { 2 }
+    fn num_dimensions() -> cl_uint { 2 }
 
     fn get_ptr(&self) -> *const libc::size_t {
         (self as *const (usize, usize)) as *const libc::size_t
@@ -915,7 +915,7 @@ impl KernelIndex for (usize, usize)
 
 impl KernelIndex for (usize, usize, usize)
 {
-    fn num_dimensions(_: Option<(usize, usize, usize)>) -> cl_uint { 3 }
+    fn num_dimensions() -> cl_uint { 3 }
 
     fn get_ptr(&self) -> *const libc::size_t {
         (self as *const (usize, usize, usize)) as *const libc::size_t
