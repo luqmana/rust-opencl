@@ -712,7 +712,7 @@ impl<T: Copy> KernelArg for Vec<T> {
     }
 }
 
-impl<T: Copy> KernelArg for [T] {
+impl<'a, T: Copy> KernelArg for &'a [T] {
     fn get_value(&self) -> (libc::size_t, *const libc::c_void) {
         (4 * mem::size_of::<T>() as libc::size_t,
           (self.as_ptr()) as *const libc::c_void)
