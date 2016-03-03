@@ -415,7 +415,7 @@ impl CommandQueue
     //synchronous
     pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self,
                                                         k: &Kernel,
-                                                        global_offset: Option<I>,
+                                                        //global_offset: Option<I>,
                                                         global: I,
                                                         local: Option<I>,
                                                         wait_on: E)
@@ -429,7 +429,8 @@ impl CommandQueue
                     self.cqueue,
                     k.kernel,
                     I::num_dimensions(),
-                    global_offset.map(|x| x.get_ptr()).unwrap_or(ptr::null()),
+                    //global_offset.map(|x| x.get_ptr()).unwrap_or(ptr::null()),
+                    ptr::null(),
                     global.get_ptr(),
                     match local {
                         Some(ref l) => l.get_ptr() as *const libc::size_t,
@@ -449,7 +450,7 @@ impl CommandQueue
     //asynchronous
     pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self,
                                                               k: &Kernel,
-                                                              global_offset: Option<I>,
+                                                              //global_offset: Option<I>,
                                                               global: I,
                                                               local: Option<I>,
                                                               wait_on: E)
@@ -463,7 +464,8 @@ impl CommandQueue
                     self.cqueue,
                     k.kernel,
                     I::num_dimensions(),
-                    global_offset.map(|x| x.get_ptr()).unwrap_or(ptr::null()),
+                    //global_offset.map(|x| x.get_ptr()).unwrap_or(ptr::null()),
+                    ptr::null(),
                     global.get_ptr(),
                     match local {
                         Some(ref l) => l.get_ptr() as *const libc::size_t,

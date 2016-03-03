@@ -32,7 +32,7 @@ fn main()
     kernel.set_arg(1, &b);
     kernel.set_arg(2, &c);
 
-    let event = queue.enqueue_async_kernel(&kernel, None, vec_a.len(), None, ());
+    let event = queue.enqueue_async_kernel(&kernel, vec_a.len(), None, ());
 
     let vec_c: Vec<isize> = queue.get(&c, &event);
 
