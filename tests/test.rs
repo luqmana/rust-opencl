@@ -428,7 +428,7 @@ mod hl {
 
 #[cfg(test)]
 mod array {
-    use opencl::array::*;
+    use opencl::mem::{Array2D, Array3D};
     use opencl::cl::CL_MEM_READ_WRITE;
 
     #[test]

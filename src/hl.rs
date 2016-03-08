@@ -362,7 +362,7 @@ impl Context {
                                      ptr::null_mut(),
                                      (&mut status));
             check(status, "Could not allocate buffer");
-            CLBuffer::new(buf)
+            CLBuffer::new_unchecked(buf)
         }
     }
 
