@@ -12,15 +12,10 @@ use cl::*;
 use cl::ll::*;
 use cl::CLStatus::CL_SUCCESS;
 use error::check;
-use mem::CLBuffer;
 use device::Device;
+use context::Context;
 
-/// Represents an OpenCL program, which is a collection of kernels.
-///
-/// Create these using
-/// [`Context::create_program_from_source`](struct.Context.html#method.create_program_from_source)
-/// or
-/// [`Context::create_program_from_binary`](struct.Context.html#method.create_program_from_binary).
+/// An OpenCL program, which is a collection of kernels.
 pub struct Program {
     prg: cl_program,
 }
@@ -30,18 +25,52 @@ impl Drop for Program
     fn drop(&mut self) {
         unsafe {
             let status = clReleaseProgram(self.prg);
-            check(status, "Colud not release the program.");
+            check(status, "Could not release the program");
         }
     }
 }
 
 impl Program {
-    /// Creates a new program from its OpenCL pointer.
-    ///
-    /// The pointer validity is not checked.
-    pub unsafe fn new_unchecked(prg: cl_program) -> Program {
+    /// Creates a program from its OpenCL C source code.
+    pub fn new(context: &Context, src: &str) -> Program {
+        unsafe
+        {
+            let src = CString::new(src).unwrap();
+
+            let mut status = CL_SUCCESS as cl_int;
+            let program = clCreateProgramWithSource(
+                context.cl_id(),
+                1,
+                &src.as_ptr(),
+                ptr::null(),
+                (&mut status));
+            check(status, "Could not create the program");
+
+            Program {
+                prg: program
+            }
+        }
+    }
+
+    /// Creates a program from its pre-compiled binaries.
+    pub fn from_binary(context: &Context, bin: &str, device: &Device) -> Program {
+        let src = CString::new(bin).unwrap();
+        let mut status = CL_SUCCESS as cl_int;
+        let len = bin.len() as libc::size_t;
+        let program = unsafe {
+            clCreateProgramWithBinary(
+                context.cl_id(),
+                1,
+                &device.cl_id(),
+                (&len),
+                (src.as_ptr() as *const *const i8) as *const *const libc::c_uchar,
+                ptr::null_mut(),
+                (&mut status))
+        };
+        check(status, "Could not create the program");
+
         Program {
-            prg: prg
+            prg: program
         }
     }
 
@@ -136,7 +165,7 @@ pub fn create_kernel(program: &Program, kernel: &str) -> Kernel
                                     str.as_ptr(),
                                     (&mut errcode));
 
-        check(errcode, "Failed to create kernel!");
+        check(errcode, "Failed to create kernel");
 
         Kernel { kernel: kernel }
     }
@@ -147,26 +176,6 @@ pub trait KernelArg {
   /// Gets the size (in bytes) of this kernel argument and an OpenCL-compatible
   /// pointer to its value.
   fn get_value(&self) -> (libc::size_t, *const libc::c_void);
-}
-
-impl<'r, T> KernelArg for &'r (CLBuffer<T> + 'r) {
-    fn get_value(&self) -> (libc::size_t, *const libc::c_void)
-    {
-        unsafe {
-            (mem::size_of::<cl_mem>() as libc::size_t,
-             self.cl_id_ptr() as *const libc::c_void)
-        }
-    }
-}
-
-impl<'r, T> KernelArg for Box<CLBuffer<T> + 'r> {
-    fn get_value(&self) -> (libc::size_t, *const libc::c_void)
-    {
-        unsafe {
-            (mem::size_of::<cl_mem>() as libc::size_t,
-             self.cl_id_ptr() as *const libc::c_void)
-        }
-    }
 }
 
 
@@ -207,16 +216,12 @@ impl KernelArg for [f64; 3] {
 /// Sets the i-th kernel argument of the given kernel.
 pub fn set_kernel_arg<T: KernelArg>(kernel:   &Kernel,
                                     position: cl_uint,
-                                    arg:      &T)
-{
-    unsafe
-    {
+                                    arg:      &T) {
+    unsafe {
         let (size, p) = arg.get_value();
-        let ret = clSetKernelArg(kernel.kernel, position,
-                                 size,
-                                 p);
+        let ret = clSetKernelArg(kernel.kernel, position, size, p);
 
-        check(ret, "Failed to set kernel arg!");
+        check(ret, "Failed to set kernel arg");
     }
 }
 
@@ -227,18 +232,16 @@ pub fn alloc_kernel_local<T>(kernel: &Kernel,
                              position: cl_uint,
                              // size: libc::size_t,
                              length: libc::size_t){
-    unsafe
-    {
+    unsafe {
         let tsize = mem::size_of::<T>() as libc::size_t;
         let ret = clSetKernelArg(kernel.kernel, position,
                                     tsize * length, ptr::null());
-        check(ret, "Failed to set kernel arg!");
+        check(ret, "Failed to set kernel arg");
     }
 }
 
 /// Trait implemented by a valid kernel buffer index.
-pub trait KernelIndex
-{
+pub trait KernelIndex {
     /// The number of dimensions (up to 3) of this kernel index.
     fn num_dimensions(dummy_self: Option<Self>) -> cl_uint where Self: Sized;
 
@@ -246,54 +249,60 @@ pub trait KernelIndex
     fn get_ptr(&self) -> *const libc::size_t;
 }
 
-impl KernelIndex for isize
-{
-    fn num_dimensions(_: Option<isize>) -> cl_uint { 1 }
+impl KernelIndex for isize {
+    fn num_dimensions(_: Option<isize>) -> cl_uint {
+        1
+    }
 
-    fn get_ptr(&self) -> *const libc::size_t
-    {
+    fn get_ptr(&self) -> *const libc::size_t {
         (self as *const isize) as *const libc::size_t
     }
 }
 
 impl KernelIndex for (isize, isize) {
-    fn num_dimensions(_: Option<(isize, isize)>) -> cl_uint { 2 }
+    fn num_dimensions(_: Option<(isize, isize)>) -> cl_uint {
+        2
+    }
 
     fn get_ptr(&self) -> *const libc::size_t {
         (self as *const (isize, isize)) as *const libc::size_t
     }
 }
 
-impl KernelIndex for (isize, isize, isize)
-{
-    fn num_dimensions(_: Option<(isize, isize, isize)>) -> cl_uint { 3 }
+impl KernelIndex for (isize, isize, isize) {
+    fn num_dimensions(_: Option<(isize, isize, isize)>) -> cl_uint {
+        3
+    }
 
     fn get_ptr(&self) -> *const libc::size_t {
         (self as *const (isize, isize, isize)) as *const libc::size_t
     }
 }
 
-impl KernelIndex for usize
-{
-    fn num_dimensions(_: Option<usize>) -> cl_uint { 1 }
+impl KernelIndex for usize {
+    fn num_dimensions(_: Option<usize>) -> cl_uint {
+        1
+    }
 
     fn get_ptr(&self) -> *const libc::size_t {
         (self as *const usize) as *const libc::size_t
     }
 }
 
-impl KernelIndex for (usize, usize)
-{
-    fn num_dimensions(_: Option<(usize, usize)>) -> cl_uint { 2 }
+impl KernelIndex for (usize, usize) {
+    fn num_dimensions(_: Option<(usize, usize)>) -> cl_uint {
+        2
+    }
 
     fn get_ptr(&self) -> *const libc::size_t {
         (self as *const (usize, usize)) as *const libc::size_t
     }
 }
 
-impl KernelIndex for (usize, usize, usize)
-{
-    fn num_dimensions(_: Option<(usize, usize, usize)>) -> cl_uint { 3 }
+impl KernelIndex for (usize, usize, usize) {
+    fn num_dimensions(_: Option<(usize, usize, usize)>) -> cl_uint {
+        3
+    }
 
     fn get_ptr(&self) -> *const libc::size_t {
         (self as *const (usize, usize, usize)) as *const libc::size_t

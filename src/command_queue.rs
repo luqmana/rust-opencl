@@ -6,35 +6,55 @@ use std::ptr;
 use cl::*;
 use cl::ll::*;
 use error::check;
-use mem::{Get, Write, Read, CLBuffer};
+use buffer::{BufferData, Buffer};
 use program::{Kernel, KernelIndex};
 use event::{Event, EventList};
+use context::Context;
+use device::Device;
 
 /// An OpenCL command queue.
 pub struct CommandQueue {
     cqueue: cl_command_queue
 }
 
-unsafe impl Sync for CommandQueue {}
-unsafe impl Send for CommandQueue {}
+unsafe impl Sync for CommandQueue { }
+unsafe impl Send for CommandQueue { }
 
 impl CommandQueue {
-    /// Creates a new command queue from its OpenCL raw pointer.
-    ///
-    /// The pointer validity is not checked.
-    pub unsafe fn new_unchecked(cqueue: cl_command_queue) -> CommandQueue {
+    /// Creates a new command queue for the given device.
+    pub fn new(context: &Context, device: &Device, profiling: bool, out_of_order: bool) -> CommandQueue {
+        let mut errcode = 0;
+
+        let mut props = 0;
+
+        if profiling {
+            props = props | CL_QUEUE_PROFILING_ENABLE;
+        }
+
+        if out_of_order {
+            props = props | CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE;
+        }
+
+        let cqueue = unsafe {
+            clCreateCommandQueue(context.cl_id(),
+                                 device.cl_id(),
+                                 props,
+                                 (&mut errcode))
+        };
+
+        check(errcode, "Failed to create command queue!");
+
         CommandQueue {
             cqueue: cqueue
         }
     }
 
     /// Synchronously enqueues a kernel for execution on the device.
-    pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
-        -> Event
-    {
+    pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_list: E)
+        -> Event {
         unsafe
         {
-            wait_on.as_event_list(|event_list, event_list_length| {
+            wait_list.as_event_list(|event_list, event_list_length| {
                 let mut e: cl_event = ptr::null_mut();
                 let mut status = clEnqueueNDRangeKernel(
                     self.cqueue,
@@ -59,12 +79,11 @@ impl CommandQueue {
     }
 
     /// Asynchronously enqueues a kernel for execution on the device.
-    pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
-        -> Event
-    {
+    pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_list: E)
+        -> Event {
         unsafe
         {
-            wait_on.as_event_list(|event_list, event_list_length| {
+            wait_list.as_event_list(|event_list, event_list_length| {
                 let mut e: cl_event = ptr::null_mut();
                 let status = clEnqueueNDRangeKernel(
                     self.cqueue,
@@ -86,97 +105,99 @@ impl CommandQueue {
         }
     }
 
-    /// Synchronously writes `data` to a device-side memory object `mem`.
-    pub fn write<U: Write, T, E: EventList, B: CLBuffer<T>>(&self, mem: &B, data: &U, event: E)
-    {
+    fn do_write<T: Copy, U: ?Sized, E>(&self, mem: &Buffer<T>, data: &U, wait_list: E, out_event: *mut cl_event)
+        where U: BufferData<T>,
+              E: EventList {
         unsafe {
-            event.as_event_list(|event_list, event_list_length| {
-                data.write(|offset, p, len| {
+            wait_list.as_event_list(|event_list, event_list_length| {
+                data.as_raw_data(|raw_data, sz| {
+                    assert!(sz == mem.bytes_len(), "Mismatched size for writing into a device buffer.");
+
+                    let blocking = if out_event.is_null() { CL_TRUE } else { CL_FALSE };
+
                     let err = clEnqueueWriteBuffer(self.cqueue,
                                                    mem.cl_id(),
-                                                   CL_TRUE,
-                                                   offset as libc::size_t,
-                                                   len as libc::size_t,
-                                                   p as *const libc::c_void,
+                                                   blocking,
+                                                   0,
+                                                   sz as libc::size_t,
+                                                   raw_data as *const libc::c_void,
                                                    event_list_length,
                                                    event_list,
-                                                   ptr::null_mut());
+                                                   out_event);
 
                     check(err, "Failed to write buffer");
                 })
             })
         }
+    }
+
+    /// Synchronously writes `data` to a device-side memory object `mem`.
+    pub fn write<T: Copy, U: ?Sized, E>(&self, mem: &Buffer<T>, data: &U, wait_list: E)
+        where U: BufferData<T>,
+              E: EventList {
+        self.do_write(mem, data, wait_list, ptr::null_mut())
     }
 
     /// Asynchronously writes `data` to a device-side memory object `mem`.
-    pub fn write_async<U: Write, T, E: EventList, B: CLBuffer<T>>(&self, mem: &B, data: &U, event: E) -> Event
-    {
+    pub fn write_async<T: Copy, U: ?Sized, E>(&self, mem: &Buffer<T>, data: &U, wait_list: E) -> Event
+        where U: BufferData<T>,
+              E: EventList {
+        let mut e: cl_event = ptr::null_mut();
+        self.do_write(mem, data, wait_list, &mut e);
+
+        assert!(!e.is_null(), "The event was not created properly.");
+        unsafe { Event::new_unchecked(e) }
+    }
+
+    fn do_read<T: Copy, E>(&self,
+                           mem:       &Buffer<T>,
+                           raw_data:  *mut libc::c_void,
+                           sz:        libc::size_t,
+                           wait_list: E,
+                           out_event: *mut cl_event)
+        where E: EventList {
         unsafe {
-            let mut out_event = None;
+            wait_list.as_event_list(|event_list, event_list_length| {
+                assert!(sz == mem.bytes_len(), "Mismatched size for reading from a device buffer.");
 
-            event.as_event_list(|evt, evt_len| {
-                data.write(|offset, p, len| {
-                    let mut e: cl_event = ptr::null_mut();
-                    let err = clEnqueueWriteBuffer(self.cqueue,
-                                                   mem.cl_id(),
-                                                   CL_FALSE,
-                                                   offset as libc::size_t,
-                                                   len as libc::size_t,
-                                                   p as *const libc::c_void,
-                                                   evt_len,
-                                                   evt,
-                                                   &mut e);
-                    out_event = Some(e);
-                    check(err, "Failed to write buffer");
-                })
-            });
+                let blocking = if out_event.is_null() { CL_TRUE } else { CL_FALSE };
 
-            Event::new_unchecked(out_event.unwrap())
+                let err = clEnqueueReadBuffer(self.cqueue,
+                                              mem.cl_id(),
+                                              blocking,
+                                              0,
+                                              sz as libc::size_t,
+                                              raw_data as *mut libc::c_void,
+                                              event_list_length,
+                                              event_list,
+                                              out_event);
+
+                check(err, "Failed to reading buffer");
+            })
         }
     }
 
-    /// Synchronously reads `mem` to a host-side memory object of type `G`.
-    pub fn get<T, U, B: CLBuffer<T>, G: Get<B, U>, E: EventList>(&self, mem: &B, event: E) -> G
-    {
-        event.as_event_list(|event_list, event_list_length| {
-            Get::get(mem, |offset, ptr, len| {
-                unsafe {
-                    let err = clEnqueueReadBuffer(self.cqueue,
-                                                  mem.cl_id(),
-                                                  CL_TRUE,
-                                                  offset as libc::size_t,
-                                                  len,
-                                                  ptr,
-                                                  event_list_length,
-                                                  event_list,
-                                                  ptr::null_mut());
-
-                    check(err, "Failed to read buffer");
-                }
-            })
+    /// Synchronously reads `mem` data to the device-side memory object `out`.
+    pub fn read<T: Copy, U: ?Sized, E>(&self, mem: &Buffer<T>, out: &mut U, wait_list: E)
+        where U: BufferData<T>,
+              E: EventList {
+        out.as_raw_data_mut(|raw_data, sz| {
+            self.do_read(mem, raw_data, sz, wait_list, ptr::null_mut())
         })
     }
 
-    /// Synchronously reads `mem` data to the device-side memory object `out`.
-    pub fn read<T, U: Read, E: EventList, B: CLBuffer<T>>(&self, mem: &B, out: &mut U, event: E)
-    {
-        event.as_event_list(|event_list, event_list_length| {
-                out.read(|offset, p, len| {
-                        unsafe {
-                            let err = clEnqueueReadBuffer(self.cqueue,
-                                                          mem.cl_id(),
-                                                          CL_TRUE,
-                                                          offset as libc::size_t,
-                                                          len as libc::size_t,
-                                                          p as *mut libc::c_void,
-                                                          event_list_length,
-                                                          event_list,
-                                                          ptr::null_mut());
-                            
-                            check(err, "Failed to read buffer");
-                        }
-                    })
-            })
+    /// Asynchronously reads `mem` data to the device-side memory object `out`.
+    pub fn read_async<T: Copy, U: ?Sized, E>(&self, mem: &Buffer<T>, out: &mut U, wait_list: E) -> Event
+        where U: BufferData<T>,
+              E: EventList {
+        let mut e: cl_event = ptr::null_mut();
+
+        out.as_raw_data_mut(|raw_data, sz| {
+            self.do_read(mem, raw_data, sz, wait_list, &mut e)
+        });
+
+        assert!(!e.is_null(), "The event was not created properly.");
+        unsafe { Event::new_unchecked(e) }
     }
 }
 

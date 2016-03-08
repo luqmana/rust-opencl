@@ -24,8 +24,9 @@ pub enum PreferedType {
 
 /// Creates a complete compute context.
 ///
-/// This creates a command queue and context for the first device of the first platform.
-pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &'static str>
+/// This creates a command queue and context for the first device of the first platform. The
+/// command queue has profiling and out-of-order command execution both disabled.
+pub fn create_compute_context(profiling: bool) -> Result<(Device, Context, CommandQueue), &'static str>
 {
     let platforms = ::platforms();
     if platforms.len() == 0 {
@@ -36,9 +37,9 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &'sta
     if devices.len() == 0 {
         Err("No device found")
     } else {
-        let device = devices.remove(0);
+        let device  = devices.remove(0);
         let context = Context::new(&device);
-        let queue = context.create_command_queue(&device);
+        let queue   = CommandQueue::new(&context, &device, profiling, false);
         Ok((device, context, queue))
     }
 }
@@ -46,8 +47,9 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &'sta
 /// Attempt to create a complete compute context for the specified device type.
 ///
 /// This creates a command queue and context for the first device of the specified type on the
-/// first platform that contains it.
-pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Context, CommandQueue), &'static str>
+/// first platform that contains it. The command queue has profiling and out-of-order command
+/// execution both disabled.
+pub fn create_compute_context_prefer(cltype: PreferedType, profiling: bool) -> Result<(Device, Context, CommandQueue), &'static str>
 {
     let platforms = ::platforms();
     for platform in platforms.iter() {
@@ -59,9 +61,9 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
 
         let mut devices = platform.get_devices_by_types(&types[..]);
         if devices.len() > 0 {
-            let device = devices.remove(0);
+            let device  = devices.remove(0);
             let context = Context::new(&device);
-            let queue = context.create_command_queue(&device);
+            let queue   = CommandQueue::new(&context, &device, profiling, false);
             return Ok((device, context, queue))
         }
     }
@@ -70,7 +72,7 @@ pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Co
     match cltype {
         PreferedType::Any |
         PreferedType::CPUPrefered |
-        PreferedType::GPUPrefered => create_compute_context(),
+        PreferedType::GPUPrefered => create_compute_context(profiling),
         _ => Err("Could not find valid implementation")
     }
 }

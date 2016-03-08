@@ -46,19 +46,21 @@ pub use command_queue::CommandQueue;
 pub use program::{Program, Kernel, KernelArg, KernelIndex};
 pub use event::{Event, EventList};
 
-pub use mem::{CLBuffer, Buffer1D, CLBuffer1D, Buffer2D, CLBuffer2D, Buffer3D, CLBuffer3D};
-pub use mem::{Put, Get, Read, Write};
+pub use buffer::{BufferData, Buffer};
 
+pub use image::{Image2D, Image3D};
 pub use hl::{PreferedType, create_compute_context, create_compute_context_prefer};
 
 pub mod cl;
 pub mod ext;
 pub mod error;
+pub mod image_channel_type;
 mod hl;
-mod mem;
+mod buffer;
 mod platform;
 mod device;
 mod context;
 mod command_queue;
 mod program;
 mod event;
+mod image;

@@ -66,8 +66,8 @@ pub type cl_command_type                = cl_uint;
 pub type cl_profiling_info              = cl_uint;
 
 pub struct cl_image_format {
-    image_channel_order:        cl_channel_order,
-    image_channel_data_type:    cl_channel_type
+    pub image_channel_order:        cl_channel_order,
+    pub image_channel_data_type:    cl_channel_type
 }
 
 pub struct cl_buffer_region {
@@ -275,19 +275,21 @@ pub const CL_MEM_ALLOC_HOST_PTR:                        cl_bitfield = 1 << 4;
 pub const CL_MEM_COPY_HOST_PTR:                         cl_bitfield = 1 << 5;
 
 /* cl_channel_order */
-pub const CL_R:                                         cl_uint = 0x10B0;
-pub const CL_A:                                         cl_uint = 0x10B1;
-pub const CL_RG:                                        cl_uint = 0x10B2;
-pub const CL_RA:                                        cl_uint = 0x10B3;
-pub const CL_RGB:                                       cl_uint = 0x10B4;
-pub const CL_RGBA:                                      cl_uint = 0x10B5;
-pub const CL_BGRA:                                      cl_uint = 0x10B6;
-pub const CL_ARGB:                                      cl_uint = 0x10B7;
-pub const CL_INTENSITY:                                 cl_uint = 0x10B8;
-pub const CL_LUMINANCE:                                 cl_uint = 0x10B9;
-pub const CL_Rx:                                        cl_uint = 0x10BA;
-pub const CL_RGx:                                       cl_uint = 0x10BB;
-pub const CL_RGBx:                                      cl_uint = 0x10BC;
+pub enum CLChannelOrder {
+    CL_R         = 0x10B0,
+    CL_A         = 0x10B1,
+    CL_RG        = 0x10B2,
+    CL_RA        = 0x10B3,
+    CL_RGB       = 0x10B4,
+    CL_RGBA      = 0x10B5,
+    CL_BGRA      = 0x10B6,
+    CL_ARGB      = 0x10B7,
+    CL_INTENSITY = 0x10B8,
+    CL_LUMINANCE = 0x10B9,
+    CL_Rx        = 0x10BA,
+    CL_RGx       = 0x10BB,
+    CL_RGBx      = 0x10BC
+}
 
 /* cl_channel_type */
 pub const CL_SNORM_INT8:                                cl_uint = 0x10D0;
@@ -508,7 +510,7 @@ pub mod ll {
                         errcode_ret: *mut cl_int) -> cl_mem;
     pub fn clCreateImage2D(context: cl_context,
                        flags: cl_mem_flags,
-                       image_format: *mut cl_image_format,
+                       image_format: *const cl_image_format,
                        image_width: libc::size_t,
                        image_height: libc::size_t,
                        image_row_pitch: libc::size_t,
@@ -516,11 +518,9 @@ pub mod ll {
                        errcode_ret: *mut cl_int) -> cl_mem;
     pub fn clCreateImage3D(context: cl_context,
                        flags: cl_mem_flags,
-                       image_format: *mut cl_image_format,
+                       image_format: *const cl_image_format,
                        image_width: libc::size_t,
                        image_height: libc::size_t,
-                       image_depth: libc::size_t,
-                       image_row_pitch: libc::size_t,
                        image_depth: libc::size_t,
                        image_row_pitch: libc::size_t,
                        image_slice_pitch: libc::size_t,
