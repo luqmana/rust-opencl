@@ -1,6 +1,5 @@
 #![allow(unused,
          unused_attributes,
-         raw_pointer_derive,
          non_camel_case_types,
          non_snake_case)]
 

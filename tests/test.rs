@@ -371,6 +371,34 @@ mod hl {
     }
 
     #[test]
+    fn memory_alloc_local()
+    {
+        let src = "__kernel void test(__global int *i, \
+                                    __local int *t) { \
+                   *t = *i; \
+                   *t += 1; \
+                   *i = *t; \
+                   }";
+        ::test_all_platforms_devices(&mut |device, ctx, queue| {
+            let prog = ctx.create_program_from_source(src);
+            prog.build(device).unwrap();
+
+            let k = prog.create_kernel("test");
+            let v = ctx.create_buffer_from(vec![1isize], CL_MEM_READ_WRITE);
+
+            k.set_arg(0, &v);
+            k.alloc_local::<isize>(1, 1);
+
+            queue.enqueue_async_kernel(&k, 1isize, None, ()).wait();
+
+            let v: Vec<isize> = queue.get(&v, ());
+
+            expect!(v[0], 2);
+        })
+
+    }
+
+    #[test]
     fn event_get_times() {
         let src = "__kernel void test(__global int *i) { \
                    *i += 1; \

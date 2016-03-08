@@ -249,6 +249,47 @@ impl Device {
 		}
 	}
 
+    pub fn global_mem_size(&self) -> usize {
+        unsafe {
+            let mut ct: usize = 0;
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_GLOBAL_MEM_SIZE,
+                16,
+                (&mut ct as *mut usize) as *mut libc::c_void,
+                ptr::null_mut());
+            check(status, "Could not get size of global memory.");
+            return ct;
+        }
+    }
+
+    pub fn local_mem_size(&self) -> usize {
+        unsafe {
+            let mut ct: usize = 0;
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_LOCAL_MEM_SIZE,
+                16,
+                (&mut ct as *mut usize) as *mut libc::c_void,
+                ptr::null_mut());
+            check(status, "Could not get size of local memory.");
+            return ct;
+        }
+    }
+
+    pub fn max_mem_alloc_size(&self) -> usize {
+        unsafe {
+            let mut ct: usize = 0;
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_MAX_MEM_ALLOC_SIZE,
+                16,
+                (&mut ct as *mut usize) as *mut libc::c_void,
+                ptr::null_mut());
+            check(status, "Could not get size of local memory.");
+            return ct;
+        }
+    }
 
     pub fn create_context(&self) -> Context
     {
@@ -651,6 +692,14 @@ impl Kernel {
     {
         set_kernel_arg(self, i as cl::cl_uint, x)
     }
+
+    pub fn alloc_local<T>(&self, i: usize, l: usize)
+    {
+        alloc_kernel_local::<T>(self, i as cl::cl_uint, 
+            l as libc::size_t)
+            // s as libc::size_t,
+
+    }
 }
 
 pub fn create_kernel(program: &Program, kernel: & str) -> Kernel
@@ -721,6 +770,18 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
     }
 }
 
+pub fn alloc_kernel_local<T>(kernel: &Kernel,
+                       position: cl_uint,
+                       // size: libc::size_t,
+                       length: libc::size_t){
+    unsafe
+    {
+        let tsize = mem::size_of::<T>() as libc::size_t;
+        let ret = clSetKernelArg(kernel.kernel, position,
+                tsize*length, ptr::null());
+        check(ret, "Failed to set kernel arg!");
+    }
+}
 
 pub struct Event
 {
