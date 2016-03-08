@@ -1,6 +1,6 @@
 [package]
 name = "opencl"
-version = "0.3.0-dev"
+version = "0.4.0"
 authors = [ "Colin Sherratt <colin.sherratt@gmail.com>",
             "Eric Holk <eholk@cs.indiana.edu>",
             "Ian Daniher <it.daniher@gmail.com>",
