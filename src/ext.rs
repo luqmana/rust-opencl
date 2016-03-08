@@ -105,7 +105,7 @@ macro_rules! ext_struct_literal {
 
 pub mod cl_khr_fp64 {
     use cl::*;
-    static CL_DEVICE_DOUBLE_FP_CONFIG: cl_uint = 0x1032;
+    const CL_DEVICE_DOUBLE_FP_CONFIG: cl_uint = 0x1032;
     cl_extension_loader! {
         "cl_khr_fp64";
     }
@@ -113,7 +113,7 @@ pub mod cl_khr_fp64 {
 
 pub mod cl_khr_fp16 {
     use cl::*;
-    pub static CL_DEVICE_HALF_FP_CONFIG: cl_uint = 0x1033;
+    pub const CL_DEVICE_HALF_FP_CONFIG: cl_uint = 0x1033;
     cl_extension_loader! {
         "cl_khr_pf16";
     }
@@ -154,9 +154,9 @@ pub mod cl_APPLE_ContextLoggingFunctions {
 pub mod cl_khr_icd {
     use libc;
     use cl::*;
-    pub static CL_PLATFORM_ICD_SUFFIX:      cl_uint = 0x0920;
+    pub const CL_PLATFORM_ICD_SUFFIX:      cl_uint = 0x0920;
     // Note: this is an error code, but we can't extend CLStatus with it... hmm.
-    pub static CL_PLATFORM_NOT_FOUND_KHR:   cl_int  = -1001;
+    pub const CL_PLATFORM_NOT_FOUND_KHR:   cl_int  = -1001;
     cl_extension_loader! {
         "cl_khr_icd";
         extern fn clIcdGetPlatformIDsKHR(num_entries: cl_uint,
@@ -167,13 +167,13 @@ pub mod cl_khr_icd {
 
 pub mod cl_nv_device_attribute_query {
     use cl::*;
-    pub static CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV:   cl_uint = 0x4000;
-    pub static CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV:   cl_uint = 0x4001;
-    pub static CL_DEVICE_REGISTERS_PER_BLOCK_NV:        cl_uint = 0x4002;
-    pub static CL_DEVICE_WARP_SIZE_NV:                  cl_uint = 0x4003;
-    pub static CL_DEVICE_GPU_OVERLAP_NV:                cl_uint = 0x4004;
-    pub static CL_DEVICE_KERNEL_EXEC_TIMEOUT_NV:        cl_uint = 0x4005;
-    pub static CL_DEVICE_INTEGRATED_MEMORY_NV:          cl_uint = 0x4006;
+    pub const CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV:   cl_uint = 0x4000;
+    pub const CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV:   cl_uint = 0x4001;
+    pub const CL_DEVICE_REGISTERS_PER_BLOCK_NV:        cl_uint = 0x4002;
+    pub const CL_DEVICE_WARP_SIZE_NV:                  cl_uint = 0x4003;
+    pub const CL_DEVICE_GPU_OVERLAP_NV:                cl_uint = 0x4004;
+    pub const CL_DEVICE_KERNEL_EXEC_TIMEOUT_NV:        cl_uint = 0x4005;
+    pub const CL_DEVICE_INTEGRATED_MEMORY_NV:          cl_uint = 0x4006;
     cl_extension_loader! {
         "cl_nv_device_attribute_query";
     }
@@ -181,7 +181,7 @@ pub mod cl_nv_device_attribute_query {
 
 pub mod cl_amd_device_attribute_query {
     use cl::*;
-    pub static CL_DEVICE_PROFILING_TIMER_OFFSET_AMD:    cl_uint = 0x4036;
+    pub const CL_DEVICE_PROFILING_TIMER_OFFSET_AMD:    cl_uint = 0x4036;
     cl_extension_loader! {
         "cl_amd_device_attribute_query";
     }
@@ -189,8 +189,8 @@ pub mod cl_amd_device_attribute_query {
 
 pub mod cl_arm_printf {
     use cl::*;
-    pub static CL_PRINTF_CALLBACK_ARM:      cl_uint = 0x40B0;
-    pub static CL_PRINTF_BUFFERSIZE_ARM:    cl_uint = 0x40B1;
+    pub const CL_PRINTF_CALLBACK_ARM:      cl_uint = 0x40B0;
+    pub const CL_PRINTF_BUFFERSIZE_ARM:    cl_uint = 0x40B1;
     cl_extension_loader! {
         "cl_arm_printf";
     }
@@ -200,27 +200,27 @@ pub mod cl_ext_device_fission {
     use std;
     use cl::*;
     pub type cl_device_partition_property_ext = cl_ulong;
-    pub static CL_DEVICE_PARTITION_EQUALLY_EXT: cl_device_partition_property_ext            = 0x4050;
-    pub static CL_DEVICE_PARTITION_BY_COUNTS_EXT: cl_device_partition_property_ext          = 0x4051;
-    pub static CL_DEVICE_PARTITION_BY_NAMES_EXT: cl_device_partition_property_ext           = 0x4052;
-    pub static CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN_EXT: cl_device_partition_property_ext = 0x4053;
-    pub static CL_DEVICE_PARENT_DEVICE_EXT: cl_device_info                                  = 0x4054;
-    pub static CL_DEVICE_PARTITION_TYPES_EXT: cl_device_info                                = 0x4055;
-    pub static CL_DEVICE_AFFINITY_DOMAINS_EXT: cl_device_info                               = 0x4056;
-    pub static CL_DEVICE_REFERENCE_COUNT_EXT: cl_device_info                                = 0x4057;
-    pub static CL_DEVICE_PARTITION_STYLE_EXT: cl_device_info                                = 0x4058;
-    pub static CL_DEVICE_PARTITION_FAILED_EXT: cl_int                                       = -1057;
-    pub static CL_INVALID_PARTITION_COUNT_EXT: cl_int                                       = -1058;
-    pub static CL_INVALID_PARTITION_NAME_EXT: cl_int                                        = -1059;
-    pub static CL_AFFINITY_DOMAIN_L1_CACHE_EXT: cl_uint                                     = 0x1;
-    pub static CL_AFFINITY_DOMAIN_L2_CACHE_EXT: cl_uint                                     = 0x2;
-    pub static CL_AFFINITY_DOMAIN_L3_CACHE_EXT: cl_uint                                     = 0x3;
-    pub static CL_AFFINITY_DOMAIN_L4_CACHE_EXT: cl_uint                                     = 0x4;
-    pub static CL_AFFINITY_DOMAIN_NUMA_EXT: cl_uint                                         = 0x10;
-    pub static CL_AFFINITY_DOMAIN_NEXT_FISSIONABLE_EXT: cl_uint                             = 0x100;
-    pub static CL_PROPERTIES_LIST_END_EXT: cl_device_partition_property_ext                 = 0;
-    pub static CL_PARTITION_BY_COUNTS_LIST_END_EXT: cl_device_partition_property_ext        = 0;
-    pub static CL_PARTITION_BY_NAMES_LIST_END_EXT: cl_device_partition_property_ext         = std::u64::MAX;
+    pub const CL_DEVICE_PARTITION_EQUALLY_EXT: cl_device_partition_property_ext            = 0x4050;
+    pub const CL_DEVICE_PARTITION_BY_COUNTS_EXT: cl_device_partition_property_ext          = 0x4051;
+    pub const CL_DEVICE_PARTITION_BY_NAMES_EXT: cl_device_partition_property_ext           = 0x4052;
+    pub const CL_DEVICE_PARTITION_BY_AFFINITY_DOMAIN_EXT: cl_device_partition_property_ext = 0x4053;
+    pub const CL_DEVICE_PARENT_DEVICE_EXT: cl_device_info                                  = 0x4054;
+    pub const CL_DEVICE_PARTITION_TYPES_EXT: cl_device_info                                = 0x4055;
+    pub const CL_DEVICE_AFFINITY_DOMAINS_EXT: cl_device_info                               = 0x4056;
+    pub const CL_DEVICE_REFERENCE_COUNT_EXT: cl_device_info                                = 0x4057;
+    pub const CL_DEVICE_PARTITION_STYLE_EXT: cl_device_info                                = 0x4058;
+    pub const CL_DEVICE_PARTITION_FAILED_EXT: cl_int                                       = -1057;
+    pub const CL_INVALID_PARTITION_COUNT_EXT: cl_int                                       = -1058;
+    pub const CL_INVALID_PARTITION_NAME_EXT: cl_int                                        = -1059;
+    pub const CL_AFFINITY_DOMAIN_L1_CACHE_EXT: cl_uint                                     = 0x1;
+    pub const CL_AFFINITY_DOMAIN_L2_CACHE_EXT: cl_uint                                     = 0x2;
+    pub const CL_AFFINITY_DOMAIN_L3_CACHE_EXT: cl_uint                                     = 0x3;
+    pub const CL_AFFINITY_DOMAIN_L4_CACHE_EXT: cl_uint                                     = 0x4;
+    pub const CL_AFFINITY_DOMAIN_NUMA_EXT: cl_uint                                         = 0x10;
+    pub const CL_AFFINITY_DOMAIN_NEXT_FISSIONABLE_EXT: cl_uint                             = 0x100;
+    pub const CL_PROPERTIES_LIST_END_EXT: cl_device_partition_property_ext                 = 0;
+    pub const CL_PARTITION_BY_COUNTS_LIST_END_EXT: cl_device_partition_property_ext        = 0;
+    pub const CL_PARTITION_BY_NAMES_LIST_END_EXT: cl_device_partition_property_ext         = std::u64::MAX;
     cl_extension_loader! {
         "cl_ext_device_fission";
         extern fn clReleaseDeviceEXT(device: cl_device_id) -> cl_int,
@@ -241,15 +241,15 @@ pub mod cl_qcom_ext_host_ptr {
         pub allocation_type: cl_uint,
         pub host_cache_policy: cl_uint
     }
-    pub static CL_MEM_EXT_HOST_PTR_QCOM:                cl_uint = (1 << 29);
-    pub static CL_DEVICE_EXT_MEM_PADDING_IN_BYTES_QCOM: cl_uint = 0x40A0;
-    pub static CL_DEVICE_PAGE_SIZE_QCOM:                cl_uint = 0x40A1;
-    pub static CL_IMAGE_ROW_ALIGNMENT_QCOM:             cl_uint = 0x40A2;
-    pub static CL_IMAGE_SLICE_ALIGNMENT_QCOM:           cl_uint = 0x40A3;
-    pub static CL_MEM_HOST_UNCACHED_QCOM:               cl_uint = 0x40A4;
-    pub static CL_MEM_HOST_WRITEBACK_QCOM:              cl_uint = 0x40A5;
-    pub static CL_MEM_HOST_WRITETHROUGH_QCOM:           cl_uint = 0x40A6;
-    pub static CL_MEM_HOST_WRITE_COMBINING_QCOM:        cl_uint = 0x40A7;
+    pub const CL_MEM_EXT_HOST_PTR_QCOM:                cl_uint = (1 << 29);
+    pub const CL_DEVICE_EXT_MEM_PADDING_IN_BYTES_QCOM: cl_uint = 0x40A0;
+    pub const CL_DEVICE_PAGE_SIZE_QCOM:                cl_uint = 0x40A1;
+    pub const CL_IMAGE_ROW_ALIGNMENT_QCOM:             cl_uint = 0x40A2;
+    pub const CL_IMAGE_SLICE_ALIGNMENT_QCOM:           cl_uint = 0x40A3;
+    pub const CL_MEM_HOST_UNCACHED_QCOM:               cl_uint = 0x40A4;
+    pub const CL_MEM_HOST_WRITEBACK_QCOM:              cl_uint = 0x40A5;
+    pub const CL_MEM_HOST_WRITETHROUGH_QCOM:           cl_uint = 0x40A6;
+    pub const CL_MEM_HOST_WRITE_COMBINING_QCOM:        cl_uint = 0x40A7;
     cl_extension_loader! {
         "cl_qcom_ext_host_ptr";
         extern fn clGetDeviceImageInfoQCOM(device: cl_device_id,
@@ -273,7 +273,7 @@ pub mod cl_qcom_ion_host_ptr {
         pub ion_filedesc: libc::c_int,
         pub ion_hostptr: *mut libc::c_void
     }
-    pub static CL_MEM_ION_HOST_PTR_QCOM: cl_uint = 0x40A8;
+    pub const CL_MEM_ION_HOST_PTR_QCOM: cl_uint = 0x40A8;
 
     cl_extension_loader! {
         "cl_qcom_ion_host_ptr";
