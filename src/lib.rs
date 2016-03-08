@@ -46,7 +46,7 @@ pub use command_queue::CommandQueue;
 pub use program::{Program, Kernel, KernelArg, KernelIndex};
 pub use event::{Event, EventList};
 
-pub use mem::{CLBuffer, Buffer, Array2D, Array2DCL, Array3D, Array3DCL};
+pub use mem::{CLBuffer, Buffer, Array2D, CLArray2D, Array3D, CLArray3D};
 pub use mem::{Put, Get, Read, Write};
 
 pub use hl::{PreferedType, create_compute_context, create_compute_context_prefer};
