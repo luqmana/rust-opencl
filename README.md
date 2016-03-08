@@ -13,7 +13,7 @@ rust-opencl = "0.5.0"
 
 ## Example 
 
-From 'examples/demo/main.rs':
+From 'examples/demo/addition.rs':
 
 ```rust
 extern crate opencl;
@@ -21,7 +21,7 @@ extern crate opencl;
 use opencl::{CLBuffer, Program};
 
 // The kernel sources.
-const KERNEL_SRC: &'static str = include_str!("demo.ocl");
+const KERNEL_SRC: &'static str = include_str!("addition.ocl");
 
 fn main()
 {
@@ -62,7 +62,7 @@ fn main()
 }
 ```
 
-With the kernel `demo.ocl`:
+With the kernel `addition.ocl`:
 ```opencl
 __kernel void vector_add(__global const long *A, __global const long *B, __global long *C) {
 	int i = get_global_id(0);
