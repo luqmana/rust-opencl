@@ -1,10 +1,31 @@
+/*! # rust-opencl
+
+OpenCL bindings and high-level interface for Rust.
+
+## Installation
+
+Add the following to your `Cargo.toml` file:
+
+```.ignore
+[dependencies] 
+rust-opencl = "0.4.0"
+```
+*/
+
+
 #![allow(improper_ctypes)]
 #![allow(missing_copy_implementations)]
-#![allow(non_upper_case_globals)]
+
+#![deny(non_upper_case_globals)]
+#![deny(non_camel_case_types)]
+#![deny(unused_parens)]
+#![deny(unused_qualifications)]
+#![deny(unused_results)]
+#![deny(unused_imports)]
+#![warn(missing_docs)]
 
 #![feature(static_mutex)]
 
-//! OpenCL bindings for Rust.
 
 extern crate libc;
 #[macro_use]
@@ -18,10 +39,7 @@ extern { }
 #[cfg(target_os = "linux")]
 extern { }
 
-/// Low-level OpenCL bindings. These should primarily be used by the
-/// higher level features in this library.
 pub mod cl;
-/// OpenCL extensions
 pub mod ext;
 pub mod error;
 pub mod hl;

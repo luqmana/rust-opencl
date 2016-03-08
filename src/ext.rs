@@ -1,7 +1,10 @@
+//! OpenCL extensions.
+
 #![allow(unused,
          unused_attributes,
          non_camel_case_types,
-         non_snake_case)]
+         non_snake_case,
+         missing_docs)]
 
 /// All of the extensions defined for OpenCL 1.1, from
 /// [`cl_ext.h`](https://www.khronos.org/registry/cl/api/1.1/cl_ext.h).

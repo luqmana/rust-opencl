@@ -1,4 +1,7 @@
-#![allow(non_camel_case_types, dead_code)]
+//! Low-level OpenCL bindings. These should primarily be used by the
+//! higher level features in this library.
+
+#![allow(non_camel_case_types, dead_code, missing_docs, non_upper_case_globals)]
 
 use libc;
 use std::fmt;

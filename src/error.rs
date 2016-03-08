@@ -1,7 +1,6 @@
 //! Error handling utilities.
 
 use cl::{CLStatus, cl_int};
-use cl::CLStatus::CL_SUCCESS;
 
 fn error_str(status_code: cl_int) -> String {
     match status_code {
@@ -60,8 +59,9 @@ fn error_str(status_code: cl_int) -> String {
     }
 }
 
+/// Checks and prints an OpenCL error code with a message in case of failure.
 pub fn check(status: cl_int, message: &str) {
-    if status != CL_SUCCESS as cl_int {
+    if status != CLStatus::CL_SUCCESS as cl_int {
         panic!("{} ({})", message, error_str(status))
     }
 }

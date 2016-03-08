@@ -2,6 +2,9 @@
 
 use hl::*;
 
+/// Creates a complete compute context.
+///
+/// This creates a command queue and context for the first device of the first platform.
 pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &'static str>
 {
     let platforms = get_platforms();
@@ -20,17 +23,27 @@ pub fn create_compute_context() -> Result<(Device, Context, CommandQueue), &'sta
     }
 }
 
+/// The preferred device type for compute context creation.
 #[derive(Copy, Clone)]
 pub enum PreferedType {
+    /// Pick the first available device.
     Any,
 
+    /// Pick the first CPU device. Default to GPU in none is found.
     CPUPrefered,
+    /// Pick the first GPU device. Default to CPU in none is found.
     GPUPrefered,
 
+    /// Pick only the first available CPU device. Fail if none is found.
     CPUOnly,
+    /// Pick only the first available GPU device. Fail if none is found.
     GPUOnly,
 }
 
+/// Attempt to create a complete compute context for the specified device type.
+///
+/// This creates a command queue and context for the first device of the specified type on the
+/// first platform that contains it.
 pub fn create_compute_context_prefer(cltype: PreferedType) -> Result<(Device, Context, CommandQueue), &'static str>
 {
     let platforms = get_platforms();

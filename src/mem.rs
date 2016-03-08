@@ -12,15 +12,19 @@ use cl::ll::*;
 use hl::KernelArg;
 use error::check;
 
+/// Trait implemented by valid OpenCL buffer ojects.
 pub trait Buffer<T> {
+    /// A pointer to the underlying OpenCL buffer object.
     unsafe fn id_ptr(&self) -> *const cl_mem;
 
+    /// The underlying buffer object.
     fn id(&self) -> cl_mem {
         unsafe {
             *self.id_ptr()
         }
     }
 
+    /// The length in bytes of this buffer object.
     fn byte_len(&self) -> size_t
     {
         unsafe {
@@ -36,18 +40,33 @@ pub trait Buffer<T> {
         }
     }
 
+    /// The number of element of type `T` on this buffer object.
     fn len(&self) -> usize { self.byte_len() as usize / mem::size_of::<T>() }
 }
 
+/// An 1-dimenisonal device-side-only OpenCL buffer object.
 pub struct CLBuffer<T> {
-    pub cl_buffer: cl_mem,
-    pub phantom: PhantomData<T>,
+    cl_buffer: cl_mem,
+    phantom: PhantomData<T>,
+}
+
+impl<T> CLBuffer<T> {
+    /// Unsafely wraps an OpenCL buffer object ID.
+    /// 
+    /// The provided identifier is not checked.
+    pub unsafe fn new(buffer: cl_mem) -> CLBuffer<T> {
+        CLBuffer {
+            cl_buffer: buffer,
+            phantom:   PhantomData
+        }
+    }
 }
 
 impl<T> Drop for CLBuffer<T> {
     fn drop(&mut self) {
         unsafe {
-            clReleaseMemObject(self.cl_buffer);
+            let status = clReleaseMemObject(self.cl_buffer);
+            check(status, "Could not release the buffer");
         }
     }
 }
@@ -77,20 +96,45 @@ impl<T> KernelArg for CLBuffer<T> {
  * | Read   | X              | X                | opencl -> rust |
  *mut */
 
+/// Internal trait implemented by host-side buffer objects that can be transfered to the device, yielding a
+/// device-side buffer object of type `B`.
 pub trait Put<T, B> {
+    /// Writes data to the device, and returns the corresponding device-side
+    /// buffer.
+    ///
+    /// The provided callback of type `F` is responsible for actually writing raw data to the device.
+    /// Do not use this directly, refer to the corresponding `CommandQueue::put` method.
     fn put<F>(&self, F) -> B
         where F: FnOnce(*const c_void, size_t) -> cl_mem;
 }
 
+/// Internal trait implemented by host-side buffer objects that can be retrieved from a device-side buffer
+/// object of type `B`.
 pub trait Get<B, T> {
+    /// Reads data from the device, and returns the corresponding host-side
+    /// buffer.
+    ///
+    /// The provided callback of type `F` is responsible for actually reading raw data from the device.
+    /// Do not use this directly, refer to the corresponding `CommandQueue::get` method.
     fn get<F: FnOnce(size_t, *mut c_void, size_t)>(mem: &B, F) -> Self;
 }
 
+/// Internal trait implemented by host-side memory objects that can be written to a device-side memory
+/// object.
 pub trait Write {
+    /// Writes data from `self` to the device.
+    ///
+    /// The provided callback of type `F` is responsible for actually writing raw data to the device.
+    /// Do not use this directly, refer to the corresponding `CommandQueue::write` method.
     fn write<F: FnOnce(size_t, *const c_void, size_t)>(&self, F);
 }
 
+/// Internal trait implemented by host-side memory objects that can be filled with data read from the device.
 pub trait Read {
+    /// Reads data to `self` from the device.
+    ///
+    /// The provided callback of type `F` is responsible for actually reading raw data from the device.
+    /// Do not use this directly, refer to the corresponding `CommandQueue::read` method.
     fn read<F: FnOnce(size_t, *mut c_void, size_t)>(&mut self, F);
 }
 

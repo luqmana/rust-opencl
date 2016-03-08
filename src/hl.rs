@@ -4,22 +4,24 @@ use libc;
 use std;
 use std::ffi::CString;
 use std::iter::repeat;
-use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
 use std::string::String;
 use std::vec::Vec;
 
-use cl;
 use cl::*;
 use cl::ll::*;
 use cl::CLStatus::CL_SUCCESS;
 use error::check;
 use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 
+/// The type of selectable device.
 #[derive(Copy, Clone)]
 pub enum DeviceType {
-      CPU, GPU
+    /// A CPU device.
+    CPU,
+    /// A GPU device.
+    GPU
 }
 
 fn convert_device_type(device: DeviceType) -> cl_device_type {
@@ -29,6 +31,7 @@ fn convert_device_type(device: DeviceType) -> cl_device_type {
     }
 }
 
+/// An OpenCL platform.
 pub struct Platform {
     id: cl_platform_id
 }
@@ -42,22 +45,27 @@ impl Platform {
 
             info!("Looking for devices matching {}", dtype);
 
-            clGetDeviceIDs(self.id, dtype, 0, ptr::null_mut(),
-                           (&mut num_devices));
+            let status = clGetDeviceIDs(self.id, dtype, 0, ptr::null_mut(),
+                                         (&mut num_devices));
+            check(status, "Could not determine the number of devices");
 
             let mut ids: Vec<cl_device_id> = repeat(0 as cl_device_id)
                 .take(num_devices as usize).collect();
-            clGetDeviceIDs(self.id, dtype, ids.len() as cl_uint,
-                           ids.as_mut_ptr(), (&mut num_devices));
+            let status = clGetDeviceIDs(self.id, dtype, ids.len() as cl_uint,
+                                        ids.as_mut_ptr(), (&mut num_devices));
+            check(status, "Could not retrieve the list of devices");
+
             ids.iter().map(|id| { Device {id: *id }}).collect()
         }
     }
 
+    /// Gets all the devices available with this platform.
     pub fn get_devices(&self) -> Vec<Device>
     {
         self.get_devices_internal(CL_DEVICE_TYPE_ALL)
     }
 
+    /// Gets all devices of the specified types available with this platform.
     pub fn get_devices_by_types(&self, types: &[DeviceType]) -> Vec<Device>
     {
         let mut dtype = 0;
@@ -94,35 +102,44 @@ impl Platform {
         }
     }
 
+    /// Gets the OpenCL platform identifier.
     pub fn get_id(&self) -> cl_platform_id {
         self.id
     }
 
+    /// Gets the platform name.
     pub fn name(&self) -> String
     {
         self.profile_info(CL_PLATFORM_NAME)
     }
 
+    /// Gets the platform version.
     pub fn version(&self) -> String
     {
         self.profile_info(CL_PLATFORM_VERSION)
     }
 
+    /// Gets the platform profile.
     pub fn profile(&self) -> String
     {
         self.profile_info(CL_PLATFORM_PROFILE)
     }
 
+    /// Gets the platform vendor.
     pub fn vendor(&self) -> String
     {
         self.profile_info(CL_PLATFORM_VENDOR)
     }
 
+    /// Gets the support platform extensions.
     pub fn extensions(&self) -> String
     {
         self.profile_info(CL_PLATFORM_EXTENSIONS)
     }
 
+    /// Unsafely creates a platform from its identifier.
+    ///
+    /// The identifier validity is not checked.
     pub unsafe fn from_platform_id(id: cl_platform_id) -> Platform {
         Platform { id: id }
     }
@@ -133,6 +150,7 @@ impl Platform {
 // will cause the implantation to return invalid status.
 static mut platforms_mutex: std::sync::StaticMutex = std::sync::MUTEX_INIT;
 
+/// Retrieves all the platform available in your system.
 pub fn get_platforms() -> Vec<Platform>
 {
     let mut num_platforms = 0 as cl_uint;
@@ -160,6 +178,7 @@ pub fn get_platforms() -> Vec<Platform>
     }
 }
 
+/// Creates an OpenCL context with a set of devices and properties.
 pub fn create_context_with_properties(dev: &[Device], prop: &[cl_context_properties]) -> Context
 {
     unsafe
@@ -182,7 +201,7 @@ pub fn create_context_with_properties(dev: &[Device], prop: &[cl_context_propert
     }
 }
 
-#[derive(Copy, Clone)]
+/// And OpenCL device.
 pub struct Device {
     id: cl_device_id
 }
@@ -218,23 +237,30 @@ impl Device {
         }
     }
     
+    /// The device name.
     pub fn name(&self) -> String
     {
         self.profile_info(CL_DEVICE_NAME)
     }
+    /// The device vendor.
     pub fn vendor(&self) -> String
     {
         self.profile_info(CL_DEVICE_VENDOR)
     }
+
+    /// The device profile.
     pub fn profile(&self) -> String
     {
         self.profile_info(CL_DEVICE_PROFILE)
     }
+
+    /// The device type.
     pub fn device_type(&self) -> String
     {
         self.profile_info(CL_DEVICE_TYPE)
     }
 	
+    /// The maximum number of compute units of this device.
     pub fn compute_units(&self) -> usize {
 		unsafe {
 			let mut ct: usize = 0;
@@ -249,6 +275,7 @@ impl Device {
 		}
 	}
 
+    /// The global memory size of this device.
     pub fn global_mem_size(&self) -> usize {
         unsafe {
             let mut ct: usize = 0;
@@ -263,6 +290,7 @@ impl Device {
         }
     }
 
+    /// The local memory size of this device.
     pub fn local_mem_size(&self) -> usize {
         unsafe {
             let mut ct: usize = 0;
@@ -277,6 +305,7 @@ impl Device {
         }
     }
 
+    /// The maximum memory allocation size of this device.
     pub fn max_mem_alloc_size(&self) -> usize {
         unsafe {
             let mut ct: usize = 0;
@@ -291,6 +320,7 @@ impl Device {
         }
     }
 
+    /// Creates a context for this device.
     pub fn create_context(&self) -> Context
     {
         unsafe
@@ -313,16 +343,17 @@ impl Device {
     }
 }
 
+/// An OpenCL context.
 pub struct Context {
-    pub ctx: cl_context,
+    ctx: cl_context
 }
 
 unsafe impl Sync for Context {}
 unsafe impl Send for Context {}
 
 impl Context {
-    pub fn create_buffer<T>(&self, size: usize, flags: cl_mem_flags) -> CLBuffer<T>
-    {
+    /// Creates a buffer on this context.
+    pub fn create_buffer<T>(&self, size: usize, flags: cl_mem_flags) -> CLBuffer<T> {
         unsafe {
             let mut status = 0;
             let buf = clCreateBuffer(self.ctx,
@@ -331,14 +362,12 @@ impl Context {
                                      ptr::null_mut(),
                                      (&mut status));
             check(status, "Could not allocate buffer");
-            CLBuffer {
-                cl_buffer: buf,
-                phantom: PhantomData,
-            }
+            CLBuffer::new(buf)
         }
     }
 
 
+    /// Creates a buffer on this context.
     pub fn create_buffer_from<T, U, IN: Put<T, U>>(&self, create: IN, flags: cl_mem_flags) -> U
     {
         create.put(|p, len| {
@@ -355,6 +384,7 @@ impl Context {
         })
     }
 
+    /// Creates a command queue for a device attached to this context.
     pub fn create_command_queue(&self, device: &Device) -> CommandQueue
     {
         unsafe
@@ -374,6 +404,7 @@ impl Context {
         }
     }
 
+    /// Creates a program from its OpenCL C source code.
     pub fn create_program_from_source(&self, src: &str) -> Program
     {
         unsafe
@@ -393,6 +424,7 @@ impl Context {
         }
     }
 
+    /// Creates a program from its pre-compiled binaries.
     pub fn create_program_from_binary(&self, bin: &str, device: &Device) -> Program {
         let src = CString::new(bin).unwrap();
         let mut status = CL_SUCCESS as cl_int;
@@ -417,7 +449,8 @@ impl Drop for Context
 {
     fn drop(&mut self) {
         unsafe {
-            clReleaseContext(self.ctx);
+            let status = clReleaseContext(self.ctx);
+            check(status, "Could not release the context");
         }
     }
 }
@@ -443,8 +476,9 @@ impl<'r, T> KernelArg for Box<Buffer<T> + 'r> {
 }
 
 
+/// An OpenCL command queue.
 pub struct CommandQueue {
-    pub cqueue: cl_command_queue
+    cqueue: cl_command_queue
 }
 
 unsafe impl Sync for CommandQueue {}
@@ -452,7 +486,7 @@ unsafe impl Send for CommandQueue {}
 
 impl CommandQueue
 {
-    //synchronous
+    /// Synchronously enqueues a kernel for execution on the device.
     pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
         -> Event
     {
@@ -481,7 +515,7 @@ impl CommandQueue
         }
     }
 
-    //asynchronous
+    /// Asynchronously enqueues a kernel for execution on the device.
     pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_on: E)
         -> Event
     {
@@ -508,32 +542,12 @@ impl CommandQueue
         }
     }
 
-    pub fn get<T, U, B: Buffer<T>, G: Get<B, U>, E: EventList>(&self, buf: &B, event: E) -> G
-    {
-        event.as_event_list(|event_list, event_list_length| {
-            Get::get(buf, |offset, ptr, len| {
-                unsafe {
-                    let err = clEnqueueReadBuffer(self.cqueue,
-                                                  buf.id(),
-                                                  CL_TRUE,
-                                                  offset as libc::size_t,
-                                                  len,
-                                                  ptr,
-                                                  event_list_length,
-                                                  event_list,
-                                                  ptr::null_mut());
-
-                    check(err, "Failed to read buffer");
-                }
-            })
-        })
-    }
-
-    pub fn write<U: Write, T, E: EventList, B: Buffer<T>>(&self, mem: &B, write: &U, event: E)
+    /// Synchronously writes `data` to a device-side memory object `mem`.
+    pub fn write<U: Write, T, E: EventList, B: Buffer<T>>(&self, mem: &B, data: &U, event: E)
     {
         unsafe {
             event.as_event_list(|event_list, event_list_length| {
-                write.write(|offset, p, len| {
+                data.write(|offset, p, len| {
                     let err = clEnqueueWriteBuffer(self.cqueue,
                                                    mem.id(),
                                                    CL_TRUE,
@@ -550,12 +564,13 @@ impl CommandQueue
         }
     }
 
-    pub fn write_async<U: Write, T, E: EventList, B: Buffer<T>>(&self, mem: &B, write: &U, event: E) -> Event
+    /// Asynchronously writes `data` to a device-side memory object `mem`.
+    pub fn write_async<U: Write, T, E: EventList, B: Buffer<T>>(&self, mem: &B, data: &U, event: E) -> Event
     {
         let mut out_event = None;
         unsafe {
             event.as_event_list(|evt, evt_len| {
-                write.write(|offset, p, len| {
+                data.write(|offset, p, len| {
                     let mut e: cl_event = ptr::null_mut();
                     let err = clEnqueueWriteBuffer(self.cqueue,
                                                    mem.id(),
@@ -574,10 +589,33 @@ impl CommandQueue
         Event { event: out_event.unwrap() }
     }
 
-    pub fn read<T, U: Read, E: EventList, B: Buffer<T>>(&self, mem: &B, read: &mut U, event: E)
+    /// Synchronously reads `mem` to a host-side memory object of type `G`.
+    pub fn get<T, U, B: Buffer<T>, G: Get<B, U>, E: EventList>(&self, mem: &B, event: E) -> G
     {
         event.as_event_list(|event_list, event_list_length| {
-                read.read(|offset, p, len| {
+            Get::get(mem, |offset, ptr, len| {
+                unsafe {
+                    let err = clEnqueueReadBuffer(self.cqueue,
+                                                  mem.id(),
+                                                  CL_TRUE,
+                                                  offset as libc::size_t,
+                                                  len,
+                                                  ptr,
+                                                  event_list_length,
+                                                  event_list,
+                                                  ptr::null_mut());
+
+                    check(err, "Failed to read buffer");
+                }
+            })
+        })
+    }
+
+    /// Synchronously reads `mem` data to the device-side memory object `out`.
+    pub fn read<T, U: Read, E: EventList, B: Buffer<T>>(&self, mem: &B, out: &mut U, event: E)
+    {
+        event.as_event_list(|event_list, event_list_length| {
+                out.read(|offset, p, len| {
                         unsafe {
                             let err = clEnqueueReadBuffer(self.cqueue,
                                                           mem.id(),
@@ -600,7 +638,8 @@ impl Drop for CommandQueue
 {
     fn drop(&mut self) {
         unsafe {
-            clReleaseCommandQueue(self.cqueue);
+            let status = clReleaseCommandQueue(self.cqueue);
+            check(status, "Could not release the command queue.");
         }
     }
 }
@@ -612,8 +651,7 @@ impl Drop for CommandQueue
 /// [`Context::create_program_from_source`](struct.Context.html#method.create_program_from_source)
 /// or
 /// [`Context::create_program_from_binary`](struct.Context.html#method.create_program_from_binary).
-pub struct Program
-{
+pub struct Program {
     prg: cl_program,
 }
 
@@ -621,13 +659,13 @@ impl Drop for Program
 {
     fn drop(&mut self) {
         unsafe {
-            clReleaseProgram(self.prg);
+            let status = clReleaseProgram(self.prg);
+            check(status, "Colud not release the program.");
         }
     }
 }
 
-impl Program
-{
+impl Program {
     /// Build the program for a given device.
     ///
     /// Both Ok and Err returns include the build log.
@@ -669,11 +707,13 @@ impl Program
         }
     }
 
+    /// Retrieves a kernel object from its name.
     pub fn create_kernel(&self, name: &str) -> Kernel {
         create_kernel(self, name)
     }
 }
 
+/// An OpenCL kernel object.
 pub struct Kernel {
     kernel: cl_kernel,
 }
@@ -682,26 +722,27 @@ impl Drop for Kernel
 {
     fn drop(&mut self) {
         unsafe {
-            clReleaseKernel(self.kernel);
+            let status = clReleaseKernel(self.kernel);
+            check(status, "Could not release the kernel");
         }
     }
 }
 
 impl Kernel {
+    /// Sets the i-th argument of this kernel.
     pub fn set_arg<T: KernelArg>(&self, i: usize, x: &T)
     {
-        set_kernel_arg(self, i as cl::cl_uint, x)
+        set_kernel_arg(self, i as cl_uint, x)
     }
 
+    /// Allocates local memory for this kernel.
     pub fn alloc_local<T>(&self, i: usize, l: usize)
     {
-        alloc_kernel_local::<T>(self, i as cl::cl_uint, 
-            l as libc::size_t)
-            // s as libc::size_t,
-
+        alloc_kernel_local::<T>(self, i as cl_uint, l as libc::size_t)
     }
 }
 
+/// Retrieves a kernel object from its name on the given program.
 pub fn create_kernel(program: &Program, kernel: & str) -> Kernel
 {
     unsafe {
@@ -717,7 +758,10 @@ pub fn create_kernel(program: &Program, kernel: & str) -> Kernel
     }
 }
 
+/// Trait implemented by valid kernel arguments.
 pub trait KernelArg {
+  /// Gets the size (in bytes) of this kernel argument and an OpenCL-compatible
+  /// pointer to its value.
   fn get_value(&self) -> (libc::size_t, *const libc::c_void);
 }
 
@@ -755,9 +799,10 @@ impl KernelArg for [f64; 3] {
     }
 }
 
-pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
+/// Sets the i-th kernel argument of the given kernel.
+pub fn set_kernel_arg<T: KernelArg>(kernel:   &Kernel,
                                     position: cl_uint,
-                                    arg: &T)
+                                    arg:      &T)
 {
     unsafe
     {
@@ -770,22 +815,25 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
     }
 }
 
+/// Allocates local memory for the given kernel.
+///
+/// It allocates enough memory to contain `length` elements of type `T`.
 pub fn alloc_kernel_local<T>(kernel: &Kernel,
-                       position: cl_uint,
-                       // size: libc::size_t,
-                       length: libc::size_t){
+                             position: cl_uint,
+                             // size: libc::size_t,
+                             length: libc::size_t){
     unsafe
     {
         let tsize = mem::size_of::<T>() as libc::size_t;
         let ret = clSetKernelArg(kernel.kernel, position,
-                tsize*length, ptr::null());
+                                    tsize * length, ptr::null());
         check(ret, "Failed to set kernel arg!");
     }
 }
 
-pub struct Event
-{
-    pub event: cl_event,
+/// An OpenCL event.
+pub struct Event {
+    event: cl_event,
 }
 
 impl Event {
@@ -804,21 +852,25 @@ impl Event {
         }
     }
 
+    /// Gets the time when the event was queued.
     pub fn queue_time(&self) -> u64
     {
         self.get_time(CL_PROFILING_COMMAND_QUEUED)
     }
 
+    /// Gets the time when the event was submitted to the device.
     pub fn submit_time(&self) -> u64
     {
         self.get_time(CL_PROFILING_COMMAND_SUBMIT)
     }
 
+    /// Gets the time when the event started.
     pub fn start_time(&self) -> u64
     {
         self.get_time(CL_PROFILING_COMMAND_START)
     }
 
+    /// Gets the time when the event ended.
     pub fn end_time(&self) -> u64
     {
         self.get_time(CL_PROFILING_COMMAND_END)
@@ -829,14 +881,18 @@ impl Drop for Event
 {
     fn drop(&mut self) {
         unsafe {
-            clReleaseEvent(self.event);
+            let status = clReleaseEvent(self.event);
+            check(status, "Could not release the event");
         }
     }
 }
 
+/// Trait implemented by event lists.
 pub trait EventList {
+    /// Applies a user-defined function to this list of event.
     fn as_event_list<T, F: FnOnce(*const cl_event, cl_uint) -> T>(&self, F) -> T;
 
+    /// Wait for all the events on this event list.
     fn wait(&self) {
         self.as_event_list(|p, len| {
             unsafe {
@@ -897,9 +953,13 @@ impl EventList for () {
 }
 
 
+/// Trait implemented by a valid kernel buffer index.
 pub trait KernelIndex
 {
+    /// The number of dimensions (up to 3) of this kernel index.
     fn num_dimensions(dummy_self: Option<Self>) -> cl_uint where Self: Sized;
+
+    /// Returns an OpenCL-compatible pointer to this index.
     fn get_ptr(&self) -> *const libc::size_t;
 }
 

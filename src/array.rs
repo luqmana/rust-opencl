@@ -9,7 +9,9 @@ use std::vec::Vec;
 use libc::{size_t, c_void};
 
 use hl::KernelArg;
+use error::check;
 
+/// A host-side 3D array.
 pub struct Array3D<T> {
     width: usize,
     height: usize,
@@ -17,6 +19,7 @@ pub struct Array3D<T> {
     dat: Vec<T>
 }
 
+/// A device-side 3D array.
 pub struct Array3DCL<T> {
     width: usize,
     height: usize,
@@ -26,9 +29,8 @@ pub struct Array3DCL<T> {
 }
 
 impl<T: Clone> Array3D<T> {
-    pub fn new<F>(width: usize, height: usize, depth: usize,
-                  val: F)
-               -> Array3D<T>
+    /// Creates a new host-side 3D array with elements initialized by a callback.
+    pub fn new<F>(width: usize, height: usize, depth: usize, val: F) -> Array3D<T>
         where F: Fn(usize, usize, usize) -> T
     {
         let mut dat: Vec<T> = Vec::new();
@@ -48,13 +50,13 @@ impl<T: Clone> Array3D<T> {
         }
     }
 
-    pub fn set(&mut self, x: usize, y: usize, z: usize, val: T)
-    {
+    /// Sets an element of this array.
+    pub fn set(&mut self, x: usize, y: usize, z: usize, val: T) {
         self.dat[self.width*self.height*z + self.width*y + x] = val;
     }
 
-    pub fn get(&self, x: usize, y: usize, z: usize) -> T
-    {
+    /// Gets an element of this array.
+    pub fn get(&self, x: usize, y: usize, z: usize) -> T {
         (&self.dat[..])[self.width*self.height*z + self.width*y + x].clone()
     }
 }
@@ -62,7 +64,8 @@ impl<T: Clone> Array3D<T> {
 impl<T> Drop for Array3DCL<T> {
     fn drop(&mut self) {
         unsafe {
-            clReleaseMemObject(self.buf);
+            let status = clReleaseMemObject(self.buf);
+            check(status, "Could not release the 3D array");
         }
     }
 }
@@ -150,12 +153,14 @@ impl<T> KernelArg for Array3DCL<T> {
     }
 }
 
+/// A host-side 2D array.
 pub struct Array2D<T> {
     width: usize,
     height: usize,
     dat: Vec<T>,
 }
 
+/// A device-side 2D array.
 pub struct Array2DCL<T> {
     width: usize,
     height: usize,
@@ -164,6 +169,7 @@ pub struct Array2DCL<T> {
 }
 
 impl<T: Clone> Array2D<T> {
+    /// Creates a new host-side 2D array with elements initialized by a callback.
     pub fn new<F>(width: usize, height: usize, val: F) -> Array2D<T>
         where F: Fn(usize, usize) -> T
     {
@@ -180,10 +186,12 @@ impl<T: Clone> Array2D<T> {
         }
     }
 
+    /// Sets an element of this array.
     pub fn set(&mut self, x: usize, y: usize, val: T) {
         self.dat[self.width*y + x] = val;
     }
 
+    /// Gets an element of this array.
     pub fn get(&self, x: usize, y: usize) -> T {
         (&self.dat[..])[self.width*y + x].clone()
     }
@@ -192,7 +200,8 @@ impl<T: Clone> Array2D<T> {
 impl<T> Drop for Array2DCL<T> {
     fn drop(&mut self) {
         unsafe {
-            clReleaseMemObject(self.buf);
+            let status = clReleaseMemObject(self.buf);
+            check(status, "Could not release the 2D array");
         }
     }
 }
