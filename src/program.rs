@@ -12,7 +12,7 @@ use cl::*;
 use cl::ll::*;
 use cl::CLStatus::CL_SUCCESS;
 use error::check;
-use mem::Buffer;
+use mem::CLBuffer;
 use device::Device;
 
 /// Represents an OpenCL program, which is a collection of kernels.
@@ -109,7 +109,7 @@ impl Drop for Kernel
 
 impl Kernel {
     /// The underlying OpenCL kernel pointer.
-    pub fn cl_ptr(&self) -> cl_kernel {
+    pub fn cl_id(&self) -> cl_kernel {
         self.kernel
     }
 
@@ -149,22 +149,22 @@ pub trait KernelArg {
   fn get_value(&self) -> (libc::size_t, *const libc::c_void);
 }
 
-impl<'r, T> KernelArg for &'r (Buffer<T> + 'r) {
+impl<'r, T> KernelArg for &'r (CLBuffer<T> + 'r) {
     fn get_value(&self) -> (libc::size_t, *const libc::c_void)
     {
         unsafe {
             (mem::size_of::<cl_mem>() as libc::size_t,
-             self.id_ptr() as *const libc::c_void)
+             self.cl_id_ptr() as *const libc::c_void)
         }
     }
 }
 
-impl<'r, T> KernelArg for Box<Buffer<T> + 'r> {
+impl<'r, T> KernelArg for Box<CLBuffer<T> + 'r> {
     fn get_value(&self) -> (libc::size_t, *const libc::c_void)
     {
         unsafe {
             (mem::size_of::<cl_mem>() as libc::size_t,
-             self.id_ptr() as *const libc::c_void)
+             self.cl_id_ptr() as *const libc::c_void)
         }
     }
 }

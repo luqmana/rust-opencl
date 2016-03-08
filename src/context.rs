@@ -8,7 +8,7 @@ use cl::*;
 use cl::ll::*;
 use cl::CLStatus::CL_SUCCESS;
 use error::check;
-use mem::{Put, CLBuffer};
+use mem::{Put, CLBuffer, CLBuffer1D, CLBuffer2D, CLBuffer3D};
 use device::Device;
 use command_queue::CommandQueue;
 use program::Program;
@@ -62,17 +62,32 @@ impl Context {
     }
 
     /// Creates a buffer on this context.
-    pub fn create_buffer<T>(&self, size: usize, flags: cl_mem_flags) -> CLBuffer<T> {
+    pub fn create_buffer1d<T>(&self, size: usize, flags: cl_mem_flags) -> CLBuffer1D<T> {
         unsafe {
             let mut status = 0;
             let buf = clCreateBuffer(self.ctx,
                                      flags,
-                                     (size*mem::size_of::<T>()) as libc::size_t ,
+                                     (size * mem::size_of::<T>()) as libc::size_t ,
                                      ptr::null_mut(),
                                      (&mut status));
             check(status, "Could not allocate buffer");
-            CLBuffer::new_unchecked(buf)
+
+            CLBuffer1D::new_unchecked(buf)
         }
+    }
+
+    /// Creates a buffer on this context.
+    pub fn create_buffer2d<T>(&self, width: usize, height: usize, flags: cl_mem_flags) -> CLBuffer2D<T> {
+        let buf: CLBuffer1D<T> = self.create_buffer1d(width * height, flags);
+
+        unsafe { CLBuffer2D::new_unchecked(width, height, buf.cl_id()) }
+    }
+
+    /// Creates a buffer on this context.
+    pub fn create_buffer3d<T>(&self, width: usize, height: usize, depth: usize, flags: cl_mem_flags) -> CLBuffer3D<T> {
+        let buf: CLBuffer1D<T> = self.create_buffer1d(width * height * depth, flags);
+
+        unsafe { CLBuffer3D::new_unchecked(width, height, depth, buf.cl_id()) }
     }
 
 

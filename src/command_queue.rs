@@ -6,7 +6,7 @@ use std::ptr;
 use cl::*;
 use cl::ll::*;
 use error::check;
-use mem::{Get, Write, Read, Buffer};
+use mem::{Get, Write, Read, CLBuffer};
 use program::{Kernel, KernelIndex};
 use event::{Event, EventList};
 
@@ -38,7 +38,7 @@ impl CommandQueue {
                 let mut e: cl_event = ptr::null_mut();
                 let mut status = clEnqueueNDRangeKernel(
                     self.cqueue,
-                    k.cl_ptr(),
+                    k.cl_id(),
                     KernelIndex::num_dimensions(None::<I>),
                     ptr::null(),
                     global.get_ptr(),
@@ -68,7 +68,7 @@ impl CommandQueue {
                 let mut e: cl_event = ptr::null_mut();
                 let status = clEnqueueNDRangeKernel(
                     self.cqueue,
-                    k.cl_ptr(),
+                    k.cl_id(),
                     KernelIndex::num_dimensions(None::<I>),
                     ptr::null(),
                     global.get_ptr(),
@@ -87,13 +87,13 @@ impl CommandQueue {
     }
 
     /// Synchronously writes `data` to a device-side memory object `mem`.
-    pub fn write<U: Write, T, E: EventList, B: Buffer<T>>(&self, mem: &B, data: &U, event: E)
+    pub fn write<U: Write, T, E: EventList, B: CLBuffer<T>>(&self, mem: &B, data: &U, event: E)
     {
         unsafe {
             event.as_event_list(|event_list, event_list_length| {
                 data.write(|offset, p, len| {
                     let err = clEnqueueWriteBuffer(self.cqueue,
-                                                   mem.id(),
+                                                   mem.cl_id(),
                                                    CL_TRUE,
                                                    offset as libc::size_t,
                                                    len as libc::size_t,
@@ -109,7 +109,7 @@ impl CommandQueue {
     }
 
     /// Asynchronously writes `data` to a device-side memory object `mem`.
-    pub fn write_async<U: Write, T, E: EventList, B: Buffer<T>>(&self, mem: &B, data: &U, event: E) -> Event
+    pub fn write_async<U: Write, T, E: EventList, B: CLBuffer<T>>(&self, mem: &B, data: &U, event: E) -> Event
     {
         unsafe {
             let mut out_event = None;
@@ -118,7 +118,7 @@ impl CommandQueue {
                 data.write(|offset, p, len| {
                     let mut e: cl_event = ptr::null_mut();
                     let err = clEnqueueWriteBuffer(self.cqueue,
-                                                   mem.id(),
+                                                   mem.cl_id(),
                                                    CL_FALSE,
                                                    offset as libc::size_t,
                                                    len as libc::size_t,
@@ -136,13 +136,13 @@ impl CommandQueue {
     }
 
     /// Synchronously reads `mem` to a host-side memory object of type `G`.
-    pub fn get<T, U, B: Buffer<T>, G: Get<B, U>, E: EventList>(&self, mem: &B, event: E) -> G
+    pub fn get<T, U, B: CLBuffer<T>, G: Get<B, U>, E: EventList>(&self, mem: &B, event: E) -> G
     {
         event.as_event_list(|event_list, event_list_length| {
             Get::get(mem, |offset, ptr, len| {
                 unsafe {
                     let err = clEnqueueReadBuffer(self.cqueue,
-                                                  mem.id(),
+                                                  mem.cl_id(),
                                                   CL_TRUE,
                                                   offset as libc::size_t,
                                                   len,
@@ -158,13 +158,13 @@ impl CommandQueue {
     }
 
     /// Synchronously reads `mem` data to the device-side memory object `out`.
-    pub fn read<T, U: Read, E: EventList, B: Buffer<T>>(&self, mem: &B, out: &mut U, event: E)
+    pub fn read<T, U: Read, E: EventList, B: CLBuffer<T>>(&self, mem: &B, out: &mut U, event: E)
     {
         event.as_event_list(|event_list, event_list_length| {
                 out.read(|offset, p, len| {
                         unsafe {
                             let err = clEnqueueReadBuffer(self.cqueue,
-                                                          mem.id(),
+                                                          mem.cl_id(),
                                                           CL_TRUE,
                                                           offset as libc::size_t,
                                                           len as libc::size_t,

@@ -1,6 +1,5 @@
 extern crate opencl;
 
-use opencl::CLBuffer;
 use std::fmt;
 
 fn main()
@@ -15,9 +14,9 @@ fn main()
 
     println!("{}", device.name());
 
-    let a: CLBuffer<isize> = ctx.create_buffer(vec_a.len(), opencl::cl::CL_MEM_READ_ONLY);
-    let b: CLBuffer<isize> = ctx.create_buffer(vec_a.len(), opencl::cl::CL_MEM_READ_ONLY);
-    let c: CLBuffer<isize> = ctx.create_buffer(vec_a.len(), opencl::cl::CL_MEM_WRITE_ONLY);
+    let a = ctx.create_buffer1d::<isize>(vec_a.len(), opencl::cl::CL_MEM_READ_ONLY);
+    let b = ctx.create_buffer1d::<isize>(vec_a.len(), opencl::cl::CL_MEM_READ_ONLY);
+    let c = ctx.create_buffer1d::<isize>(vec_a.len(), opencl::cl::CL_MEM_WRITE_ONLY);
 
     queue.write(&a, &&vec_a[..], ());
     queue.write(&b, &&vec_b[..], ());

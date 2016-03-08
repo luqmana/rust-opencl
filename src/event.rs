@@ -6,7 +6,7 @@ use std::vec::Vec;
 use cl::*;
 use cl::ll::*;
 use error::check;
-use mem::Buffer;
+use mem::CLBuffer;
 
 /// An OpenCL event.
 pub struct Event {

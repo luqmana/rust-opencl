@@ -61,6 +61,7 @@ mod mem {
             let len = len as usize;
             assert!(buffer.len() >= (off + len) as usize);
             let target = &mut buffer[off .. off + len];
+
             unsafe {
                 let ptr = ptr as *const u8;
                 let src = slice::from_raw_parts(ptr, len);
@@ -323,7 +324,7 @@ mod hl {
     fn memory_read_write()
     {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
-            let buffer: CLBuffer<isize> = ctx.create_buffer(8, CL_MEM_READ_ONLY);
+            let buffer = ctx.create_buffer1d::<isize>(8, CL_MEM_READ_ONLY);
 
             let input = [0isize, 1, 2, 3, 4, 5, 6, 7];
             let mut output = [0isize, 0, 0, 0, 0, 0, 0, 0];
@@ -427,16 +428,16 @@ mod hl {
 
 #[cfg(test)]
 mod array {
-    use opencl::{Array2D, Array3D};
+    use opencl::{Buffer2D, Buffer3D};
     use opencl::cl::CL_MEM_READ_WRITE;
 
     #[test]
     fn put_get_2d()
     {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
-            let arr_in = Array2D::new(8, 8, |x, y| {(x+y) as isize});
+            let arr_in = Buffer2D::new(8, 8, |x, y| {(x+y) as isize});
             let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
-            let arr_out: Array2D<isize> = queue.get(&arr_cl, ());
+            let arr_out: Buffer2D<isize> = queue.get(&arr_cl, ());
 
             for x in 0usize.. 8usize {
                 for y in 0usize..8usize {
@@ -451,9 +452,9 @@ mod array {
     fn read_write_2d()
     {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
-            let added = Array2D::new(8, 8, |x, y| {(x+y) as isize});
-            let zero = Array2D::new(8, 8, |_, _| {(0) as isize});
-            let mut out = Array2D::new(8, 8, |_, _| {(0) as isize});
+            let added = Buffer2D::new(8, 8, |x, y| {(x+y) as isize});
+            let zero = Buffer2D::new(8, 8, |_, _| {(0) as isize});
+            let mut out = Buffer2D::new(8, 8, |_, _| {(0) as isize});
 
             /* both are zeroed */
             let a_cl = ctx.create_buffer_from(&zero, CL_MEM_READ_WRITE);
@@ -474,8 +475,8 @@ mod array {
     fn kernel_2d()
     {
         ::test_all_platforms_devices(&mut |device, ctx, queue| {
-            let mut a = Array2D::new(8, 8, |_, _| {(0) as i32});
-            let b = Array2D::new(8, 8, |x, y| {(x*y) as i32});
+            let mut a = Buffer2D::new(8, 8, |_, _| {(0) as i32});
+            let b = Buffer2D::new(8, 8, |x, y| {(x*y) as i32});
             let a_cl = ctx.create_buffer_from(&a, CL_MEM_READ_WRITE);
 
             let src =  "__kernel void test(__global int *a) { \
@@ -511,9 +512,9 @@ mod array {
     fn put_get_3d()
     {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
-            let arr_in = Array3D::new(8, 8, 8, |x, y, z| {(x+y+z) as isize});
+            let arr_in = Buffer3D::new(8, 8, 8, |x, y, z| {(x+y+z) as isize});
             let arr_cl = ctx.create_buffer_from(&arr_in, CL_MEM_READ_WRITE);
-            let arr_out: Array3D<isize> = queue.get(&arr_cl, ());
+            let arr_out: Buffer3D<isize> = queue.get(&arr_cl, ());
 
             for x in 0usize .. 8usize {
                 for y in 0usize .. 8usize {
@@ -530,9 +531,9 @@ mod array {
     fn read_write_3d()
     {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
-            let added = Array3D::new(8, 8, 8, |x, y, z| {(x+y+z) as isize});
-            let zero = Array3D::new(8, 8, 8, |_, _, _| {(0) as isize});
-            let mut out = Array3D::new(8, 8, 8, |_, _, _| {(0) as isize});
+            let added = Buffer3D::new(8, 8, 8, |x, y, z| {(x+y+z) as isize});
+            let zero = Buffer3D::new(8, 8, 8, |_, _, _| {(0) as isize});
+            let mut out = Buffer3D::new(8, 8, 8, |_, _, _| {(0) as isize});
 
             /* both are zeroed */
             let a_cl = ctx.create_buffer_from(&zero, CL_MEM_READ_WRITE);
@@ -555,8 +556,8 @@ mod array {
     fn kernel_3d()
     {
         ::test_all_platforms_devices(&mut |device, ctx, queue| {
-            let mut a = Array3D::new(8, 8, 8, |_, _, _| {(0) as i32});
-            let b = Array3D::new(8, 8, 8, |x, y, z| {(x*y*z) as i32});
+            let mut a = Buffer3D::new(8, 8, 8, |_, _, _| {(0) as i32});
+            let b = Buffer3D::new(8, 8, 8, |x, y, z| {(x * y * z) as i32});
             let a_cl = ctx.create_buffer_from(&a, CL_MEM_READ_WRITE);
 
             let src =  "__kernel void test(__global int *a) { \

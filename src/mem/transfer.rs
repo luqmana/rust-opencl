@@ -3,7 +3,7 @@ use std::mem;
 use std::vec::Vec;
 
 use cl::*;
-use mem::{CLBuffer, Buffer};
+use mem::{CLBuffer1D, CLBuffer};
 
 /* memory life cycle
  * | Trait  | Exists in rust | Exists in OpenCL | Direction      |
@@ -55,39 +55,39 @@ pub trait Read {
     fn read<F: FnOnce(size_t, *mut c_void, size_t)>(&mut self, F);
 }
 
-impl<'r, T> Put<T, CLBuffer<T>> for &'r [T]
+impl<'r, T> Put<T, CLBuffer1D<T>> for &'r [T]
 {
-    fn put<F>(&self, f: F) -> CLBuffer<T>
+    fn put<F>(&self, f: F) -> CLBuffer1D<T>
         where F: FnOnce(*const c_void, size_t) -> cl_mem
     {
         let mem =  f(self.as_ptr() as *const c_void, (self.len() * mem::size_of::<T>()) as size_t);
-        unsafe { CLBuffer::new_unchecked(mem) }
+        unsafe { CLBuffer1D::new_unchecked(mem) }
     }
 }
 
-impl<'r, T> Put<T, CLBuffer<T>> for &'r Vec<T>
+impl<'r, T> Put<T, CLBuffer1D<T>> for &'r Vec<T>
 {
-    fn put<F>(&self, f: F) -> CLBuffer<T>
+    fn put<F>(&self, f: F) -> CLBuffer1D<T>
         where F: FnOnce(*const c_void, size_t) -> cl_mem
     {
         let mem = f(self.as_ptr() as *const c_void, (self.len() * mem::size_of::<T>()) as size_t);
-        unsafe { CLBuffer::new_unchecked(mem) }
+        unsafe { CLBuffer1D::new_unchecked(mem) }
     }
 }
 
-impl<T> Put<T, CLBuffer<T>> for Vec<T>
+impl<T> Put<T, CLBuffer1D<T>> for Vec<T>
 {
-    fn put<F>(&self, f: F) -> CLBuffer<T>
+    fn put<F>(&self, f: F) -> CLBuffer1D<T>
         where F: FnOnce(*const c_void, size_t) -> cl_mem
     {
         let mem = f(self.as_ptr() as *const c_void, (self.len() * mem::size_of::<T>()) as size_t);
-        unsafe { CLBuffer::new_unchecked(mem) }
+        unsafe { CLBuffer1D::new_unchecked(mem) }
     }
 }
 
-impl<T> Get<CLBuffer<T>, T> for Vec<T>
+impl<T> Get<CLBuffer1D<T>, T> for Vec<T>
 {
-    fn get<F>(mem: &CLBuffer<T>, f: F) -> Vec<T>
+    fn get<F>(mem: &CLBuffer1D<T>, f: F) -> Vec<T>
         where F: FnOnce(size_t, *mut c_void, size_t)
     {
         let mut v: Vec<T> = Vec::with_capacity(mem.len());
@@ -120,9 +120,9 @@ impl<'r, T> Read for &'r mut [T]
 }
 
 macro_rules! get_arg (
-    ($t:ty) => (impl Get<CLBuffer<$t>, $t> for $t
+    ($t:ty) => (impl Get<CLBuffer1D<$t>, $t> for $t
         {
-            fn get<F>(_: &CLBuffer<$t>, f: F) -> $t
+            fn get<F>(_: &CLBuffer1D<$t>, f: F) -> $t
                 where F: FnOnce(size_t, *mut c_void, size_t)
             {
                 let mut v: $t = 0 as $t;
@@ -142,13 +142,13 @@ get_arg!(f32);
 get_arg!(f64);
 
 macro_rules! put_arg (
-    ($t:ty) => (impl Put<$t, CLBuffer<$t>> for $t
+    ($t:ty) => (impl Put<$t, CLBuffer1D<$t>> for $t
         {
-            fn put<F>(&self, f: F) -> CLBuffer<$t>
+            fn put<F>(&self, f: F) -> CLBuffer1D<$t>
                 where F: FnOnce(*const c_void, size_t) -> cl_mem
             {
                 let mem = f((self as *const $t) as *const c_void, mem::size_of::<$t>() as size_t);
-                unsafe { CLBuffer::new_unchecked(mem) }
+                unsafe { CLBuffer1D::new_unchecked(mem) }
             }
         }
     )
