@@ -3,10 +3,9 @@ extern crate opencl;
 use opencl::{Buffer, Program};
 
 // The kernel sources.
-const KERNEL_SRC: &'static str = include_str!("demo.ocl");
+const KERNEL_SRC: &'static str = include_str!("addition.ocl");
 
-fn main()
-{
+fn main() {
     let vec_a = [ 0isize, 1, 2, -3, 4, 5, 6, 7 ];
     let vec_b = [ -7isize, -6, 5, -4, 0, -1, 2, 3 ];
     let mut vec_c = [ 0isize; 8 ];

@@ -18,8 +18,8 @@ keywords = ["opencl", "bindings", "ffi", "gpu", "compute"]
 name = "opencl"
 
 [[example]]
-name = "demo"
-path = "examples/demo/main.rs"
+name = "addition"
+path = "examples/demo/addition.rs"
 
 [[example]]
 name = "platform"
