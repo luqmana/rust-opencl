@@ -1,6 +1,6 @@
 extern crate opencl;
 
-use opencl::mem::CLBuffer;
+use opencl::CLBuffer;
 use std::fmt;
 
 fn main()
@@ -11,7 +11,7 @@ fn main()
     let vec_a = vec![0isize, 1, 2, -3, 4, 5, 6, 7];
     let vec_b = vec![-7isize, -6, 5, -4, 0, -1, 2, 3];
 
-    let (device, ctx, queue) = opencl::util::create_compute_context().unwrap();
+    let (device, ctx, queue) = opencl::create_compute_context().unwrap();
 
     println!("{}", device.name());
 

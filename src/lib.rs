@@ -8,7 +8,7 @@ Add the following to your `Cargo.toml` file:
 
 ```.ignore
 [dependencies] 
-rust-opencl = "0.4.0"
+rust-opencl = "0.5.0"
 ```
 */
 
@@ -39,9 +39,26 @@ extern { }
 #[cfg(target_os = "linux")]
 extern { }
 
+pub use platform::{Platform, platforms};
+pub use device::{Device, DeviceType};
+pub use context::Context;
+pub use command_queue::CommandQueue;
+pub use program::{Program, Kernel, KernelArg, KernelIndex};
+pub use event::{Event, EventList};
+
+pub use mem::{CLBuffer, Buffer, Array2D, Array2DCL, Array3D, Array3DCL};
+pub use mem::{Put, Get, Read, Write};
+
+pub use hl::{PreferedType, create_compute_context, create_compute_context_prefer};
+
 pub mod cl;
 pub mod ext;
 pub mod error;
-pub mod hl;
-pub mod util;
-pub mod mem;
+mod hl;
+mod mem;
+mod platform;
+mod device;
+mod context;
+mod command_queue;
+mod program;
+mod event;

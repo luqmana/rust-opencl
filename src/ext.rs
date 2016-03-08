@@ -37,7 +37,7 @@ macro_rules! cl_extension_loader {
             // unavailable extension can return non-NULL.
             // TODO read in extensions lazily and store them in a global HashSet?
             let available = unsafe {
-                let hl_platform = hl::Platform::from_platform_id(platform);
+                let hl_platform = Platform::from_platform_id(platform);
                 let available = hl_platform.extensions().contains($ext_name);
                 mem::forget(hl_platform);
                 available
@@ -45,7 +45,7 @@ macro_rules! cl_extension_loader {
             if !available {
                 let platform_name;
                 unsafe {
-                    let hl_platform = hl::Platform::from_platform_id(platform);
+                    let hl_platform = Platform::from_platform_id(platform);
                     platform_name = hl_platform.name();
                     mem::forget(hl_platform);
                 }
@@ -86,7 +86,7 @@ macro_rules! ext_struct_literal {
                     let platform_name;
 
                     unsafe {
-                        let hl_platform = hl::Platform::from_platform_id($plat);
+                        let hl_platform = Platform::from_platform_id($plat);
                         platform_name = hl_platform.name();
                         mem::forget(hl_platform);
                     }
@@ -107,6 +107,8 @@ macro_rules! ext_struct_literal {
 
 pub mod cl_khr_fp64 {
     use cl::*;
+    use ::Platform;
+
     const CL_DEVICE_DOUBLE_FP_CONFIG: cl_uint = 0x1032;
     cl_extension_loader! {
         "cl_khr_fp64";
@@ -115,6 +117,8 @@ pub mod cl_khr_fp64 {
 
 pub mod cl_khr_fp16 {
     use cl::*;
+    use ::Platform;
+
     pub const CL_DEVICE_HALF_FP_CONFIG: cl_uint = 0x1033;
     cl_extension_loader! {
         "cl_khr_pf16";
@@ -124,6 +128,8 @@ pub mod cl_khr_fp16 {
 pub mod cl_APPLE_SetMemObjectDestructor {
     use libc;
     use cl::*;
+    use ::Platform;
+
     cl_extension_loader! {
         "cl_APPLE_SetMemObjectDestructor";
         extern fn clSetMemObjectDestructorAPPLE(memobj: cl_mem,
@@ -136,6 +142,8 @@ pub mod cl_APPLE_SetMemObjectDestructor {
 pub mod cl_APPLE_ContextLoggingFunctions {
     use libc;
     use cl::*;
+    use ::Platform;
+
     cl_extension_loader! {
         "cl_APPLE_ContextLoggingFunctions";
         extern fn clLogMessagesToSystemLogAPPLE(errstr: *const libc::c_char,
@@ -156,6 +164,8 @@ pub mod cl_APPLE_ContextLoggingFunctions {
 pub mod cl_khr_icd {
     use libc;
     use cl::*;
+    use ::Platform;
+
     pub const CL_PLATFORM_ICD_SUFFIX:      cl_uint = 0x0920;
     // Note: this is an error code, but we can't extend CLStatus with it... hmm.
     pub const CL_PLATFORM_NOT_FOUND_KHR:   cl_int  = -1001;
@@ -169,6 +179,8 @@ pub mod cl_khr_icd {
 
 pub mod cl_nv_device_attribute_query {
     use cl::*;
+    use ::Platform;
+
     pub const CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV:   cl_uint = 0x4000;
     pub const CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV:   cl_uint = 0x4001;
     pub const CL_DEVICE_REGISTERS_PER_BLOCK_NV:        cl_uint = 0x4002;
@@ -183,6 +195,8 @@ pub mod cl_nv_device_attribute_query {
 
 pub mod cl_amd_device_attribute_query {
     use cl::*;
+    use ::Platform;
+
     pub const CL_DEVICE_PROFILING_TIMER_OFFSET_AMD:    cl_uint = 0x4036;
     cl_extension_loader! {
         "cl_amd_device_attribute_query";
@@ -191,6 +205,8 @@ pub mod cl_amd_device_attribute_query {
 
 pub mod cl_arm_printf {
     use cl::*;
+    use ::Platform;
+
     pub const CL_PRINTF_CALLBACK_ARM:      cl_uint = 0x40B0;
     pub const CL_PRINTF_BUFFERSIZE_ARM:    cl_uint = 0x40B1;
     cl_extension_loader! {
@@ -201,6 +217,8 @@ pub mod cl_arm_printf {
 pub mod cl_ext_device_fission {
     use std;
     use cl::*;
+    use ::Platform;
+
     pub type cl_device_partition_property_ext = cl_ulong;
     pub const CL_DEVICE_PARTITION_EQUALLY_EXT: cl_device_partition_property_ext            = 0x4050;
     pub const CL_DEVICE_PARTITION_BY_COUNTS_EXT: cl_device_partition_property_ext          = 0x4051;
@@ -238,6 +256,8 @@ pub mod cl_ext_device_fission {
 pub mod cl_qcom_ext_host_ptr {
     use libc;
     use cl::*;
+    use ::Platform;
+
     pub type cl_image_pitch_info_qcom = cl_uint;
     pub struct cl_mem_ext_host_ptr {
         pub allocation_type: cl_uint,
@@ -269,7 +289,9 @@ pub mod cl_qcom_ext_host_ptr {
 pub mod cl_qcom_ion_host_ptr {
     use libc;
     use cl::*;
+    use ::Platform;
     use super::cl_qcom_ext_host_ptr;
+
     struct cl_mem_ion_host_ptr {
         pub ext_host_ptr: cl_qcom_ext_host_ptr::cl_mem_ext_host_ptr,
         pub ion_filedesc: libc::c_int,

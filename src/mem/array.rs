@@ -8,7 +8,7 @@ use std::mem;
 use std::vec::Vec;
 use libc::{size_t, c_void};
 
-use hl::KernelArg;
+use program::KernelArg;
 use error::check;
 
 /// A host-side 3D array.

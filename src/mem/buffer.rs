@@ -6,10 +6,10 @@ use std::ptr;
 use cl::*;
 use cl::ll::*;
 
-use hl::KernelArg;
+use program::KernelArg;
 use error::check;
 
-/// Trait implemented by valid OpenCL buffer ojects.
+/// Trait implemented by valid OpenCL buffer objects.
 pub trait Buffer<T> {
     /// A pointer to the underlying OpenCL buffer object.
     unsafe fn id_ptr(&self) -> *const cl_mem;
@@ -41,7 +41,7 @@ pub trait Buffer<T> {
     fn len(&self) -> usize { self.byte_len() as usize / mem::size_of::<T>() }
 }
 
-/// An 1-dimenisonal device-side-only OpenCL buffer object.
+/// An 1-dimenisonal device-side OpenCL buffer object.
 pub struct CLBuffer<T> {
     cl_buffer: cl_mem,
     phantom: PhantomData<T>,

@@ -1,9 +1,9 @@
 extern crate opencl;
 
-use opencl::hl;
+use opencl::Platform;
 
 fn main() {
-    for platform in hl::get_platforms().iter() {
+    for platform in Platform::all().iter() {
         println!("Platform: {}", platform.name());
         println!("Platform Version: {}", platform.version());
         println!("Vendor:   {}", platform.vendor());

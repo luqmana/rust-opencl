@@ -5,7 +5,7 @@ extern crate log;
 
 extern crate opencl;
 
-use opencl::hl::*;
+use opencl::{Platform, Device, Context, CommandQueue};
 
 macro_rules! expect (
     ($test: expr, $expected: expr) => ({
@@ -23,11 +23,11 @@ macro_rules! expect (
 pub fn test_all_platforms_devices<F>(test: &mut F)
     where F: FnMut(&Device, &Context, &CommandQueue)
 {
-    let platforms = get_platforms();
+    let platforms = Platform::all();
     for p in platforms.iter() {
         let devices = p.get_devices();
         for d in devices.iter() {
-            let context = d.create_context();
+            let context = Context::new(d);
             let queue = context.create_command_queue(d);
             test(d, &context, &queue);
         }
@@ -36,7 +36,7 @@ pub fn test_all_platforms_devices<F>(test: &mut F)
 
 mod mem {
     use std::slice;
-    use opencl::mem::{Read, Write};
+    use opencl::{Read, Write};
 
     fn read_write<W: Write, R: Read>(src: &W, dst: &mut R)
     {
@@ -131,9 +131,8 @@ mod mem {
 #[cfg(test)]
 mod hl {
     use opencl::cl::*;
-    use opencl::hl::*;
-    use opencl::mem::*;
-    use opencl::util;
+    use opencl::*;
+    use opencl;
 
     #[test]
     fn program_build() {
@@ -404,7 +403,7 @@ mod hl {
                    *i += 1; \
                    }";
 
-        let (device, ctx, queue) = util::create_compute_context().unwrap();
+        let (device, ctx, queue) = opencl::create_compute_context().unwrap();
         let prog = ctx.create_program_from_source(src);
         prog.build(&device).unwrap();
 
@@ -428,7 +427,7 @@ mod hl {
 
 #[cfg(test)]
 mod array {
-    use opencl::mem::{Array2D, Array3D};
+    use opencl::{Array2D, Array3D};
     use opencl::cl::CL_MEM_READ_WRITE;
 
     #[test]
@@ -597,11 +596,11 @@ mod array {
 #[cfg(test)]
 mod ext {
     use opencl::ext;
-    use opencl::hl::*;
+    use opencl::Platform;
 
     #[test]
     fn try_load_all_extensions() {
-        let platforms = get_platforms();
+        let platforms = Platform::all();
 
         for platform in platforms.into_iter() {
             let platform_id = platform.get_id();
