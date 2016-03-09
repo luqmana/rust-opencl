@@ -34,8 +34,8 @@ fn main()
     let (device, ctx, queue) = opencl::create_compute_context(false).unwrap();
 
     // Create the pre-initialized buffer objects.
-    let a = CLBuffer::<isize>::new(&ctx, &vec_a[..], opencl::cl::CL_MEM_READ_ONLY);
-    let b = CLBuffer::<isize>::new(&ctx, &vec_b[..], opencl::cl::CL_MEM_READ_ONLY);
+    let a = CLBuffer::new(&ctx, &vec_a[..], opencl::cl::CL_MEM_READ_ONLY);
+    let b = CLBuffer::new(&ctx, &vec_b[..], opencl::cl::CL_MEM_READ_ONLY);
     let c = CLBuffer::<isize>::new_uninitialized(&ctx, 8, opencl::cl::CL_MEM_WRITE_ONLY);
 
     // Create and build the program.

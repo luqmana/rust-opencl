@@ -29,6 +29,8 @@ rust-opencl = "0.5.0"
 
 extern crate libc;
 #[macro_use]
+extern crate bitflags;
+#[macro_use]
 extern crate log;
 
 #[link(name = "OpenCL", kind = "framework")]
@@ -50,6 +52,8 @@ pub use buffer::{BufferData, Buffer};
 
 pub use image::{Image2D, Image3D};
 pub use hl::{PreferedType, create_compute_context, create_compute_context_prefer};
+
+pub use cl::{ChannelOrder, MemoryAccess};
 
 pub mod cl;
 pub mod ext;

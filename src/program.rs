@@ -114,11 +114,6 @@ impl Program {
             }
         }
     }
-
-    /// Retrieves a kernel object from its name.
-    pub fn create_kernel(&self, name: &str) -> Kernel {
-        create_kernel(self, name)
-    }
 }
 
 /// An OpenCL kernel object.
@@ -137,6 +132,21 @@ impl Drop for Kernel
 }
 
 impl Kernel {
+    /// Creates a new kernel from its name on the given program.
+    pub fn new(program: &Program, name: &str) -> Kernel {
+        unsafe {
+            let mut errcode = 0;
+            let str = CString::new(name).unwrap();
+            let kernel = clCreateKernel(program.prg,
+                                        str.as_ptr(),
+                                        (&mut errcode));
+
+            check(errcode, "Failed to create kernel");
+
+            Kernel { kernel: kernel }
+        }
+    }
+
     /// The underlying OpenCL kernel pointer.
     pub fn cl_id(&self) -> cl_kernel {
         self.kernel
@@ -152,22 +162,6 @@ impl Kernel {
     pub fn alloc_local<T>(&self, i: usize, l: usize)
     {
         alloc_kernel_local::<T>(self, i as cl_uint, l as libc::size_t)
-    }
-}
-
-/// Retrieves a kernel object from its name on the given program.
-pub fn create_kernel(program: &Program, kernel: &str) -> Kernel
-{
-    unsafe {
-        let mut errcode = 0;
-        let str = CString::new(kernel).unwrap();
-        let kernel = clCreateKernel(program.prg,
-                                    str.as_ptr(),
-                                    (&mut errcode));
-
-        check(errcode, "Failed to create kernel");
-
-        Kernel { kernel: kernel }
     }
 }
 

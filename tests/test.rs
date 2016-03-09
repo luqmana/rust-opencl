@@ -34,7 +34,6 @@ pub fn test_all_platforms_devices<F>(test: &mut F)
 
 #[cfg(test)]
 mod hl {
-    use opencl::cl::*;
     use opencl::*;
     use opencl;
 
@@ -58,15 +57,15 @@ mod hl {
             let prog = Program::new(ctx, src);
             prog.build(device).unwrap();
 
-            let k = prog.create_kernel("test");
-            let v = Buffer::new(&ctx, &[ 1isize ][..], CL_MEM_READ_WRITE);
+            let k = Kernel::new(&prog, "test");
+            let v = Buffer::new(&ctx, &[ 1isize ][..], MemoryAccess::ReadWrite);
 
             k.set_arg(0, &v);
 
-            queue.enqueue_async_kernel(&k, 1isize, None, ()).wait();
+            queue.enqueue_async_kernel(&k, 1isize, None, None).wait();
 
             let mut out = [ 0isize; 1 ];
-            queue.read(&v, &mut out[..], ());
+            queue.read(&v, &mut out[..], None);
 
             expect!(out[0], 2);
         })
@@ -82,17 +81,17 @@ mod hl {
             let prog = Program::new(ctx, src);
             prog.build(device).unwrap();
 
-            let k = prog.create_kernel("test");
+            let k = Kernel::new(&prog, "test");
 
-            let v = Buffer::new(&ctx, &[1isize][..], CL_MEM_READ_WRITE);
+            let v = Buffer::new(&ctx, &[1isize][..], MemoryAccess::ReadWrite);
 
             k.set_arg(0, &v);
             k.set_arg(1, &42isize);
 
-            queue.enqueue_async_kernel(&k, 1isize, None, ()).wait();
+            queue.enqueue_async_kernel(&k, 1isize, None, None).wait();
 
             let mut out = [ 0isize; 1 ];
-            queue.read(&v, &mut out[..], ());
+            queue.read(&v, &mut out[..], None);
 
             expect!(out[0], 43);
         })
@@ -108,16 +107,16 @@ mod hl {
             let prog = Program::new(ctx, src);
             prog.build(device).unwrap();
 
-            let k = prog.create_kernel("test");
+            let k = Kernel::new(&prog, "test");
 
-            let v = Buffer::new(&ctx, &[1isize][..], CL_MEM_READ_WRITE);
+            let v = Buffer::new(&ctx, &[1isize][..], MemoryAccess::ReadWrite);
 
             k.set_arg(0, &v);
 
-            queue.enqueue_async_kernel(&k, 1isize, None, ()).wait();
+            queue.enqueue_async_kernel(&k, 1isize, None, None).wait();
 
             let mut out = [ 0isize; 1 ];
-            queue.read(&v, &mut out[..], ());
+            queue.read(&v, &mut out[..], None);
 
             expect!(out[0], 2);
         })
@@ -133,8 +132,8 @@ mod hl {
             let prog = Program::new(ctx, src);
             prog.build(device).unwrap();
 
-            let k = prog.create_kernel("test");
-            let v = Buffer::new(&ctx, &[1isize][..], CL_MEM_READ_WRITE);
+            let k = Kernel::new(&prog, "test");
+            let v = Buffer::new(&ctx, &[1isize][..], MemoryAccess::ReadWrite);
 
             k.set_arg(0, &v);
 
@@ -145,7 +144,7 @@ mod hl {
             e.wait();
 
             let mut out = [ 0isize; 1 ];
-            queue.read(&v, &mut out[..], ());
+            queue.read(&v, &mut out[..], None);
 
             expect!(out[0], 9);
         })
@@ -164,20 +163,20 @@ mod hl {
             let prog = Program::new(ctx, src);
             prog.build(device).unwrap();
 
-            let k_inc_a = prog.create_kernel("inc");
-            let k_inc_b = prog.create_kernel("inc");
-            let k_add = prog.create_kernel("add");
+            let k_inc_a = Kernel::new(&prog, "inc");
+            let k_inc_b = Kernel::new(&prog, "inc");
+            let k_add   = Kernel::new(&prog, "add");
 
-            let a = Buffer::new(&ctx, &[1isize][..], CL_MEM_READ_WRITE);
-            let b = Buffer::new(&ctx, &[1isize][..], CL_MEM_READ_WRITE);
-            let c = Buffer::new(&ctx, &[1isize][..], CL_MEM_READ_WRITE);
+            let a = Buffer::new(&ctx, &[1isize][..], MemoryAccess::ReadWrite);
+            let b = Buffer::new(&ctx, &[1isize][..], MemoryAccess::ReadWrite);
+            let c = Buffer::new(&ctx, &[1isize][..], MemoryAccess::ReadWrite);
 
             k_inc_a.set_arg(0, &a);
             k_inc_b.set_arg(0, &b);
 
             let event_list = [
-                queue.enqueue_async_kernel(&k_inc_a, 1isize, None, ()),
-                queue.enqueue_async_kernel(&k_inc_b, 1isize, None, ()),
+                queue.enqueue_async_kernel(&k_inc_a, 1isize, None, None),
+                queue.enqueue_async_kernel(&k_inc_b, 1isize, None, None),
             ];
 
             k_add.set_arg(0, &a);
@@ -187,7 +186,7 @@ mod hl {
             queue.enqueue_async_kernel(&k_add, 1isize, None, &event_list[..]).wait();
 
             let mut out = [ 0isize; 1 ];
-            queue.read(&c, &mut out[..], ());
+            queue.read(&c, &mut out[..], None);
 
             expect!(out[0], 4);
         })
@@ -214,16 +213,15 @@ mod hl {
                 }
             }
 
-            let k = prog.create_kernel("test");
-
-            let v = Buffer::new(&ctx, &[1isize, 2, 3, 4, 5, 6, 7, 8, 9][..], CL_MEM_READ_WRITE);
+            let k = Kernel::new(&prog, "test");
+            let v = Buffer::new(&ctx, &[1isize, 2, 3, 4, 5, 6, 7, 8, 9][..], MemoryAccess::ReadWrite);
 
             k.set_arg(0, &v);
 
-            queue.enqueue_async_kernel(&k, (3isize, 3isize), None, ()).wait();
+            queue.enqueue_async_kernel(&k, (3isize, 3isize), None, None).wait();
 
             let mut out = [ 0isize; 9 ];
-            queue.read(&v, &mut out[..], ());
+            queue.read(&v, &mut out[..], None);
 
             expect!(out, [ 0, 0, 0, 0, 1, 2, 0, 2, 4 ]);
         })
@@ -233,13 +231,13 @@ mod hl {
     fn memory_read_write()
     {
         ::test_all_platforms_devices(&mut |_, ctx, queue| {
-            let buffer = Buffer::<isize>::new_uninitialized(&ctx, 8, CL_MEM_READ_ONLY);
+            let buffer = Buffer::<isize>::new_uninitialized(&ctx, 8, MemoryAccess::ReadWrite);
 
             let input = [0isize, 1, 2, 3, 4, 5, 6, 7];
             let mut output = [0isize, 0, 0, 0, 0, 0, 0, 0];
 
-            queue.write(&buffer, &input[..], ());
-            queue.read(&buffer, &mut output[..], ());
+            queue.write(&buffer, &input[..], None);
+            queue.read(&buffer, &mut output[..], None);
 
             expect!(input, output);
         })
@@ -252,10 +250,10 @@ mod hl {
             let input = [0isize, 1, 2, 3, 4, 5, 6, 7];
             let mut output = [0isize, 0, 0, 0, 0, 0, 0, 0];
 
-            let buffer = Buffer::new(&ctx, &input[..], CL_MEM_READ_WRITE);
+            let buffer = Buffer::new(&ctx, &input[..], MemoryAccess::ReadWrite);
 
-            queue.write(&buffer, &input[..], ());
-            queue.read(&buffer, &mut output[..], ());
+            queue.write(&buffer, &input[..], None);
+            queue.read(&buffer, &mut output[..], None);
 
             expect!(&input[..], &output[..]);
         })
@@ -269,10 +267,10 @@ mod hl {
             let input = vec!(0isize, 1, 2, 3, 4, 5, 6, 7);
             let mut output = vec!(0isize, 0, 0, 0, 0, 0, 0, 0);
 
-            let buffer = Buffer::new(&ctx, &input[..], CL_MEM_READ_WRITE);
+            let buffer = Buffer::new(&ctx, &input[..], MemoryAccess::ReadWrite);
 
-            queue.write(&buffer, &input[..], ());
-            queue.read(&buffer, &mut output[..], ());
+            queue.write(&buffer, &input[..], None);
+            queue.read(&buffer, &mut output[..], None);
 
             expect!(input, output);
         })
@@ -285,10 +283,10 @@ mod hl {
             let input = vec!(0isize, 1, 2, 3, 4, 5, 6, 7);
             let mut output = vec!(0isize, 0, 0, 0, 0, 0, 0, 0);
 
-            let buffer = Buffer::new(&ctx, &input.clone(), CL_MEM_READ_WRITE);
+            let buffer = Buffer::new(&ctx, &input.clone(), MemoryAccess::ReadWrite);
 
-            queue.write(&buffer, &input[..], ());
-            queue.read(&buffer, &mut output[..], ());
+            queue.write(&buffer, &input[..], None);
+            queue.read(&buffer, &mut output[..], None);
 
             expect!(input, output);
         })
@@ -307,16 +305,16 @@ mod hl {
             let prog = Program::new(ctx, src);
             prog.build(device).unwrap();
 
-            let k = prog.create_kernel("test");
-            let v = Buffer::new(&ctx, &[1isize][..], CL_MEM_READ_WRITE);
+            let k = Kernel::new(&prog, "test");
+            let v = Buffer::new(&ctx, &[1isize][..], MemoryAccess::ReadWrite);
 
             k.set_arg(0, &v);
             k.alloc_local::<isize>(1, 1);
 
-            queue.enqueue_async_kernel(&k, 1isize, None, ()).wait();
+            queue.enqueue_async_kernel(&k, 1isize, None, None).wait();
 
             let mut out = [ 0isize; 1 ];
-            queue.read(&v, &mut out[..], ());
+            queue.read(&v, &mut out[..], None);
 
             expect!(out[0], 2);
         })
@@ -333,16 +331,16 @@ mod hl {
         let prog = Program::new(&ctx, src);
         prog.build(&device).unwrap();
 
-        let k = prog.create_kernel("test");
-        let v = Buffer::new(&ctx, &[1isize][..], CL_MEM_READ_WRITE);
+        let k = Kernel::new(&prog, "test");
+        let v = Buffer::new(&ctx, &[1isize][..], MemoryAccess::ReadWrite);
 
         k.set_arg(0, &v);
 
-        let e = queue.enqueue_async_kernel(&k, 1isize, None, ());
+        let e = queue.enqueue_async_kernel(&k, 1isize, None, None);
         e.wait();
 
-        // the that are returned are not useful for unit test, this test
-        // is mostly testing that opencl returns no error
+        // The returned values are not useful for unit test, this test is mostly testing that
+        // opencl returns no error.
         e.queue_time();
         e.submit_time();
         e.start_time();

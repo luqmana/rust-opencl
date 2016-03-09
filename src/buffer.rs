@@ -70,7 +70,7 @@ pub struct Buffer<T> {
 
 impl<T: Copy> Buffer<T> {
     /// Creates a buffer initialized with the content of `data`.
-    pub fn new<D: ?Sized>(context: &Context, data: &D, flags: cl_mem_flags) -> Buffer<T>
+    pub fn new<D: ?Sized>(context: &Context, data: &D, mem_access: MemoryAccess) -> Buffer<T>
         where D: BufferData<T> {
 
         data.as_raw_data(|raw_data, sz| {
@@ -78,7 +78,7 @@ impl<T: Copy> Buffer<T> {
 
             let mem = unsafe {
                 clCreateBuffer(context.cl_id(),
-                               flags | CL_MEM_COPY_HOST_PTR,
+                               mem_access.to_cl_mem_flags() | CL_MEM_COPY_HOST_PTR,
                                sz,
                                mem::transmute(raw_data),
                                &mut status)
@@ -96,11 +96,11 @@ impl<T: Copy> Buffer<T> {
 
     // FIXME: should be unsafe?
     /// Creates a new uninitialized 1-dimensional buffer.
-    pub fn new_uninitialized(context: &Context, len: usize, flags: cl_mem_flags) -> Buffer<T> {
+    pub fn new_uninitialized(context: &Context, len: usize, mem_access: MemoryAccess) -> Buffer<T> {
         let mut status = 0;
         let mem = unsafe {
             clCreateBuffer(context.cl_id(),
-                           flags,
+                           mem_access.to_cl_mem_flags(),
                            (len * mem::size_of::<T>()) as size_t,
                            ptr::null_mut(),
                            &mut status)

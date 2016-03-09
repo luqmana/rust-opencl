@@ -22,8 +22,7 @@ impl Event {
         }
     }
 
-    fn get_time(&self, param: cl_uint) -> u64
-    {
+    fn get_time(&self, param: cl_uint) -> u64 {
         unsafe {
             let mut time: cl_ulong = 0;
             let ret = clGetEventProfilingInfo(self.event,
@@ -38,26 +37,22 @@ impl Event {
     }
 
     /// Gets the time when the event was queued.
-    pub fn queue_time(&self) -> u64
-    {
+    pub fn queue_time(&self) -> u64 {
         self.get_time(CL_PROFILING_COMMAND_QUEUED)
     }
 
     /// Gets the time when the event was submitted to the device.
-    pub fn submit_time(&self) -> u64
-    {
+    pub fn submit_time(&self) -> u64 {
         self.get_time(CL_PROFILING_COMMAND_SUBMIT)
     }
 
     /// Gets the time when the event started.
-    pub fn start_time(&self) -> u64
-    {
+    pub fn start_time(&self) -> u64 {
         self.get_time(CL_PROFILING_COMMAND_START)
     }
 
     /// Gets the time when the event ended.
-    pub fn end_time(&self) -> u64
-    {
+    pub fn end_time(&self) -> u64 {
         self.get_time(CL_PROFILING_COMMAND_END)
     }
 }
@@ -104,9 +99,9 @@ impl EventList for Event {
     }
 }
 
-impl<T: EventList> EventList for Option<T> {
-    fn as_event_list<T2, F>(&self, f: F) -> T2
-        where F: FnOnce(*const cl_event, cl_uint) -> T2
+impl EventList for Option<Event> {
+    fn as_event_list<T, F>(&self, f: F) -> T
+        where F: FnOnce(*const cl_event, cl_uint) -> T
     {
         match *self {
             None => f(ptr::null(), 0),
@@ -125,14 +120,5 @@ impl<'r> EventList for &'r [Event] {
         }
 
         f(vec.as_ptr(), vec.len() as cl_uint)
-    }
-}
-
-/* this seems VERY hackey */
-impl EventList for () {
-    fn as_event_list<T, F>(&self, f: F) -> T
-        where F: FnOnce(*const cl_event, cl_uint) -> T
-    {
-        f(ptr::null(), 0)
     }
 }

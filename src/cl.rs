@@ -274,21 +274,45 @@ pub const CL_MEM_USE_HOST_PTR:                          cl_bitfield = 1 << 3;
 pub const CL_MEM_ALLOC_HOST_PTR:                        cl_bitfield = 1 << 4;
 pub const CL_MEM_COPY_HOST_PTR:                         cl_bitfield = 1 << 5;
 
+/// Kind of memory access.
+pub enum MemoryAccess {
+    /// Read-only memory access.
+    ReadOnly,
+    /// Write-only memory access.
+    WriteOnly,
+    /// Read and write memory access.
+    ReadWrite
+}
+
+impl MemoryAccess {
+    /// Retrieves the OpenCL `cl_mem_flags` value corresponding to this kind of memory access.
+    #[inline]
+    pub fn to_cl_mem_flags(&self) -> cl_bitfield {
+        match *self {
+            MemoryAccess::ReadOnly  => CL_MEM_READ_ONLY,
+            MemoryAccess::WriteOnly => CL_MEM_WRITE_ONLY,
+            MemoryAccess::ReadWrite => CL_MEM_READ_WRITE
+        }
+    }
+}
+
 /* cl_channel_order */
-pub enum CLChannelOrder {
-    CL_R         = 0x10B0,
-    CL_A         = 0x10B1,
-    CL_RG        = 0x10B2,
-    CL_RA        = 0x10B3,
-    CL_RGB       = 0x10B4,
-    CL_RGBA      = 0x10B5,
-    CL_BGRA      = 0x10B6,
-    CL_ARGB      = 0x10B7,
-    CL_INTENSITY = 0x10B8,
-    CL_LUMINANCE = 0x10B9,
-    CL_Rx        = 0x10BA,
-    CL_RGx       = 0x10BB,
-    CL_RGBx      = 0x10BC
+#[derive(PartialEq, Debug)]
+#[repr()]
+pub enum ChannelOrder {
+    R         = 0x10B0,
+    A         = 0x10B1,
+    RG        = 0x10B2,
+    RA        = 0x10B3,
+    RGB       = 0x10B4,
+    RGBA      = 0x10B5,
+    BGRA      = 0x10B6,
+    ARGB      = 0x10B7,
+    INTENSITY = 0x10B8,
+    LUMINANCE = 0x10B9,
+    Rx        = 0x10BA,
+    RGx       = 0x10BB,
+    RGBx      = 0x10BC
 }
 
 /* cl_channel_type */

@@ -50,32 +50,8 @@ impl CommandQueue {
     }
 
     /// Synchronously enqueues a kernel for execution on the device.
-    pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_list: E)
-        -> Event {
-        unsafe
-        {
-            wait_list.as_event_list(|event_list, event_list_length| {
-                let mut e: cl_event = ptr::null_mut();
-                let mut status = clEnqueueNDRangeKernel(
-                    self.cqueue,
-                    k.cl_id(),
-                    KernelIndex::num_dimensions(None::<I>),
-                    ptr::null(),
-                    global.get_ptr(),
-                    match local {
-                        Some(ref l) => l.get_ptr() as *const libc::size_t,
-                        None => ptr::null()
-                    },
-                    event_list_length,
-                    event_list,
-                    (&mut e));
-                check(status, "Error enqueuing kernel.");
-                status = clFinish(self.cqueue);
-                check(status, "Error finishing kernel.");
-
-                Event::new_unchecked(e)
-            })
-        }
+    pub fn enqueue_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_list: E) {
+        self.enqueue_async_kernel(k, global, local, wait_list).wait()
     }
 
     /// Asynchronously enqueues a kernel for execution on the device.

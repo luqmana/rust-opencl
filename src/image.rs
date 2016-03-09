@@ -38,8 +38,8 @@ impl<T: ImageChannelType> Image2D<T> {
                           width:         usize,
                           height:        usize,
                           data:          &D,
-                          channel_order: CLChannelOrder,
-                          flags:         cl_mem_flags)
+                          channel_order: ChannelOrder,
+                          mem_access:    MemoryAccess)
                           -> Image2D<T>
         where D: BufferData<T> {
 
@@ -55,7 +55,7 @@ impl<T: ImageChannelType> Image2D<T> {
 
             let mem = unsafe {
                 clCreateImage2D(context.cl_id(),
-                                flags | CL_MEM_COPY_HOST_PTR,
+                                mem_access.to_cl_mem_flags() | CL_MEM_COPY_HOST_PTR,
                                 &format,
                                 width  as size_t,
                                 height as size_t,
@@ -80,8 +80,8 @@ impl<T: ImageChannelType> Image2D<T> {
     pub fn new_uninitialized(context:       &Context,
                              width:         usize,
                              height:        usize,
-                             channel_order: CLChannelOrder,
-                             flags:         cl_mem_flags)
+                             channel_order: ChannelOrder,
+                             mem_access:    MemoryAccess)
                              -> Image2D<T> {
         let mut status = 0;
 
@@ -92,7 +92,7 @@ impl<T: ImageChannelType> Image2D<T> {
 
         let mem = unsafe {
             clCreateImage2D(context.cl_id(),
-                            flags,
+                            mem_access.to_cl_mem_flags(),
                             &format,
                             width  as size_t,
                             height as size_t,
@@ -155,8 +155,8 @@ impl<T: ImageChannelType> Image3D<T> {
                           height:        usize,
                           depth:         usize,
                           data:          &D,
-                          channel_order: CLChannelOrder,
-                          flags:         cl_mem_flags)
+                          channel_order: ChannelOrder,
+                          mem_access:    MemoryAccess)
                           -> Image3D<T>
         where D: BufferData<T> {
 
@@ -172,7 +172,7 @@ impl<T: ImageChannelType> Image3D<T> {
 
             let mem = unsafe {
                 clCreateImage3D(context.cl_id(),
-                                flags | CL_MEM_COPY_HOST_PTR,
+                                mem_access.to_cl_mem_flags() | CL_MEM_COPY_HOST_PTR,
                                 &format,
                                 width as size_t,
                                 height as size_t,
@@ -201,8 +201,8 @@ impl<T: ImageChannelType> Image3D<T> {
                              width:         usize,
                              height:        usize,
                              depth:         usize,
-                             channel_order: CLChannelOrder,
-                             flags:         cl_mem_flags)
+                             channel_order: ChannelOrder,
+                             mem_access:    MemoryAccess)
                              -> Image3D<T> {
         let mut status = 0;
 
@@ -213,7 +213,7 @@ impl<T: ImageChannelType> Image3D<T> {
 
         let mem = unsafe {
             clCreateImage3D(context.cl_id(),
-                            flags,
+                            mem_access.to_cl_mem_flags(),
                             &format,
                             width as size_t,
                             height as size_t,

@@ -19,12 +19,17 @@ name = "opencl"
 
 [[example]]
 name = "addition"
-path = "examples/demo/addition.rs"
+path = "examples/addition.rs"
 
 [[example]]
 name = "platform"
-path = "examples/platform/main.rs"
+path = "examples/platform.rs"
+
+[[example]]
+name = "histogram"
+path = "examples/histogram.rs"
 
 [dependencies]
-log = "^0.3.1"
-libc = "^0.1.8"
+log      = "0.3.1"
+libc     = "0.1.8"
+bitflags = "0.5.0"
