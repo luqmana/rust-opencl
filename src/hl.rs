@@ -234,20 +234,44 @@ impl Device {
     {
         self.profile_info(CL_DEVICE_TYPE)
     }
-	
-    pub fn compute_units(&self) -> usize {
-		unsafe {
-			let mut ct: usize = 0;
-            let status = clGetDeviceInfo(
-                self.id,
-                CL_DEVICE_MAX_COMPUTE_UNITS,
-                8,
-                (&mut ct as *mut usize) as *mut libc::c_void,
-                ptr::null_mut());
-            check(status, "Could not get number of device compute units.");
-			return ct;
-		}
+
+    fn device_info_helper<T: Default>(&self, query: cl_device_info) -> T {
+	unsafe{
+	    let mut retvalue: T = Default::default();
+	    let status = clGetDeviceInfo(
+		self.id,
+		query,
+		mem::size_of::<T>() as u64,
+		(&mut retvalue as *mut T) as *mut libc::c_void,
+		ptr::null_mut());
+	    check(status, "device_info_ulong_helper: clGetDeviceInfo query failure.");
+	    return retvalue;
 	}
+    }
+
+    pub fn compute_units(&self) -> u32 {
+	self.device_info_helper::<u32>(CL_DEVICE_MAX_COMPUTE_UNITS)
+    }
+
+    pub fn global_mem_cache_size(&self) -> u64 {
+	self.device_info_helper::<u64>(CL_DEVICE_GLOBAL_MEM_CACHE_SIZE)
+    }
+
+    pub fn global_mem_size(&self) -> u64 {
+	self.device_info_helper::<u64>(CL_DEVICE_GLOBAL_MEM_SIZE)
+    }
+
+    pub fn local_mem_size(&self) -> u64 {
+	self.device_info_helper::<u64>(CL_DEVICE_LOCAL_MEM_SIZE)
+    }
+
+    pub fn max_constant_buffer_size(&self) -> u64 {
+	self.device_info_helper::<u64>(CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE)
+    }
+
+    pub fn max_mem_alloc_size(&self) -> u64 {
+	self.device_info_helper::<u64>(CL_DEVICE_MAX_MEM_ALLOC_SIZE)
+    }
 
 
     pub fn create_context(&self) -> Context
