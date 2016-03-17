@@ -7,7 +7,7 @@ OpenCL bindings and high-level interface for Rust.
 Add the following to your `Cargo.toml` file:
 
 ```.ignore
-[dependencies] 
+[dependencies]
 rust-opencl = "0.5.0"
 ```
 */

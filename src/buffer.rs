@@ -115,6 +115,27 @@ impl<T: Copy> Buffer<T> {
         }
     }
 
+    pub fn from_gl_buffer(context: &Context, gl_buffer_id: gl::types::GLuint, mem_access: MemoryAccess) -> Buffer<T> {
+        let mut status = 0;
+        let mem = unsafe {
+            clCreateFromGLBuffer(context.cl_id(),
+                           mem_access.to_cl_mem_flags(),
+                           ptr::null_mut(),
+                           &mut status)
+        };
+
+        // this->_positions_cl = clCreateFromGLBuffer(this->_cl_context(),
+        // CL_MEM_READ_WRITE, this->_positions_vbo, &err);
+
+        check(status, "Could not allocate buffer");
+
+        Buffer {
+            len:       len as size_t,
+            cl_buffer: mem,
+            phantom:   PhantomData
+        }
+    }
+
     /// The underlying OpenCL identifier.
     pub fn cl_id_ptr(&self) -> cl_mem {
         self.cl_buffer
