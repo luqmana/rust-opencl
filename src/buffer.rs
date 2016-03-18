@@ -115,6 +115,7 @@ impl<T: Copy> Buffer<T> {
         }
     }
 
+    // FIX ME: should be here ? Trait openGL or something ?
     /// Creates a buffer object from an OpenGL buffer object.
     pub fn from_gl_buffer(context: &Context, gl_buffer_id: GLuint, len: usize,
                           mem_access: MemoryAccess) -> Buffer<T> {
@@ -155,6 +156,22 @@ impl<T: Copy> Buffer<T> {
     pub fn len(&self) -> size_t {
         self.len
     }
+
+    // FIX ME: should be here ? Trait openGL or something ?
+    // cl_int clEnqueueAcquireGLObjects (  cl_command_queue command_queue,
+    //     cl_uint num_objects,
+    //     const cl_mem *mem_objects,
+    //     cl_uint num_events_in_wait_list,
+    //     const cl_event *event_wait_list,
+    //     cl_event *event)
+
+    // FIX ME: should be here ? Trait openGL or something ?
+    // cl_int clEnqueueReleaseGLObjects (  cl_command_queue  command_queue ,
+    //     cl_uint  num_objects ,
+    //     const cl_mem  *mem_objects ,
+    //     cl_uint  num_events_in_wait_list ,
+    //     const cl_event  *event_wait_list ,
+    //     cl_event  *event )
 }
 
 impl<T> Drop for Buffer<T> {
