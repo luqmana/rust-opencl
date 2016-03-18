@@ -7,9 +7,10 @@ authors = [ "Colin Sherratt <colin.sherratt@gmail.com>",
             "Luqman Aden <me@luqman.ca>",
             "Milinda Pathirage <milinda.pathirage@gmail.com>",
             "Sébastien Crozet <developer@crozet.re>",
-            "Mathijs Henquet <mathijs.henquet@gmail.com>"
+            "Mathijs Henquet <mathijs.henquet@gmail.com>",
+            "Clément Renault <renault.cle@gmail.com>"
           ]
-repository = "https://github.com/luqmana/rust-opencl"
+repository = "https://github.com/Kerosene2000/rust-opencl"
 license = "MIT/Apache-2.0"
 description = "OpenCL bindings for Rust."
 keywords = ["opencl", "bindings", "ffi", "gpu", "compute"]

@@ -684,6 +684,18 @@ pub mod ll {
     pub fn clFinish(command_queue: cl_command_queue) -> cl_int;
 
     /* Enqueued Commands APIs */
+    pub fn clEnqueueAcquireGLObjects(command_queue: cl_command_queue,
+                            num_objects: cl_uint,
+                            mem_objects: *const cl_mem,
+                            num_events_in_wait_list: cl_uint,
+                            event_wait_list: *const cl_event,
+                            event: *mut cl_event) -> cl_int;
+    pub fn clEnqueueReleaseGLObjects(command_queue: cl_command_queue,
+                            num_objects: cl_uint,
+                            mem_objects: *const cl_mem,
+                            num_events_in_wait_list: cl_uint,
+                            event_wait_list: *const cl_event,
+                            event: *mut cl_event) -> cl_int;
     pub fn clEnqueueReadBuffer(command_queue: cl_command_queue,
                            buffer: cl_mem,
                            blocking_read: cl_bool,

@@ -57,8 +57,7 @@ impl CommandQueue {
     /// Asynchronously enqueues a kernel for execution on the device.
     pub fn enqueue_async_kernel<I: KernelIndex, E: EventList>(&self, k: &Kernel, global: I, local: Option<I>, wait_list: E)
         -> Event {
-        unsafe
-        {
+        unsafe {
             wait_list.as_event_list(|event_list, event_list_length| {
                 let mut e: cl_event = ptr::null_mut();
                 let status = clEnqueueNDRangeKernel(
@@ -81,6 +80,60 @@ impl CommandQueue {
         }
     }
 
+    /// Synchronously Acquire OpenCL memory objects that have been created from OpenGL objects.
+    pub fn enqueue_acquire_gl_buffer<T: Copy, E: EventList>(&self, mem: &Buffer<T>, wait_list: E) {
+        self.enqueue_async_acquire_gl_buffer(mem, wait_list).wait()
+    }
+
+    /// Asynchronously Acquire OpenCL memory objects that have been created from OpenGL objects.
+    pub fn enqueue_async_acquire_gl_buffer<T: Copy, E: EventList>(&self, mem: &Buffer<T>, wait_list: E)
+        -> Event {
+
+        unsafe {
+            wait_list.as_event_list(|event_list, event_list_length| {
+                let mut e: cl_event = ptr::null_mut();
+                let status = clEnqueueAcquireGLObjects(
+                    self.cqueue,
+                    1,
+                    &mem.cl_id(),
+                    event_list_length,
+                    event_list,
+                    (&mut e));
+
+                check(status, "Failed to acquire buffer");
+
+                Event::new_unchecked(e)
+            })
+        }
+    }
+
+    /// Synchronously Release OpenCL memory objects that have been created from OpenGL objects.
+    pub fn enqueue_release_gl_buffer<T: Copy, E: EventList>(&self, mem: &Buffer<T>, wait_list: E) {
+        self.enqueue_async_release_gl_buffer(mem, wait_list).wait()
+    }
+
+    /// Asynchronously Release OpenCL memory objects that have been created from OpenGL objects.
+    pub fn enqueue_async_release_gl_buffer<T: Copy, E: EventList>(&self, mem: &Buffer<T>, wait_list: E)
+        -> Event {
+
+        unsafe {
+            wait_list.as_event_list(|event_list, event_list_length| {
+                let mut e: cl_event = ptr::null_mut();
+                let status = clEnqueueReleaseGLObjects(
+                    self.cqueue,
+                    1,
+                    &mem.cl_id(),
+                    event_list_length,
+                    event_list,
+                    (&mut e));
+
+                check(status, "Failed to acquire buffer");
+
+                Event::new_unchecked(e)
+            })
+        }
+    }
+
     fn do_write<T: Copy, U: ?Sized, E>(&self, mem: &Buffer<T>, data: &U, wait_list: E, out_event: *mut cl_event)
         where U: BufferData<T>,
               E: EventList {
@@ -91,15 +144,16 @@ impl CommandQueue {
 
                     let blocking = if out_event.is_null() { CL_TRUE } else { CL_FALSE };
 
-                    let err = clEnqueueWriteBuffer(self.cqueue,
-                                                   mem.cl_id(),
-                                                   blocking,
-                                                   0,
-                                                   sz as libc::size_t,
-                                                   raw_data as *const libc::c_void,
-                                                   event_list_length,
-                                                   event_list,
-                                                   out_event);
+                    let err = clEnqueueWriteBuffer(
+                        self.cqueue,
+                        mem.cl_id(),
+                        blocking,
+                        0,
+                        sz as libc::size_t,
+                        raw_data as *const libc::c_void,
+                        event_list_length,
+                        event_list,
+                        out_event);
 
                     check(err, "Failed to write buffer");
                 })
