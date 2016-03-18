@@ -65,6 +65,9 @@ pub type cl_event_info                  = cl_uint;
 pub type cl_command_type                = cl_uint;
 pub type cl_profiling_info              = cl_uint;
 
+/* openGL Scalar types */
+pub type GLuint                         = cl_uint;
+
 pub struct cl_image_format {
     pub image_channel_order:        cl_channel_order,
     pub image_channel_data_type:    cl_channel_type
@@ -549,6 +552,10 @@ pub mod ll {
                        image_row_pitch: libc::size_t,
                        image_slice_pitch: libc::size_t,
                        host_ptr: *mut libc::c_void,
+                       errcode_ret: *mut cl_int) -> cl_mem;
+    pub fn clCreateFromGLBuffer(context: cl_context,
+                       flags: cl_mem_flags,
+                       bufobj: GLuint,
                        errcode_ret: *mut cl_int) -> cl_mem;
     pub fn clRetainMemObject(memobj: cl_mem) -> cl_int;
     pub fn clReleaseMemObject(memobj: cl_mem) -> cl_int;

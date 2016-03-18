@@ -115,22 +115,22 @@ impl<T: Copy> Buffer<T> {
         }
     }
 
-    pub fn from_gl_buffer(context: &Context, gl_buffer_id: gl::types::GLuint, mem_access: MemoryAccess) -> Buffer<T> {
+    /// Creates a buffer object from an OpenGL buffer object.
+    pub fn from_gl_buffer(context: &Context, gl_buffer_id: GLuint, len: usize,
+                          mem_access: MemoryAccess) -> Buffer<T> {
         let mut status = 0;
         let mem = unsafe {
             clCreateFromGLBuffer(context.cl_id(),
                            mem_access.to_cl_mem_flags(),
-                           ptr::null_mut(),
+                           gl_buffer_id,
                            &mut status)
         };
-
-        // this->_positions_cl = clCreateFromGLBuffer(this->_cl_context(),
-        // CL_MEM_READ_WRITE, this->_positions_vbo, &err);
 
         check(status, "Could not allocate buffer");
 
         Buffer {
-            len:       len as size_t,
+            len:       len as size_t,   // because this is from openGL we need
+                                        // to specify the size manually
             cl_buffer: mem,
             phantom:   PhantomData
         }

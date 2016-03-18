@@ -8,7 +8,7 @@ Add the following to your `Cargo.toml` file:
 
 ```rust
 [dependencies]
-rust-opencl = "0.5.0"
+opencl = "0.5.0"
 ```
 
 ## Example
