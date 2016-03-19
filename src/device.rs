@@ -28,6 +28,7 @@ impl DeviceType {
 }
 
 /// And OpenCL device.
+#[derive(Copy, Clone)]
 pub struct Device {
     id: cl_device_id
 }
@@ -71,7 +72,7 @@ impl Device {
             id: id
         }
     }
-    
+
     /// The device name.
     pub fn name(&self) -> String
     {
@@ -94,7 +95,7 @@ impl Device {
     {
         self.profile_info(CL_DEVICE_TYPE)
     }
-	
+
     /// The maximum number of compute units of this device.
     pub fn compute_units(&self) -> usize {
 		unsafe {
