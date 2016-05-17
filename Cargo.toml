@@ -1,13 +1,14 @@
 [package]
 name = "opencl"
-version = "0.3.0-dev"
+version = "0.5.0"
 authors = [ "Colin Sherratt <colin.sherratt@gmail.com>",
             "Eric Holk <eholk@cs.indiana.edu>",
             "Ian Daniher <it.daniher@gmail.com>",
             "Luqman Aden <me@luqman.ca>",
             "Milinda Pathirage <milinda.pathirage@gmail.com>",
             "Sébastien Crozet <developer@crozet.re>",
-            "Mathijs Henquet <mathijs.henquet@gmail.com>"
+            "Mathijs Henquet <mathijs.henquet@gmail.com>",
+            "Clément Renault <renault.cle@gmail.com>"
           ]
 repository = "https://github.com/luqmana/rust-opencl"
 license = "MIT/Apache-2.0"
@@ -18,13 +19,18 @@ keywords = ["opencl", "bindings", "ffi", "gpu", "compute"]
 name = "opencl"
 
 [[example]]
-name = "demo"
-path = "examples/demo/main.rs"
+name = "addition"
+path = "examples/addition.rs"
 
 [[example]]
 name = "platform"
-path = "examples/platform/main.rs"
+path = "examples/platform.rs"
+
+[[example]]
+name = "histogram"
+path = "examples/histogram.rs"
 
 [dependencies]
-log = "^0.3.1"
-libc = "^0.1.8"
+log      = "0.3.1"
+libc     = "0.1.8"
+bitflags = "0.5.0"

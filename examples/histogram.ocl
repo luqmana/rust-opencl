@@ -1,0 +1,4 @@
+__kernel void histogram(__global int* data, __global int* histogram) {
+    int i = get_global_id(0);
+    atomic_inc(&histogram[data[i]]);
+}
