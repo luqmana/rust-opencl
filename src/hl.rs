@@ -1,7 +1,5 @@
 //! A higher level API.
-
 use libc;
-use std;
 use std::ffi::CString;
 use std::iter::repeat;
 use std::marker::PhantomData;
@@ -9,6 +7,7 @@ use std::mem;
 use std::ptr;
 use std::string::String;
 use std::vec::Vec;
+use std::sync::Mutex;
 
 use cl;
 use cl::*;
@@ -21,6 +20,7 @@ use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 pub enum DeviceType {
       CPU, GPU
 }
+
 
 fn convert_device_type(device: DeviceType) -> cl_device_type {
     match device {
@@ -131,7 +131,9 @@ impl Platform {
 // This mutex is used to work around weak OpenCL implementations.
 // On some implementations concurrent calls to clGetPlatformIDs
 // will cause the implantation to return invalid status.
-static mut platforms_mutex: std::sync::StaticMutex = std::sync::MUTEX_INIT;
+lazy_static! {
+    static ref platforms_mutex : Mutex<i32> = Mutex::new(0);
+}
 
 pub fn get_platforms() -> Vec<Platform>
 {
@@ -697,8 +699,6 @@ impl Kernel {
     {
         alloc_kernel_local::<T>(self, i as cl::cl_uint, 
             l as libc::size_t)
-            // s as libc::size_t,
-
     }
 }
 
