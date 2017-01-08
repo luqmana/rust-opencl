@@ -29,7 +29,7 @@ fn convert_device_type(device: DeviceType) -> cl_device_type {
 }
 
 pub struct Platform {
-    id: cl_platform_id
+    pub id: cl_platform_id
 }
 
 impl Platform {
@@ -183,7 +183,7 @@ pub fn create_context_with_properties(dev: &[Device], prop: &[cl_context_propert
 
 #[derive(Copy, Clone)]
 pub struct Device {
-    id: cl_device_id
+    pub id: cl_device_id
 }
 
 unsafe impl Sync for Device {}
