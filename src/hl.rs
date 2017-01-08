@@ -1,7 +1,6 @@
 //! A higher level API.
 
 use libc;
-use std;
 use std::ffi::CString;
 use std::iter::repeat;
 use std::marker::PhantomData;
@@ -217,7 +216,7 @@ impl Device {
             String::from_utf8_unchecked(buf)
         }
     }
-    
+
     pub fn name(&self) -> String
     {
         self.profile_info(CL_DEVICE_NAME)
@@ -234,7 +233,7 @@ impl Device {
     {
         self.profile_info(CL_DEVICE_TYPE)
     }
-	
+
     pub fn compute_units(&self) -> usize {
 		unsafe {
 			let mut ct: usize = 0;
@@ -547,7 +546,7 @@ impl CommandQueue
                                                           event_list_length,
                                                           event_list,
                                                           ptr::null_mut());
-                            
+
                             check(err, "Failed to read buffer");
                         }
                     })
