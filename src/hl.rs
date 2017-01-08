@@ -1,5 +1,4 @@
 //! A higher level API.
-
 use libc;
 use std::ffi::CString;
 use std::iter::repeat;
@@ -8,6 +7,7 @@ use std::mem;
 use std::ptr;
 use std::string::String;
 use std::vec::Vec;
+use std::sync::Mutex;
 
 use cl;
 use cl::*;
@@ -20,6 +20,7 @@ use mem::{Put, Get, Write, Read, Buffer, CLBuffer};
 pub enum DeviceType {
       CPU, GPU
 }
+
 
 fn convert_device_type(device: DeviceType) -> cl_device_type {
     match device {
@@ -130,7 +131,9 @@ impl Platform {
 // This mutex is used to work around weak OpenCL implementations.
 // On some implementations concurrent calls to clGetPlatformIDs
 // will cause the implantation to return invalid status.
-static mut platforms_mutex: std::sync::StaticMutex = std::sync::MUTEX_INIT;
+lazy_static! {
+    static ref platforms_mutex : Mutex<i32> = Mutex::new(0);
+}
 
 pub fn get_platforms() -> Vec<Platform>
 {
@@ -248,6 +251,47 @@ impl Device {
 		}
 	}
 
+    pub fn global_mem_size(&self) -> usize {
+        unsafe {
+            let mut ct: usize = 0;
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_GLOBAL_MEM_SIZE,
+                16,
+                (&mut ct as *mut usize) as *mut libc::c_void,
+                ptr::null_mut());
+            check(status, "Could not get size of global memory.");
+            return ct;
+        }
+    }
+
+    pub fn local_mem_size(&self) -> usize {
+        unsafe {
+            let mut ct: usize = 0;
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_LOCAL_MEM_SIZE,
+                16,
+                (&mut ct as *mut usize) as *mut libc::c_void,
+                ptr::null_mut());
+            check(status, "Could not get size of local memory.");
+            return ct;
+        }
+    }
+
+    pub fn max_mem_alloc_size(&self) -> usize {
+        unsafe {
+            let mut ct: usize = 0;
+            let status = clGetDeviceInfo(
+                self.id,
+                CL_DEVICE_MAX_MEM_ALLOC_SIZE,
+                16,
+                (&mut ct as *mut usize) as *mut libc::c_void,
+                ptr::null_mut());
+            check(status, "Could not get size of local memory.");
+            return ct;
+        }
+    }
 
     pub fn create_context(&self) -> Context
     {
@@ -650,6 +694,12 @@ impl Kernel {
     {
         set_kernel_arg(self, i as cl::cl_uint, x)
     }
+
+    pub fn alloc_local<T>(&self, i: usize, l: usize)
+    {
+        alloc_kernel_local::<T>(self, i as cl::cl_uint, 
+            l as libc::size_t)
+    }
 }
 
 pub fn create_kernel(program: &Program, kernel: & str) -> Kernel
@@ -720,6 +770,18 @@ pub fn set_kernel_arg<T: KernelArg>(kernel: & Kernel,
     }
 }
 
+pub fn alloc_kernel_local<T>(kernel: &Kernel,
+                       position: cl_uint,
+                       // size: libc::size_t,
+                       length: libc::size_t){
+    unsafe
+    {
+        let tsize = mem::size_of::<T>() as libc::size_t;
+        let ret = clSetKernelArg(kernel.kernel, position,
+                tsize*length, ptr::null());
+        check(ret, "Failed to set kernel arg!");
+    }
+}
 
 pub struct Event
 {

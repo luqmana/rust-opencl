@@ -15,6 +15,9 @@ fn main() {
             println!("   Type: {}", device.device_type());
             println!("   Profile: {}", device.profile());
             println!("   Compute Units: {}", device.compute_units());
+            println!("   Global Memory Size: {} MB", device.global_mem_size() / (1024 * 1024));
+            println!("   Local Memory Size: {} MB", device.local_mem_size() / (1024 * 1024));
+            println!("   Max Alloc Size: {} MB", device.max_mem_alloc_size() / (1024 * 1024));
         }
     }
 }

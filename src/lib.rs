@@ -2,13 +2,14 @@
 #![allow(missing_copy_implementations)]
 #![allow(non_upper_case_globals)]
 
-#![feature(static_mutex)]
-
 //! OpenCL bindings for Rust.
 
 extern crate libc;
 #[macro_use]
 extern crate log;
+
+#[macro_use]
+extern crate lazy_static;
 
 #[link(name = "OpenCL", kind = "framework")]
 #[cfg(target_os = "macos")]
